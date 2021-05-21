@@ -1,7 +1,7 @@
 pub enum NativeTypes { 
     SimpleString(String), 
     Integer(isize),
-    BulkString(usize, String),
+    BulkString(isize, String),
     Error(String, String),
  }
 
@@ -90,20 +90,28 @@ impl NativeTypes {
             Self::new_error_from("ERR_PARSE Failed to parse redis bulk string\r\n".to_string())
         }
 
-
     }
 
     #[allow(dead_code)]
     fn verify_that_size_is_parsable(sliced_size: String, rest_of: String) -> (Self, String){
-        if let Ok(size) = sliced_size.parse::<usize>() {
-            NativeTypes::split_b_string(size, rest_of)
+
+        if let Ok(size) = sliced_size.parse::<isize>() {
+
+            if size == -1 {
+                (Self::BulkString(-1, "".to_string()), rest_of)
+            } else {
+                NativeTypes::split_b_string(size, rest_of)
+            }
+            
         } else {
             Self::new_error_from("ERR_PARSE Failed to parse redis bulk string\r\n".to_string())
         }
+
     }
 
     #[allow(dead_code)]
-    fn split_b_string(size: usize, rest_of: String) -> (Self, String) {
+    fn split_b_string(size: isize, rest_of: String) -> (Self, String) {
+
         if let Some((sliced_b_string, rest_of)) = NativeTypes::remove_first_cr_lf(rest_of){
             NativeTypes::verify_size_of_b_string(size, sliced_b_string, rest_of)
         } else {
@@ -113,12 +121,14 @@ impl NativeTypes {
     }
 
     #[allow(dead_code)]
-    fn verify_size_of_b_string(size: usize, sliced_b_string: String, rest_of: String) -> (Self, String) {
-        if sliced_b_string.len() == size {
+    fn verify_size_of_b_string(size: isize, sliced_b_string: String, rest_of: String) -> (Self, String) {
+
+        if sliced_b_string.len() == size as usize{
             (Self::BulkString(size, sliced_b_string), rest_of)
         } else {
             Self::new_error_from("ERR_PARSE Failed to parse redis bulk string\r\n".to_string())
         }
+
     }
 
     #[allow(dead_code)]
@@ -172,7 +182,12 @@ impl NativeTypes {
     #[allow(dead_code)]
     pub fn new_bulk_string(str: &str) -> Self {
         let string = str.to_string();
-        Self::BulkString(string.len(), string)
+        Self::BulkString(string.len() as isize, string)
+    }
+
+    #[allow(dead_code)]
+    pub fn new_nil() -> Self {
+        Self::BulkString(-1, "".to_string())
     }
 
     #[allow(dead_code)]
@@ -213,15 +228,20 @@ impl NativeTypes {
     }
 
     #[allow(dead_code)]
-    fn encode_bulk_string(size: usize, bulk: String) -> String {
-        let mut encoded = String::from("$");
-        encoded.push_str(&size.to_string());
-        encoded.push('\r');
-        encoded.push('\n');
-        encoded.push_str(&bulk);
-        encoded.push('\r');
-        encoded.push('\n');
-        encoded
+    fn encode_bulk_string(size: isize, bulk: String) -> String {
+        if size == -1 {
+            "$-1\r\n".to_string()
+        } else {
+            let mut encoded = String::from("$");
+            encoded.push_str(&size.to_string());
+            encoded.push('\r');
+            encoded.push('\n');
+            encoded.push_str(&bulk);
+            encoded.push('\r');
+            encoded.push('\n');
+            encoded
+        }
+
     }
 
     #[allow(dead_code)]
@@ -240,7 +260,15 @@ impl NativeTypes {
         match &self {
             Self::SimpleString(text) => Some(text.to_string()),
             Self::Integer(num) => Some(num.to_string()),
-            Self::BulkString(_, bulk) => Some(bulk.to_string()),
+            Self::BulkString(size, bulk) => {
+                
+                if *size == -1 {
+                    Some("(nil)".to_string())
+                } else {
+                    Some(bulk.to_string())
+                }
+                
+            },
             Self::Error(prefix, message) => Some(NativeTypes::error_to_string(prefix.to_string(), message.to_string())),
         }
     }
@@ -391,7 +419,22 @@ mod test_decode {
         assert_eq!(decoded_value.get().unwrap(), "pong".to_string());
         assert!(encoded.is_empty());
 
+    }
 
+    #[test]
+    fn test11_nil(){
+
+        let should_be_nil = NativeTypes::new_nil();
+        assert_eq!(should_be_nil.get().unwrap(), "(nil)".to_string());
+
+        let encoded_nil = should_be_nil.encode().unwrap();
+        assert_eq!(encoded_nil, "$-1\r\n".to_string());
+
+        let (decoded_nil, encoded_nil) = NativeTypes::new(encoded_nil);
+        assert_eq!(decoded_nil.get().unwrap(), "(nil)".to_string());
+        assert_eq!(encoded_nil, "".to_string());
+
+        
     }
 
 }
