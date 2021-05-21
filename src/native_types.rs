@@ -6,6 +6,7 @@ pub enum NativeTypes {
     Error(String, String),
 }
 
+
 impl NativeTypes {
     #[allow(dead_code)]
     pub fn new(mut redis_string: String) -> (Self, String) {
