@@ -1,4 +1,5 @@
-mod native_types;
+//mod native_types;
+mod redis_type;
 
 fn main() {
     let mut owned_string: String = String::from("hello ");

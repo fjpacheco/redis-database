@@ -433,8 +433,7 @@ mod test_decode {
         let (decoded_nil, encoded_nil) = NativeTypes::new(encoded_nil);
         assert_eq!(decoded_nil.get().unwrap(), "(nil)".to_string());
         assert_eq!(encoded_nil, "".to_string());
-
-        
+  
     }
 
 }

@@ -1,0 +1,1 @@
+/home/firmapaz/Escritorio/Facultad/Taller1/Proyecto/Rust-eze/target/debug/proyecto_taller_1: /home/firmapaz/Escritorio/Facultad/Taller1/Proyecto/Rust-eze/src/main.rs /home/firmapaz/Escritorio/Facultad/Taller1/Proyecto/Rust-eze/src/native_types.rs
