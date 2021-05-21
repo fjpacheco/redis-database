@@ -44,7 +44,7 @@ impl NativeTypes {
         
     }
 
-    #[allow(dead_code)]
+    /*#[allow(dead_code)]
     fn new_bulk_string_from(bulk: String) -> (Self, String){
 
         let sliced_size: String;
@@ -79,35 +79,47 @@ impl NativeTypes {
             Self::new_error_from("ERR_PARSE Failed to parse redis bulk string\r\n".to_string())
         }
 
+    }*/
+
+    #[allow(dead_code)]
+    fn new_bulk_string_from(bulk: String) -> (Self, String){
+
+        if let Some((sliced_size, rest_of)) = NativeTypes::remove_first_cr_lf(bulk) {
+            NativeTypes::verify_that_size_is_parsable(sliced_size, rest_of)
+        } else {
+            Self::new_error_from("ERR_PARSE Failed to parse redis bulk string\r\n".to_string())
+        }
+
+
     }
 
-    /*fn verify_that_size_is_parsable(sliced_size: String, rest_of: String) -> (Self, String){
+    #[allow(dead_code)]
+    fn verify_that_size_is_parsable(sliced_size: String, rest_of: String) -> (Self, String){
         if let Ok(size) = sliced_size.parse::<usize>() {
-            println!("HOla");
             NativeTypes::split_b_string(size, rest_of)
         } else {
-            Self::new_error_from("ERR_PARSE Failed to parse redis simple string\r\n".to_string())
+            Self::new_error_from("ERR_PARSE Failed to parse redis bulk string\r\n".to_string())
         }
     }
 
+    #[allow(dead_code)]
     fn split_b_string(size: usize, rest_of: String) -> (Self, String) {
         if let Some((sliced_b_string, rest_of)) = NativeTypes::remove_first_cr_lf(rest_of){
-            println!("HOla");
             NativeTypes::verify_size_of_b_string(size, sliced_b_string, rest_of)
         } else {
-            Self::new_error_from("ERR_PARSE Failed to parse redis simple string\r\n".to_string())
+            Self::new_error_from("ERR_PARSE Failed to parse redis bulk string\r\n".to_string())
         }
 
     }
 
+    #[allow(dead_code)]
     fn verify_size_of_b_string(size: usize, sliced_b_string: String, rest_of: String) -> (Self, String) {
         if sliced_b_string.len() == size {
-            println!("HOla");
             (Self::BulkString(size, sliced_b_string), rest_of)
         } else {
-            Self::new_error_from("ERR_PARSE Failed to parse redis simple string\r\n".to_string())
+            Self::new_error_from("ERR_PARSE Failed to parse redis bulk string\r\n".to_string())
         }
-    }*/
+    }
 
     #[allow(dead_code)]
     fn remove_first_cr_lf(mut slice: String) -> Option<(String, String)> {
