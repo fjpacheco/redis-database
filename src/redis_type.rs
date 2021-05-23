@@ -1,38 +1,13 @@
-fn remove_first_cr_lf(slice: &mut String) -> Option<String> {
-
-    if let Some(first_cr) = slice.find('\r') {
-        if slice.remove(first_cr + 1) == '\n' {
-
-            slice.remove(first_cr);
-            let rest = slice.split_off(first_cr);
-            let swap = slice.to_string();
-            *slice = rest; 
-            
-            Some(swap)
-
-        } else {
-            None
-        }
-    } else {
-        None
-    }
-
-}
-
 #[derive(Debug)]
 pub struct Error {
-
     prefix: String,
     message: String
-
 }
 
 impl Error {
-
     pub fn new(prefix: String, message: String) -> Self {
         Error{prefix, message}
     }
-
     #[allow(dead_code)]
     pub fn print_it(&self) -> String{
         let mut printed = self.prefix.to_string();
@@ -40,7 +15,6 @@ impl Error {
         printed.push_str(&self.message.to_string());
         printed
     }
-
 }
 
 pub trait RedisType<T>{
@@ -52,6 +26,7 @@ pub struct RSimpleString;
 pub struct RError;
 pub struct RInteger;
 pub struct RBulkString;
+pub struct RArray;
 
 impl RedisType<String> for RSimpleString {
 
@@ -148,7 +123,7 @@ impl RedisType<String> for RBulkString {
         }
     }
 
-    fn decode(bulk: &mut String) -> Result<String, Error>{
+    fn decode(bulk: &mut String) -> Result<String, Error> {
         if let Some(sliced_size) = remove_first_cr_lf(bulk) {
             verify_that_size_is_parsable(sliced_size, bulk)
         } else {
@@ -158,41 +133,118 @@ impl RedisType<String> for RBulkString {
 
 }
 
-#[allow(dead_code)]
-    fn verify_that_size_is_parsable(sliced_size: String, rest_of: &mut String) -> Result<String, Error>{
-        if let Ok(size) = sliced_size.parse::<isize>() {
+impl RedisType<Vec<String>> for RArray {
 
-            if size == -1 {
-                Ok("(nil)".to_string())
-            } else {
-                split_b_string(size, rest_of)
+    fn encode(array: Vec<String>) -> String {
+        if array.is_empty() {
+            "$-1\r\n".to_string() // Revisar si podria recibirse empty list
+        } else {
+            let mut encoded = String::from("*");
+            encoded.push_str(&(array.len()).to_string());
+            encoded.push('\r');
+            encoded.push('\n');
+            // Se guardan los elementos como bulks
+            for elem in array {
+                let encoded_elem = RBulkString::encode(elem);
+                encoded.push_str(&encoded_elem);
             }
-            
+            encoded
+        }
+    }
+
+    fn decode(bulk_array: &mut String) -> Result<Vec<String>, Error> {
+        if let Some(sliced_size) = remove_first_cr_lf(bulk_array) {
+            verify_parsable_size_for_array(&sliced_size, bulk_array) 
         } else {
             Err(Error::new("ERR_PARSE".to_string(), "Failed to parse redis simple string".to_string()))
         }
 
     }
+}
 
-    #[allow(dead_code)]
-    fn split_b_string(size: isize, rest_of: &mut String) -> Result<String, Error> {
-        if let Some(sliced_b_string) = remove_first_cr_lf(rest_of){
-            verify_size_of_b_string(size, sliced_b_string)
+fn remove_first_cr_lf(slice: &mut String) -> Option<String> {
+    if let Some(first_cr) = slice.find('\r') {
+        if slice.remove(first_cr + 1) == '\n' {
+            slice.remove(first_cr);
+            let rest = slice.split_off(first_cr);
+            let swap = slice.to_string();
+            *slice = rest;
+            Some(swap)
         } else {
-            Err(Error::new("ERR_PARSE".to_string(), "Failed to parse redis simple string".to_string()))
+            None
         }
-
+    } else {
+        None
     }
+}
 
-    #[allow(dead_code)]
-    fn verify_size_of_b_string(size: isize, sliced_b_string: String) -> Result<String, Error>{
-        if sliced_b_string.len() == size as usize{
-            Ok(sliced_b_string)
+#[allow(dead_code)]
+fn verify_parsable_size_for_array(sliced_size: &String, rest: &mut String) -> Result<Vec<String>, Error> {
+    if let Ok(size) = sliced_size.parse::<isize>() {
+        /*if size == -1 { TODO: ATAJAR ESTE CASO
+            Ok("(nil)".to_string())
+        } else
+        */
+        if size < 1 {
+            Err(Error::new("ERR_PARSE".to_string(), "Failed to parse Redis array".to_string()))
+        } else { // Analizar qué sucede si size = 0
+            get_bulk_string_vector(size, rest)
+        }
+    } else {
+        Err(Error::new("ERR_PARSE".to_string(), "Failed to parse Redis array".to_string()))
+    }
+}
+
+#[allow(dead_code)]
+fn get_bulk_string_vector(size: isize, rest: &mut String) -> Result<Vec<String>, Error> {
+    let mut decoded_vec: Vec<String> = Vec::new();
+    println!("SIZE: {}", size);
+    for __ in 0..size {
+        rest.remove(0);
+        // El codigo siguiente es un extracto de BulkString::decode REFACTORIZAR
+        if let Some(sliced_size) = remove_first_cr_lf(rest) {
+            let array_elem = verify_that_size_is_parsable(sliced_size, rest).unwrap(); // TODO: chequeos
+            decoded_vec.push(array_elem); 
+        }
+        /*
+        else { TODO: ATAJAR ESTE CASO
+            Err(Error::new("ERR_PARSE".to_string(), "Failed to parse Redis array".to_string()))
+        }
+        */
+    }
+    Ok(decoded_vec)
+}
+
+#[allow(dead_code)]
+fn verify_that_size_is_parsable(sliced_size: String, rest_of: &mut String) -> Result<String, Error> { // TODO: cambiar nombre
+    if let Ok(size) = sliced_size.parse::<isize>() {
+        if size == -1 {
+            Ok("(nil)".to_string())
         } else {
-            Err(Error::new("ERR_PARSE".to_string(), "Failed to parse redis simple string".to_string()))
+            split_b_string(size, rest_of)
         }
-
+    } else {
+        Err(Error::new("ERR_PARSE".to_string(), "Failed to parse redis simple string".to_string()))
     }
+}
+
+#[allow(dead_code)]
+fn split_b_string(size: isize, rest_of: &mut String) -> Result<String, Error> {
+    if let Some(sliced_b_string) = remove_first_cr_lf(rest_of) {
+        verify_size_of_b_string(size, sliced_b_string)
+    } else {
+        Err(Error::new("ERR_PARSE".to_string(), "Failed to parse redis simple string".to_string()))
+    }
+}
+
+#[allow(dead_code)]
+fn verify_size_of_b_string(size: isize, sliced_b_string: String) -> Result<String, Error> {
+    if sliced_b_string.len() == size as usize {
+        Ok(sliced_b_string)
+    } else {
+        Err(Error::new("ERR_PARSE".to_string(), "Failed to parse redis simple string".to_string()))
+    }
+}
 
     
 #[cfg(test)]
@@ -208,7 +260,8 @@ mod test_decode {
 
     #[test]
     fn test02_decoding_of_a_simple_string() {
-        let mut encoded = "word\r\n".to_string();
+        let mut encoded = "+word\r\n".to_string();
+        encoded.remove(0);
         let simple_string = RSimpleString::decode(&mut encoded);
         assert_eq!(simple_string.unwrap(), "word".to_string());
         assert_eq!(encoded, "".to_string());
@@ -216,7 +269,6 @@ mod test_decode {
 
     #[test]
     fn test03_encoding_and_decoding_of_an_integer() {
-
         let integer: isize = 1234;
         let mut encoded = RInteger::encode(integer);
         assert_eq!(encoded, ":1234\r\n".to_string());
@@ -380,5 +432,23 @@ mod test_decode {
     
     }*/
 
-    
+    #[test]
+    fn test12_encoding_of_array() {
+        let vec : Vec<String> = vec!["foo".to_string(), "bar".to_string()];
+        let encoded = RArray::encode(vec);
+        assert_eq!(encoded, "*2\r\n$3\r\nfoo\r\n$3\r\nbar\r\n".to_string());
+    }
+
+    #[test]
+    fn test13_encoding_of_array() {
+        let vec1 : Vec<String> = vec!["foo".to_string(), "bar".to_string()];
+        let vec2 = vec1.clone();
+        let mut encoded: String = RArray::encode(vec1);
+        encoded.remove(0); // Saco el '*'
+        let decoded = RArray::decode(&mut encoded).unwrap();
+        for i in 0..(vec2.len()) {
+            assert_eq!(decoded[i], vec2[i]); // OJO
+        }
+
+    }
 }
