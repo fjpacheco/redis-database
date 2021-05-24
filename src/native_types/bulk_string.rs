@@ -58,28 +58,28 @@ mod test_bulk_string {
     }
 
     #[test]
-    fn test04_bulk_string_encoding_empty_string() {
+    fn test04_bulk_string_empty_string_encoding() {
         let encoded = RBulkString::encode(String::from(""));
         // Averiguar si es correcto considerar este caso
         assert_eq!(encoded, "$0\r\n\r\n".to_string());
     }
 
     #[test]
-    fn test05_bulk_string_encoding_nil() {
+    fn test05_bulk_string_empty_string_decoding() {
+        let mut encoded = RBulkString::encode(String::from(""));
+        encoded.remove(0);
+        let decoded = RBulkString::decode(&mut encoded);
+        assert_eq!(decoded.unwrap(), "".to_string());
+    }
+
+    #[test]
+    fn test06_bulk_string_nil_encoding() {
         let encoded = RBulkString::encode(String::from("(nil)"));
         assert_eq!(encoded, "$-1\r\n".to_string());
     }
 
     #[test]
-    fn test06_bulk_string_decoding_nil() {
-        let mut encoded = RBulkString::encode(String::from("(nil)"));
-        encoded.remove(0);
-        let decoded = RBulkString::decode(&mut encoded);
-        assert_eq!(decoded.unwrap(), "(nil)".to_string());
-    }
-
-    #[test]
-    fn test07_bulk_string_decoding_nil() {
+    fn test07_bulk_string_nil_decoding() {
         let mut encoded = RBulkString::encode(String::from("(nil)"));
         encoded.remove(0);
         let decoded = RBulkString::decode(&mut encoded);
