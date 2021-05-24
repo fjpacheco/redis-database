@@ -1,6 +1,6 @@
 use super::redis_type::{RedisType, remove_first_cr_lf};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ErrorStruct {
     prefix: String,
     message: String
@@ -16,6 +16,11 @@ impl ErrorStruct {
         printed.push(' ');
         printed.push_str(&self.message.to_string());
         printed
+    }
+
+    // Para tests... investigar si existe una macro así: #[metodo_para_test] 
+    pub fn get_encoded_message_complete(&self) -> String{
+        RError::encode(self.clone())
     }
 }
 pub struct RError;
