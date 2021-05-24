@@ -32,7 +32,7 @@ pub mod test_integer {
 
     use super::*;
     #[test]
-    fn test03_encoding_and_decoding_of_an_integer() {
+    fn test01_encoding_and_decoding_of_an_integer() {
         let integer: isize = 1234;
         let mut encoded = RInteger::encode(integer);
         assert_eq!(encoded, ":1234\r\n".to_string());
@@ -44,7 +44,7 @@ pub mod test_integer {
     }
 
     #[test]
-    fn test07_bad_decoding_of_integer_throws_a_parsing_error() {
+    fn test02_bad_decoding_of_integer_throws_a_parsing_error() {
 
         let mut encoded = "123a\r\n".to_string();
         let should_be_error = RInteger::decode(&mut encoded);

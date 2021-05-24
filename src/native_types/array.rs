@@ -69,4 +69,23 @@ mod test_array {
         let decoded = RArray::decode(&mut encoded);
         assert_eq!(decoded.unwrap_err().print_it(), "ERR_EMPTY (empty array)".to_string());
     }
+
+
+    #[test]
+    fn test05_set_key_value_simulation() {
+        let input:String = "SET ping pong".to_string();
+        let v : Vec<String> = input.split(' ').map(str::to_string).collect();
+        let mut encoded: String = RArray::encode(v);
+       
+        assert_eq!(encoded, "*3\r\n$3\r\nSET\r\n$4\r\nping\r\n$4\r\npong\r\n".to_string());
+        
+        encoded.remove(0);
+        let mut decoded = RArray::decode(&mut encoded).unwrap();        
+        
+        assert_eq!(decoded.remove(0), "SET".to_string()); 
+        assert_eq!(decoded.remove(0), "ping".to_string());
+        assert_eq!(decoded.remove(0), "pong".to_string());
+
+        assert!(encoded.is_empty());
+    }
 }

@@ -11,7 +11,7 @@ impl ErrorStruct {
        ErrorStruct{prefix, message}
     }
     #[allow(dead_code)]
-    pub fn print_it(&self) -> String{
+    pub fn print_it(&self) -> String {
         let mut printed = self.prefix.to_string();
         printed.push(' ');
         printed.push_str(&self.message.to_string());
@@ -58,8 +58,8 @@ mod test_error {
 
     use super::*;
     #[test]
-    fn test05_encoding_and_decoding_of_an_error() {
-        let error =ErrorStruct::new("ERR".to_string(), "esto es un error generico".to_string());
+    fn test01_encoding_and_decoding_of_an_error() {
+        let error = ErrorStruct::new("ERR".to_string(), "esto es un error generico".to_string());
         let mut encoded = RError::encode(error);
         assert_eq!(encoded, "-ERR esto es un error generico\r\n".to_string());
         encoded.remove(0);

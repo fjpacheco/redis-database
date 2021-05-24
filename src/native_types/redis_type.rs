@@ -50,55 +50,35 @@ fn get_bulk_string_vector(size: isize, rest: &mut String) -> Result<Vec<String>,
 }
 
 #[allow(dead_code)]
-pub fn verify_parsable_bulk_size(sliced_size: String, rest_of: &mut String) -> Result<String,ErrorStruct> { // TODO: cambiar nombre
+pub fn verify_parsable_bulk_size(sliced_size: String, rest_of: &mut String) -> Result<String,ErrorStruct> {
     if let Ok(size) = sliced_size.parse::<isize>() {
         if size == -1 {
             Ok("(nil)".to_string())
-        } else {
+        } else if size < 0 {
+            Err(ErrorStruct::new("ERR_PARSE".to_string(), "Failed to parse Redis bulk string".to_string()))
+        } else { // ¿Puede haber size = 0?
             split_b_string(size, rest_of)
         }
     } else {
-        Err(ErrorStruct::new("ERR_PARSE".to_string(), "Failed to parse redis simple string".to_string()))
+        Err(ErrorStruct::new("ERR_PARSE".to_string(), "Failed to parse redis bulk string".to_string()))
     }
 }
 
 #[allow(dead_code)]
 fn split_b_string(size: isize, rest_of: &mut String) -> Result<String,ErrorStruct> {
     if let Some(sliced_b_string) = remove_first_cr_lf(rest_of) {
-        verify_size_of_b_string(size, sliced_b_string)
+        verify_b_string_size(size, sliced_b_string)
     } else {
         Err(ErrorStruct::new("ERR_PARSE".to_string(), "Failed to parse redis simple string".to_string()))
     }
 }
 
 #[allow(dead_code)]
-fn verify_size_of_b_string(size: isize, sliced_b_string: String) -> Result<String,ErrorStruct> {
+fn verify_b_string_size(size: isize, sliced_b_string: String) -> Result<String,ErrorStruct> {
     if sliced_b_string.len() == size as usize {
         Ok(sliced_b_string)
     } else {
         Err(ErrorStruct::new("ERR_PARSE".to_string(), "Failed to parse redis simple string".to_string()))
     }
 }
-
-/*#[test]
-fn test09_unknown_redis_char_type_throws_a_unknown_type_error(){
-    let encoded = "%Good Morning".to_string();
-    let (should_be_error, _) = NativeTypes::new(encoded);
-    assert_eq!(should_be_error.get().unwrap(), "ERR_UNKNOWN_TYPE Failed to match the first byte. Unknown Redis type".to_string());
-}*/
-
-/*#[test]
-fn test11_nil(){
-
-    let should_be_nil = NativeTypes::new_nil();
-    assert_eq!(should_be_nil.get().unwrap(), "(nil)".to_string());
-
-    let encoded_nil = should_be_nil.encode().unwrap();
-    assert_eq!(encoded_nil, "$-1\r\n".to_string());
-
-    let (decoded_nil, encoded_nil) = NativeTypes::new(encoded_nil);
-    assert_eq!(decoded_nil.get().unwrap(), "(nil)".to_string());
-    assert_eq!(encoded_nil, "".to_string());
-
-}*/
 

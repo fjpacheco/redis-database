@@ -27,14 +27,14 @@ pub mod test_simple_string {
 
     use super::*;
     #[test]
-    fn test01_encoding_of_a_simple_string() {
+    fn test01_simple_string_encoding() {
         let simple_string = String::from("word");
         let encoded = RSimpleString::encode(simple_string);
         assert_eq!(encoded, "+word\r\n".to_string());
     }
 
     #[test]
-    fn test02_decoding_of_a_simple_string() {
+    fn test02_simple_string_decoding() {
         let mut encoded = "+word\r\n".to_string();
         encoded.remove(0);
         let simple_string = RSimpleString::decode(&mut encoded);
@@ -43,9 +43,8 @@ pub mod test_simple_string {
     }
 
     #[test]
-    fn test06_bad_decoding_of_simple_string_throws_a_parsing_error() {
-
-        let mut encoded = "Good Morning".to_string();
+    fn test03_decoding_of_bad_simple_string_throws_parsing_error() {
+        let mut encoded = "Good Morning\r\r".to_string();
         let should_be_error = RSimpleString::decode(&mut encoded);
         match should_be_error {
             Ok(_string) => {},
