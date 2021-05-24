@@ -29,7 +29,7 @@ impl Database {
     pub fn new() -> Self {
         let mut hashmap_commands = HashMap::new();
 
-        let commands_strings = vec!["set"];
+        let commands_strings = vec!["set", "get"];
         let commands_lists: Vec<&str> = vec![];
         let commands_sets: Vec<&str> = vec![];
 
@@ -82,7 +82,7 @@ impl Database {
 
 #[cfg(test)]
 mod tests {
-    use crate::native_types::{RSimpleString, RedisType};
+    use crate::native_types::{RBulkString, RSimpleString, RedisType};
 
     use super::*;
     #[test]
@@ -96,6 +96,19 @@ mod tests {
         assert_eq!(excepted_result.unwrap(), RSimpleString::decode(&mut result_received.unwrap()).unwrap())
     }
 
+    
+    #[test]
+    fn test02_execute_command_get_return_a_value() {
+        let mut database_redis = Database::new();
+        let command_complete_buffer_seting = "set key value".to_string();
+        let _ =  database_redis.execute(command_complete_buffer_seting);
+        let command_complete_buffer_geting = "GET key".to_string();
+
+        let result_received =  database_redis.execute(command_complete_buffer_geting);
+        
+        let excepted_result = RBulkString::encode("value".to_string());
+        assert_eq!(excepted_result, result_received.unwrap());
+    }
 
     #[test]
     fn test03_run_not_existent_command_with_many_args_return_error_native_type() {

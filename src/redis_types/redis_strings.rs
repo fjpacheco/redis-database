@@ -21,6 +21,7 @@ pub mod redis_string {
        
         match command.as_str() {
             "set" => set(buffer_vec, database),
+            "get" => get(buffer_vec, database),
             _ => {           
                 let message_error = command_not_found_in(buffer);
                 Err(ErrorStruct::new(message_error.get_prefix(), message_error.get_message()))
@@ -46,6 +47,32 @@ pub mod redis_string {
         let _ = database.insert(key, TypesSaved::String(value));    //  "Set" command does not interest Some/None of insert.
         
         Ok(RSimpleString::encode(redis_messages::ok()))
+    }
+
+    pub fn get(buffer_vec: Vec<&str>, database: &mut HashMap<String, TypesSaved>) -> Result<String, ErrorStruct> {
+        if buffer_vec.is_empty(){
+            let message_error = not_empty_values_for("Redis strings");
+            return Err(ErrorStruct::new(message_error.get_prefix(), message_error.get_message()))
+        }
+        
+        if buffer_vec.len() != 2 { 
+            let error_message = redis_messages::wrong_number_args_for("get");
+            return Err(ErrorStruct::new(error_message.get_prefix(), error_message.get_message()))
+        }
+        
+        let key = buffer_vec[1].to_string();
+
+        match database.get(&key) {
+            Some(item) => {
+                match item{
+                    TypesSaved::String(item) => Ok(RBulkString::encode(item.to_string())),
+                    _ => {
+                            let message_error = wrongtype_in_get_key();
+                            return Err(ErrorStruct::new(message_error.get_prefix(), message_error.get_message()))}
+                }
+            }
+            None => Ok(RBulkString::encode(redis_messages::nil())),
+        }
     }
 }
 
@@ -138,6 +165,33 @@ mod test_decode {
         let excepted_message_redis = redis_messages::arguments_invalid_to("set");
         let excepted_result = ("-".to_owned() + &excepted_message_redis.get_message_complete() + "\r\n").to_string();
         assert_eq!(excepted_result, result_received_encoded);
+    }
+       
+    #[test]
+    fn test08_get_value_of_key_correct_is_success() {
+        let buffer_vec_mock_set = vec!["set", "key", "value"];
+        let buffer_vec_mock_get = vec!["get", "key"];
+        let mut database_mock: HashMap<String, TypesSaved> = HashMap::new();
+
+        let _ = redis_string::set(buffer_vec_mock_set, &mut database_mock);
+        let result_received = redis_string::get(buffer_vec_mock_get, &mut database_mock);
+
+        let excepted_result = RBulkString::encode("value".to_string());
+        assert_eq!(excepted_result, result_received.unwrap());
+    }
+
+    #[test]
+    fn test09_get_value_of_key_inorrect_return_result_ok_with_nil() {
+        let buffer_vec_mock_set = vec!["set", "key", "value"];
+        let buffer_vec_mock_get = vec!["get", "key_other"];
+        let mut database_mock: HashMap<String, TypesSaved> = HashMap::new();
+
+        let _ = redis_string::set(buffer_vec_mock_set, &mut database_mock);
+        let result_received = redis_string::get(buffer_vec_mock_get, &mut database_mock);
+        let received = result_received.unwrap();
+
+        let excepted_result = "$-1\r\n".to_string();
+        assert_eq!(excepted_result, received)        
     }
 
 }
