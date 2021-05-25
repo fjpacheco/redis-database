@@ -7,7 +7,7 @@ pub struct RBulkString;
 
 impl RedisType<String> for RBulkString {
     fn encode(text: String) -> String {
-        if text == "(nil)".to_string() {
+        if text == "(nil)" {
             "$-1\r\n".to_string()
         } else {
             let mut encoded = String::from("$");
