@@ -27,7 +27,7 @@ impl RedisType<Vec<String>> for RArray {
     fn decode(bulk_array: &mut String) -> Result<Vec<String>, ErrorStruct> {
         // 2 \r\n$ 3\r\nfoo\r\n $ 3\r\nbar\r\n
         if let Some(sliced_size) = remove_first_cr_lf(bulk_array) {
-            verify_parsable_array_size(&sliced_size, bulk_array)
+            verify_parsable_array_size(sliced_size, bulk_array)
         } else {
             Err(ErrorStruct::new(
                 "ERR_PARSE".to_string(),
