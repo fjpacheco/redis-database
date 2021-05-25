@@ -22,7 +22,7 @@ pub fn remove_first_cr_lf(slice: &mut String) -> Option<String> {
 }
 
 #[allow(dead_code)]
-pub fn verify_parsable_array_size (
+pub fn verify_parsable_array_size(
     sliced_size: String,
     rest: &mut String,
 ) -> Result<Vec<String>, ErrorStruct> {
