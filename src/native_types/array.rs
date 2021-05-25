@@ -44,7 +44,7 @@ mod test_array {
 
     #[test]
     fn test02_array_decoding() {
-        let vec1 : Vec<String> = vec!["foo".to_string(), "bar".to_string()];
+        let vec1 : Vec<String> = vec!["fooo".to_string(), "bar".to_string()];
         let vec2 = vec1.clone();
         let mut encoded: String = RArray::encode(vec1);
         encoded.remove(0); // Saco el '*'
