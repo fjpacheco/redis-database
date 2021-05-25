@@ -1,4 +1,4 @@
-mod redis_types;
-mod native_types;
 pub mod database;
-mod messages;
+pub mod messages;
+mod native_types;
+mod redis_types;

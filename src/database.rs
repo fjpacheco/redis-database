@@ -1,6 +1,9 @@
 use std::collections::{HashMap, HashSet};
 
-use crate::{messages::redis_messages::command_not_found_in, native_types::ErrorStruct, redis_types::redis_string};
+use crate::{
+    messages::redis_messages::command_not_found_in, native_types::ErrorStruct,
+    redis_types::strings::redis_strings::redis_string,
+};
 
 #[derive(Debug)]
 pub struct Database {
@@ -8,8 +11,7 @@ pub struct Database {
     commands: HashMap<String, TypesComannds>,
 }
 
-#[derive(Debug)]
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum TypesSaved {
     String(String),
     Lists(Vec<String>),
@@ -19,23 +21,35 @@ pub enum TypesSaved {
 #[derive(Debug)]
 #[allow(dead_code)]
 enum TypesComannds {
-    ForStrings,
-    ForLists,
-    ForSets,
+    Strings,
+    Lists,
+    Sets,
+}
+
+impl Default for Database {
+    // Se me quejaba clippy si no...
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Database {
     #[allow(dead_code)]
     pub fn new() -> Self {
-        let mut hashmap_commands = HashMap::new();
-
         let commands_strings = vec!["set", "get"];
         let commands_lists: Vec<&str> = vec![];
         let commands_sets: Vec<&str> = vec![];
+        let mut hashmap_commands = HashMap::new();
 
-        commands_strings.into_iter().for_each(|item| {hashmap_commands.insert(item.to_string(),TypesComannds::ForStrings); ()} );
-        commands_lists.into_iter().for_each(|item| {hashmap_commands.insert(item.to_string(),TypesComannds::ForLists); ()} );
-        commands_sets.into_iter().for_each(|item| {hashmap_commands.insert(item.to_string(),TypesComannds::ForSets); ()} );
+        commands_strings.into_iter().for_each(|item| {
+            hashmap_commands.insert(item.to_string(), TypesComannds::Strings);
+        });
+        commands_lists.into_iter().for_each(|item| {
+            hashmap_commands.insert(item.to_string(), TypesComannds::Lists);
+        });
+        commands_sets.into_iter().for_each(|item| {
+            hashmap_commands.insert(item.to_string(), TypesComannds::Sets);
+        });
 
         Database {
             elements: HashMap::new(),
@@ -46,7 +60,7 @@ impl Database {
     /// Ejecuta sobre la `Database` un comando con sus argumentos especificados en un buffer de tipo `String`
     ///
     /// El resultado de [`Ok()`] es un `String` con formato codificado de `redis_type` según sea lo solicitado por el buffer.
-    /// 
+    ///
     /// El resultado de [`Err()`] es un `ErrorStruct`. Podría aparecer errores segun los siguientes casos:
     ///
     /// 1) ...
@@ -69,13 +83,22 @@ impl Database {
 
         if let Some(item) = self.commands.get(&command.to_lowercase()) {
             match item {
-                TypesComannds::ForStrings => redis_string::run(buffer, &mut self.elements),
-                TypesComannds::ForLists => Err(ErrorStruct::new("ERR Rust-eze team".to_string(), "command not implemented".to_string())),
-                TypesComannds::ForSets => Err(ErrorStruct::new("ERR Rust-eze team".to_string(), "command not implemented".to_string())),
+                TypesComannds::Strings => redis_string::run(buffer, &mut self.elements),
+                TypesComannds::Lists => Err(ErrorStruct::new(
+                    "ERR Rust-eze team".to_string(),
+                    "command not implemented".to_string(),
+                )),
+                TypesComannds::Sets => Err(ErrorStruct::new(
+                    "ERR Rust-eze team".to_string(),
+                    "command not implemented".to_string(),
+                )),
             }
         } else {
             let message_error = command_not_found_in(buffer);
-            Err(ErrorStruct::new(message_error.get_prefix(), message_error.get_message()))
+            Err(ErrorStruct::new(
+                message_error.get_prefix(),
+                message_error.get_message(),
+            ))
         }
     }
 }
@@ -93,19 +116,21 @@ mod tests {
         let result_received = database_redis.execute(command_complete_buffer);
 
         let excepted_result = RSimpleString::decode(&mut "+OK\r\n".to_string());
-        assert_eq!(excepted_result.unwrap(), RSimpleString::decode(&mut result_received.unwrap()).unwrap())
+        assert_eq!(
+            excepted_result.unwrap(),
+            RSimpleString::decode(&mut result_received.unwrap()).unwrap()
+        )
     }
 
-    
     #[test]
     fn test02_execute_command_get_return_a_value() {
         let mut database_redis = Database::new();
         let command_complete_buffer_seting = "set key value".to_string();
-        let _ =  database_redis.execute(command_complete_buffer_seting);
+        let _ = database_redis.execute(command_complete_buffer_seting);
         let command_complete_buffer_geting = "GET key".to_string();
 
-        let result_received =  database_redis.execute(command_complete_buffer_geting);
-        
+        let result_received = database_redis.execute(command_complete_buffer_geting);
+
         let excepted_result = RBulkString::encode("value".to_string());
         assert_eq!(excepted_result, result_received.unwrap());
     }
@@ -130,11 +155,11 @@ mod tests {
         let result_received = database_redis.execute(command_complete);
         let result_received_encoded = result_received.unwrap_err().get_encoded_message_complete();
 
-        let excepted_result = "-ERR unknown command \'abc03\', with args beginning with: \'key\', \r\n".to_string();
+        let excepted_result =
+            "-ERR unknown command \'abc03\', with args beginning with: \'key\', \r\n".to_string();
         assert_eq!(excepted_result, result_received_encoded)
-
     }
-    
+
     #[test]
     fn test05_run_not_existent_command_without_args_return_error_native_type() {
         let command_complete = "abc04".to_string();
@@ -143,8 +168,8 @@ mod tests {
         let result_received = database_redis.execute(command_complete);
         let result_received_encoded = result_received.unwrap_err().get_encoded_message_complete();
 
-        let excepted_result = "-ERR unknown command \'abc04\', with args beginning with: \r\n".to_string();
+        let excepted_result =
+            "-ERR unknown command \'abc04\', with args beginning with: \r\n".to_string();
         assert_eq!(excepted_result, result_received_encoded)
     }
-    
 }
