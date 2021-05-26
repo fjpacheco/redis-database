@@ -49,6 +49,10 @@ impl Set {
 
 #[cfg(test)]
 mod test_set_function {
+    use crate::{
+        commands::get::Get,
+        native_types::{RBulkString, RedisType},
+    };
 
     use super::*;
     #[test]
@@ -60,6 +64,32 @@ mod test_set_function {
 
         let excepted_result: String = ("+".to_owned() + &redis_messages::ok() + "\r\n").to_string();
         assert_eq!(excepted_result, result_received.unwrap());
+    }
+
+    #[test]
+    fn test02_set_key_and_value_save_correctly_in_database_mock() {
+        let buffer_vec_mock_set = vec!["set", "key", "value"];
+        let buffer_vec_mock_get = vec!["get", "key"];
+        let mut database_mock = DatabaseMock::new();
+
+        let _ = Set::run(buffer_vec_mock_set, &mut database_mock);
+        let result_received = Get::run(buffer_vec_mock_get, &mut database_mock);
+
+        let excepted = RBulkString::encode("value".to_string());
+        assert_eq!(result_received.unwrap(), excepted);
+    }
+
+    #[test]
+    fn test03_set_key_and_value_but_get_another_key_return_none() {
+        let buffer_vec_mock = vec!["set", "key", "value"];
+        let buffer_vec_mock_get = vec!["get", "key2"];
+        let mut database_mock = DatabaseMock::new();
+
+        let _ = Set::run(buffer_vec_mock, &mut database_mock);
+        let received = Get::run(buffer_vec_mock_get, &mut database_mock);
+
+        let excepted = RBulkString::encode("(nil)".to_string());
+        assert_eq!(received.unwrap(), excepted);
     }
 
     #[test]

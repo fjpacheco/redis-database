@@ -33,6 +33,10 @@ impl DatabaseMock {
         self.lists.remove(key);
         self.sets.remove(key);
     }
+
+    pub fn contains_key(&self, key: &str) -> bool {
+        self.strings.contains_key(key) | self.lists.contains_key(key) | self.sets.contains_key(key)
+    }
 }
 
 impl Default for DatabaseMock {

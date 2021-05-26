@@ -5,9 +5,9 @@ use crate::{
 
 use super::database_mock_v2::{DatabaseMock2, TypeSaved};
 
-pub struct Set;
+pub struct Set2;
 
-impl Set {
+impl Set2 {
     #[allow(unused_mut)]
     pub fn run(
         mut buffer_vec: Vec<&str>,
@@ -49,16 +49,44 @@ impl Set {
 #[cfg(test)]
 mod test_set_function {
 
+    use crate::{commands::get_v2::Get2, native_types::RBulkString};
+
     use super::*;
     #[test]
     fn test01_set_key_and_value_return_ok() {
         let buffer_vec_mock = vec!["set", "key", "value"];
         let mut database_mock = DatabaseMock2::new();
 
-        let result_received = Set::run(buffer_vec_mock, &mut database_mock);
+        let result_received = Set2::run(buffer_vec_mock, &mut database_mock);
 
         let excepted_result: String = ("+".to_owned() + &redis_messages::ok() + "\r\n").to_string();
         assert_eq!(excepted_result, result_received.unwrap());
+    }
+
+    #[test]
+    fn test02_set_key_and_value_save_correctly_in_database_mock() {
+        let buffer_vec_mock_set = vec!["set", "key", "value"];
+        let buffer_vec_mock_get = vec!["get", "key"];
+        let mut database_mock = DatabaseMock2::new();
+
+        let _ = Set2::run(buffer_vec_mock_set, &mut database_mock);
+        let result_received = Get2::run(buffer_vec_mock_get, &mut database_mock);
+
+        let excepted = RBulkString::encode("value".to_string());
+        assert_eq!(result_received.unwrap(), excepted);
+    }
+
+    #[test]
+    fn test03_set_key_and_value_but_get_another_key_return_none() {
+        let buffer_vec_mock = vec!["set", "key", "value"];
+        let buffer_vec_mock_get = vec!["get", "key2"];
+        let mut database_mock = DatabaseMock2::new();
+
+        let _ = Set2::run(buffer_vec_mock, &mut database_mock);
+        let received = Get2::run(buffer_vec_mock_get, &mut database_mock);
+
+        let excepted = RBulkString::encode("(nil)".to_string());
+        assert_eq!(received.unwrap(), excepted);
     }
 
     #[test]
@@ -66,7 +94,7 @@ mod test_set_function {
         let buffer_vec_mock = vec!["set", "key"];
         let mut database_mock = DatabaseMock2::new();
 
-        let result_received = Set::run(buffer_vec_mock, &mut database_mock);
+        let result_received = Set2::run(buffer_vec_mock, &mut database_mock);
         let result_received_encoded = result_received.unwrap_err().get_encoded_message_complete();
 
         let excepted_message_redis = redis_messages::arguments_invalid_to("set");
@@ -80,7 +108,7 @@ mod test_set_function {
         let buffer_vec_mock = vec!["set"];
         let mut database_mock = DatabaseMock2::new();
 
-        let result_received = Set::run(buffer_vec_mock, &mut database_mock);
+        let result_received = Set2::run(buffer_vec_mock, &mut database_mock);
         let result_received_encoded = result_received.unwrap_err().get_encoded_message_complete();
 
         let excepted_message_redis = redis_messages::arguments_invalid_to("set");
@@ -94,7 +122,7 @@ mod test_set_function {
         let buffer_vec_mock = vec!["set", "set", "set", "set"];
         let mut database_mock = DatabaseMock2::new();
 
-        let result_received = Set::run(buffer_vec_mock, &mut database_mock);
+        let result_received = Set2::run(buffer_vec_mock, &mut database_mock);
         let result_received_encoded = result_received.unwrap_err().get_encoded_message_complete();
 
         let excepted_message_redis = redis_messages::syntax_error();
