@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use crate::native_types::{error::ErrorStruct, integer::RInteger, redis_type::RedisType};
+use std::collections::HashMap;
 
 pub struct Database {
     strings: HashMap<String, String>,
@@ -22,7 +22,6 @@ impl Default for Database {
         Self::new()
     }
 }
-
 
 pub struct Decrby;
 
