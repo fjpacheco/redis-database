@@ -1,6 +1,7 @@
 mod array;
 mod bulk_string;
-mod error;
-mod integer;
-mod redis_type;
 mod simple_string;
+
+pub(crate) mod error;
+pub(crate) mod integer;
+pub(crate) mod redis_type;
