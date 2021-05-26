@@ -3,7 +3,7 @@ use crate::{
     native_types::{ErrorStruct, RSimpleString, RedisType},
 };
 
-use super::database_mock::DatabaseMock;
+use super::database_mock_v2::{DatabaseMock2, TypeSaved};
 
 pub struct Set;
 
@@ -11,7 +11,7 @@ impl Set {
     #[allow(unused_mut)]
     pub fn run(
         mut buffer_vec: Vec<&str>,
-        database: &mut DatabaseMock,
+        database: &mut DatabaseMock2,
     ) -> Result<String, ErrorStruct> {
         if buffer_vec.is_empty() {
             let message_error = redis_messages::not_empty_values_for("Strings");
@@ -40,16 +40,8 @@ impl Set {
         let value = buffer_vec[2].to_string();
         let key = buffer_vec[1].to_string();
 
-        /*
-        let mut strings =  database.get_mut_strings();   //NO FUNCIONA :c
-        let mut lists =  database.get_mut_lists();       //NO FUNCIONA :c
-        let mut sets =  database.get_mut_sets();         //NO FUNCIONA :c
-        */
-
-        let fields = database.get_mut_fields();
-        let _ = fields.2.remove(&key); // Estoy obligado a borrar la existente cuando hago un 'set'.
-        let _ = fields.1.remove(&key);
-        let _ = fields.0.insert(key, value);
+        let fields = database.get_mut_elements();
+        let _ = fields.insert(key, TypeSaved::String(value)); // Reemplazo cualquier valor que haya antiguamente con ésa key.
         Ok(RSimpleString::encode(redis_messages::ok()))
     }
 }
@@ -61,7 +53,7 @@ mod test_set_function {
     #[test]
     fn test01_set_key_and_value_return_ok() {
         let buffer_vec_mock = vec!["set", "key", "value"];
-        let mut database_mock = DatabaseMock::new();
+        let mut database_mock = DatabaseMock2::new();
 
         let result_received = Set::run(buffer_vec_mock, &mut database_mock);
 
@@ -72,7 +64,7 @@ mod test_set_function {
     #[test]
     fn test04_set_without_value_return_err() {
         let buffer_vec_mock = vec!["set", "key"];
-        let mut database_mock = DatabaseMock::new();
+        let mut database_mock = DatabaseMock2::new();
 
         let result_received = Set::run(buffer_vec_mock, &mut database_mock);
         let result_received_encoded = result_received.unwrap_err().get_encoded_message_complete();
@@ -86,7 +78,7 @@ mod test_set_function {
     #[test]
     fn test05_set_without_value_and_key_return_err() {
         let buffer_vec_mock = vec!["set"];
-        let mut database_mock = DatabaseMock::new();
+        let mut database_mock = DatabaseMock2::new();
 
         let result_received = Set::run(buffer_vec_mock, &mut database_mock);
         let result_received_encoded = result_received.unwrap_err().get_encoded_message_complete();
@@ -100,7 +92,7 @@ mod test_set_function {
     #[test]
     fn test06_set_without_value_and_key_return_err_syntax() {
         let buffer_vec_mock = vec!["set", "set", "set", "set"];
-        let mut database_mock = DatabaseMock::new();
+        let mut database_mock = DatabaseMock2::new();
 
         let result_received = Set::run(buffer_vec_mock, &mut database_mock);
         let result_received_encoded = result_received.unwrap_err().get_encoded_message_complete();
