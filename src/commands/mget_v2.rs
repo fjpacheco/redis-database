@@ -41,11 +41,10 @@ impl Mget2 {
         let mut strings = database.get_mut_elements();
         let mut values_obtained: Vec<String> = Vec::new();
         buffer_vec.iter().for_each(|key| match strings.get(*key) {
-            Some(value) => {
-                if let TypeSaved::String(value) = value {
-                    values_obtained.push(value.to_string());
-                }
-            }
+            Some(value) => match value {
+                TypeSaved::String(value) => values_obtained.push(value.to_string()),
+                _ => values_obtained.push("(nil)".to_string()),
+            },
             None => {
                 values_obtained.push("(nil)".to_string());
             }
