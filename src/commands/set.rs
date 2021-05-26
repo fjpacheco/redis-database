@@ -40,16 +40,9 @@ impl Set {
         let value = buffer_vec[2].to_string();
         let key = buffer_vec[1].to_string();
 
-        /*
-        let mut strings =  database.get_mut_strings();   //NO FUNCIONA :c
-        let mut lists =  database.get_mut_lists();       //NO FUNCIONA :c
-        let mut sets =  database.get_mut_sets();         //NO FUNCIONA :c
-        */
-
-        let fields = database.get_mut_fields();
-        let _ = fields.2.remove(&key); // Estoy obligado a borrar la existente cuando hago un 'set'.
-        let _ = fields.1.remove(&key);
-        let _ = fields.0.insert(key, value);
+        database.remove(&key);
+        let mut strings = database.get_mut_strings();
+        let _ = strings.insert(key, value);
         Ok(RSimpleString::encode(redis_messages::ok()))
     }
 }
