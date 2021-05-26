@@ -5,6 +5,7 @@ mod integer;
 mod redis_type;
 mod simple_string;
 
+pub use array::RArray;
 pub use bulk_string::RBulkString;
 pub use error::ErrorStruct;
 pub use error::RError;
