@@ -29,21 +29,28 @@ pub fn execute_value_modification(
     mut buffer_vec: Vec<&str>,
     op: fn(isize, isize) -> isize,
 ) -> Result<String, ErrorStruct> {
-    if let Some(strings) = database.get_mut_strings() {
-        // get strings hashmap
-        let mut decr = String::from(buffer_vec.pop().unwrap()); // extract key and decrement from: Vec<&str> = ["mykey", "10"]
-        let key = String::from(buffer_vec.pop().unwrap());
-        let decr_int = get_as_integer(&mut decr)?; // check if decr is parsable as int
-        let current_key_value: isize = string_key_check(strings, String::from(&key))?;
-        let new_value = op(current_key_value, decr_int);
-        strings.insert(key, new_value.to_string());
-        Ok(RInteger::encode(new_value)) // as isize
-    } else {
-        Err(ErrorStruct::new(
-            // strings hashmap get didn't work
-            "ERR".to_string(),
-            "Weird stuff going on with the Database".to_string(),
-        ))
+    let strings: &mut HashMap<String, String> = database_check(database)?;
+    let mut decr = String::from(buffer_vec.pop().unwrap()); // extract key and decrement from: Vec<&str> = ["mykey", "10"]
+    let key = String::from(buffer_vec.pop().unwrap());
+    let decr_int = get_as_integer(&mut decr)?; // check if decr is parsable as int
+    let current_key_value: isize = string_key_check(strings, String::from(&key))?;
+    let new_value = op(current_key_value, decr_int);
+    strings.insert(key, new_value.to_string());
+    Ok(RInteger::encode(new_value)) // as isize
+}
+
+pub fn database_check(
+    database: &mut Database,
+) -> Result<&mut HashMap<String, String>, ErrorStruct> {
+    match database.get_mut_strings() {
+        Some(strings) => Ok(strings),
+        None => {
+            Err(ErrorStruct::new(
+                // strings hashmap get didn't work
+                "ERR".to_string(),
+                "Weird stuff going on with the Database".to_string(),
+            ))
+        }
     }
 }
 
