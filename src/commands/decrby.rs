@@ -1,5 +1,5 @@
-use super::database::{execute_value_modification, Database};
-use crate::native_types::error::ErrorStruct;
+use crate::native_types::{error::ErrorStruct, integer::RInteger, redis_type::RedisType};
+use std::collections::HashMap;
 
 pub struct Decrby;
 
