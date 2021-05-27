@@ -1,8 +1,10 @@
-use super::database_mock_v2::{DatabaseMock2, TypeSaved};
 use crate::{
     messages::redis_messages,
     native_types::{ErrorStruct, RBulkString, RedisType},
 };
+
+use super::database_mock_v2::{DatabaseMock2, TypeSaved};
+
 pub struct Get2;
 
 impl Get2 {
@@ -11,26 +13,11 @@ impl Get2 {
         mut buffer_vec: Vec<&str>,
         database: &mut DatabaseMock2,
     ) -> Result<String, ErrorStruct> {
-        if buffer_vec.is_empty() {
-            let message_error = redis_messages::not_empty_values_for("Redis strings");
-            return Err(ErrorStruct::new(
-                message_error.get_prefix(),
-                message_error.get_message(),
-            ));
-        }
-
-        if buffer_vec.len() != 2 {
-            let error_message = redis_messages::wrong_number_args_for("get");
-            return Err(ErrorStruct::new(
-                error_message.get_prefix(),
-                error_message.get_message(),
-            ));
-        }
+        check_error_cases(&mut buffer_vec)?;
 
         let key = buffer_vec[1].to_string();
-        let database_elements = database.get_mut_elements();
 
-        match database_elements.get(&key) {
+        match database.get(&key) {
             Some(item) => match item {
                 TypeSaved::String(item) => Ok(RBulkString::encode(item.to_string())),
                 _ => {
@@ -46,9 +33,30 @@ impl Get2 {
     }
 }
 
+fn check_error_cases(buffer_vec: &mut Vec<&str>) -> Result<(), ErrorStruct> {
+    if buffer_vec.is_empty() {
+        let message_error = redis_messages::not_empty_values_for("Redis strings");
+        return Err(ErrorStruct::new(
+            message_error.get_prefix(),
+            message_error.get_message(),
+        ));
+    }
+
+    if buffer_vec.len() != 2 {
+        let error_message = redis_messages::wrong_number_args_for("get");
+        return Err(ErrorStruct::new(
+            error_message.get_prefix(),
+            error_message.get_message(),
+        ));
+    }
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod test_get {
-    use crate::commands::set_v2::Set2;
+
+    use crate::commands::v2::set_v2::Set2;
 
     use super::*;
 

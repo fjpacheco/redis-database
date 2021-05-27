@@ -1,8 +1,9 @@
-use super::database_mock_v2::{DatabaseMock2, TypeSaved};
 use crate::{
     messages::redis_messages,
     native_types::{ErrorStruct, RSimpleString, RedisType},
 };
+
+use super::database_mock_v2::{DatabaseMock2, TypeSaved};
 
 pub struct Mset2;
 
@@ -16,9 +17,7 @@ impl Mset2 {
 
         let mut keys_and_value = buffer_vec.chunks(2);
         keys_and_value.into_iter().for_each(|x| {
-            database
-                .get_mut_elements()
-                .insert(x[0].to_string(), TypeSaved::String(x[1].to_string()));
+            database.insert(x[0].to_string(), TypeSaved::String(x[1].to_string()));
         });
 
         Ok(RSimpleString::encode(redis_messages::ok()))
@@ -60,7 +59,9 @@ fn is_odd(buffer_vec: &[&str]) -> bool {
 #[cfg(test)]
 mod test_mset_function {
     use crate::{
-        commands::{database_mock_v2::DatabaseMock2, get_v2::Get2, mset_v2::Mset2, set_v2::Set2},
+        commands::v2::{
+            database_mock_v2::DatabaseMock2, get_v2::Get2, mset_v2::Mset2, set_v2::Set2,
+        },
         messages::redis_messages,
         native_types::{RBulkString, RedisType},
     };

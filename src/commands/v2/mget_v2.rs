@@ -1,8 +1,10 @@
-use super::database_mock_v2::{DatabaseMock2, TypeSaved};
 use crate::{
     messages::redis_messages,
     native_types::{ErrorStruct, RArray, RedisType},
 };
+
+use super::database_mock_v2::{DatabaseMock2, TypeSaved};
+
 pub struct Mget2;
 
 impl Mget2 {
@@ -11,54 +13,56 @@ impl Mget2 {
         mut buffer_vec: Vec<&str>,
         database: &mut DatabaseMock2,
     ) -> Result<String, ErrorStruct> {
-        if buffer_vec.is_empty() {
-            let message_error = redis_messages::not_empty_values_for("mget command");
-            return Err(ErrorStruct::new(
-                message_error.get_prefix(),
-                message_error.get_message(),
-            ));
-        }
-
-        if buffer_vec.len() == 1 {
-            let error_message = redis_messages::wrong_number_args_for("mget");
-            return Err(ErrorStruct::new(
-                error_message.get_prefix(),
-                error_message.get_message(),
-            ));
-        }
-
-        let command = buffer_vec[0];
-        if !command.eq("mget") {
-            let concat_vector_buffer = buffer_vec.join(" ");
-            let error_message = redis_messages::command_not_found_in(concat_vector_buffer);
-            return Err(ErrorStruct::new(
-                error_message.get_prefix(),
-                error_message.get_message(),
-            ));
-        }
+        check_error_cases(&mut buffer_vec)?;
 
         buffer_vec.remove(0);
-        let mut strings = database.get_mut_elements();
         let mut values_obtained: Vec<String> = Vec::new();
-        buffer_vec.iter().for_each(|key| match strings.get(*key) {
-            Some(value) => match value {
-                TypeSaved::String(value) => values_obtained.push(value.to_string()),
-                _ => values_obtained.push("(nil)".to_string()),
-            },
-            None => {
-                values_obtained.push("(nil)".to_string());
-            }
-        });
+        buffer_vec
+            .iter()
+            .for_each(|key| match database.get(&key.to_string()) {
+                Some(value) => match value {
+                    TypeSaved::String(value) => values_obtained.push(value.to_string()),
+                    _ => values_obtained.push("(nil)".to_string()),
+                },
+                None => {
+                    values_obtained.push("(nil)".to_string());
+                }
+            });
         Ok(RArray::encode(values_obtained))
     }
 }
 
+fn check_error_cases(buffer_vec: &mut Vec<&str>) -> Result<(), ErrorStruct> {
+    if buffer_vec.is_empty() {
+        let message_error = redis_messages::not_empty_values_for("mget command");
+        return Err(ErrorStruct::new(
+            message_error.get_prefix(),
+            message_error.get_message(),
+        ));
+    }
+    if buffer_vec.len() == 1 {
+        let error_message = redis_messages::wrong_number_args_for("mget");
+        return Err(ErrorStruct::new(
+            error_message.get_prefix(),
+            error_message.get_message(),
+        ));
+    }
+    let command = buffer_vec[0];
+    if !command.eq("mget") {
+        let concat_vector_buffer = buffer_vec.join(" ");
+        let error_message = redis_messages::command_not_found_in(concat_vector_buffer);
+        return Err(ErrorStruct::new(
+            error_message.get_prefix(),
+            error_message.get_message(),
+        ));
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod test_get {
-    use crate::{
-        commands::{database_mock_v2::DatabaseMock2, set_v2::Set2},
-        native_types::RArray,
-    };
+
+    use crate::{commands::v2::set_v2::Set2, native_types::RedisType};
 
     use super::*;
 

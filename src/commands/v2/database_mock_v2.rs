@@ -8,7 +8,7 @@ pub struct DatabaseMock2 {
 pub enum TypeSaved {
     String(String),
     Lists(Vec<String>),
-    Sets(HashSet<String>), // old versión
+    Sets(HashSet<String>),
 }
 
 impl DatabaseMock2 {
@@ -18,8 +18,16 @@ impl DatabaseMock2 {
         }
     }
 
-    pub fn get_mut_elements(&mut self) -> &mut HashMap<String, TypeSaved> {
-        &mut self.elements
+    pub fn insert(&mut self, key: String, value: TypeSaved) -> Option<TypeSaved> {
+        self.elements.insert(key, value)
+    }
+
+    pub fn get(&mut self, key: &str) -> Option<&TypeSaved> {
+        self.elements.get(key)
+    }
+
+    pub fn get_mut(&mut self, key: &str) -> Option<&mut TypeSaved> {
+        self.elements.get_mut(key)
     }
 }
 

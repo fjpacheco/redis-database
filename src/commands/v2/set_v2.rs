@@ -13,43 +13,45 @@ impl Set2 {
         mut buffer_vec: Vec<&str>,
         database: &mut DatabaseMock2,
     ) -> Result<String, ErrorStruct> {
-        if buffer_vec.is_empty() {
-            let message_error = redis_messages::not_empty_values_for("Strings");
-            return Err(ErrorStruct::new(
-                message_error.get_prefix(),
-                message_error.get_message(),
-            ));
-        }
-
-        if buffer_vec.len() == 1 || buffer_vec.len() == 2 {
-            let error_message = redis_messages::arguments_invalid_to(&buffer_vec[0].to_string());
-            return Err(ErrorStruct::new(
-                error_message.get_prefix(),
-                error_message.get_message(),
-            ));
-        }
-
-        if buffer_vec.len() >= 4 {
-            let error_message = redis_messages::syntax_error();
-            return Err(ErrorStruct::new(
-                error_message.get_prefix(),
-                error_message.get_message(),
-            ));
-        }
+        check_error_cases(&mut buffer_vec)?;
 
         let value = buffer_vec[2].to_string();
         let key = buffer_vec[1].to_string();
 
-        let fields = database.get_mut_elements();
-        let _ = fields.insert(key, TypeSaved::String(value)); // Reemplazo cualquier valor que haya antiguamente con ésa key.
+        database.insert(key, TypeSaved::String(value)); // Reemplazo cualquier valor que haya antiguamente con ésa key.
         Ok(RSimpleString::encode(redis_messages::ok()))
     }
+}
+
+fn check_error_cases(buffer_vec: &mut Vec<&str>) -> Result<(), ErrorStruct> {
+    if buffer_vec.is_empty() {
+        let message_error = redis_messages::not_empty_values_for("Strings");
+        return Err(ErrorStruct::new(
+            message_error.get_prefix(),
+            message_error.get_message(),
+        ));
+    }
+    if buffer_vec.len() == 1 || buffer_vec.len() == 2 {
+        let error_message = redis_messages::arguments_invalid_to(&*buffer_vec[0].to_string());
+        return Err(ErrorStruct::new(
+            error_message.get_prefix(),
+            error_message.get_message(),
+        ));
+    }
+    if buffer_vec.len() >= 4 {
+        let error_message = redis_messages::syntax_error();
+        return Err(ErrorStruct::new(
+            error_message.get_prefix(),
+            error_message.get_message(),
+        ));
+    }
+    Ok(())
 }
 
 #[cfg(test)]
 mod test_set_function {
 
-    use crate::{commands::get_v2::Get2, native_types::RBulkString};
+    use crate::{commands::v2::get_v2::Get2, native_types::RBulkString};
 
     use super::*;
     #[test]
