@@ -20,7 +20,7 @@ fn incr(addend1: isize, addend2: isize) -> isize {
 }
 
 #[cfg(test)]
-pub mod test_decrby {
+pub mod test_incrby {
 
     use super::*;
 
