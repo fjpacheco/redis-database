@@ -1,3 +1,4 @@
 pub mod commands;
+pub mod database;
 pub mod messages;
-mod native_types;
+pub mod native_types;
