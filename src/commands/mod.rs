@@ -1,7 +1,7 @@
 use crate::{messages::redis_messages, native_types::ErrorStruct};
 
+pub mod database_mock;
 pub mod strings;
-
 // Duda 1:
 // Usar el paquete MOD para algo así es posible? Son funciones que usarán todos los commandos
 // he visto en creates externos que en los mod.rs dentro de una carpeta tienen tales funciones, y no se por qué
@@ -17,6 +17,8 @@ pub mod strings;
 // siento que hay microsegundos que se pierden al hacer este chequeo de empty/name con una funcion tan repetitiva
 // en casi TODO los comandos a implementar. Y usar macros, no vendría mal
 // podria usarse para esa forma las macros de Rust? mmmmmmmmmmmm
+
+// Duda 3: esto podria no chequearse y estar en un nivel mas arriba de jerarquia de chequeos de comandos en general.. ojo!
 
 // TODO: consultar Rust-eze team/Matías
 

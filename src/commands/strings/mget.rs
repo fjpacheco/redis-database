@@ -1,6 +1,8 @@
 use crate::{
-    commands::check_empty_and_name_command,
-    database::{Database, TypeSaved},
+    commands::{
+        check_empty_and_name_command,
+        database_mock::{Database, TypeSaved},
+    },
     messages::redis_messages,
     native_types::{ErrorStruct, RArray, RedisType},
 };
@@ -46,26 +48,22 @@ fn check_error_cases(buffer_vec: &mut Vec<&str>) -> Result<(), ErrorStruct> {
 #[cfg(test)]
 mod test_get {
 
-    use crate::commands::strings::set::Set;
-
     use super::*;
 
     #[test]
     fn test01_mget_value_of_key_correct_is_success() {
-        let buffer_vec_mock_set1 = vec!["set", "key1", "value"];
-        let buffer_vec_mock_set2 = vec!["set", "key2", "value"];
         let buffer_vec_mock_get = vec!["mget", "key2", "asd", "key1"];
         let mut database_mock = Database::new();
 
-        let _ = Set::run(buffer_vec_mock_set1, &mut database_mock);
-        let _ = Set::run(buffer_vec_mock_set2, &mut database_mock);
+        database_mock.insert("key1".to_string(), TypeSaved::String("value1".to_string()));
+        database_mock.insert("key2".to_string(), TypeSaved::String("value2".to_string()));
         let result_received = Mget::run(buffer_vec_mock_get, &mut database_mock);
 
         // ->> "*3\r\n $5\r\nvalue\r\n $-1\r\n $5\r\nvalue\r\n"
         let expected_vec = vec![
-            "value".to_string(),
+            "value2".to_string(),
             "(nil)".to_string(),
-            "value".to_string(),
+            "value1".to_string(),
         ];
         let expected_vec_encoded = RArray::encode(expected_vec);
         assert_eq!(expected_vec_encoded, result_received.unwrap());
@@ -73,15 +71,13 @@ mod test_get {
 
     #[test]
     fn test02_mget_does_not_maintain_order() {
-        let buffer_vec_mock_set1 = vec!["set", "key1", "value1"];
-        let buffer_vec_mock_set2 = vec!["set", "key2", "value2"];
         let buffer_vec_mock_get1 = vec!["mget", "key2", "asd", "key1"];
         let buffer_vec_mock_get2 = vec!["mget", "asd", "key2", "key1"];
         let buffer_vec_mock_get3 = vec!["mget", "key1", "key2", "asd"];
         let mut database_mock = Database::new();
 
-        let _ = Set::run(buffer_vec_mock_set1, &mut database_mock);
-        let _ = Set::run(buffer_vec_mock_set2, &mut database_mock);
+        database_mock.insert("key1".to_string(), TypeSaved::String("value1".to_string()));
+        database_mock.insert("key2".to_string(), TypeSaved::String("value2".to_string()));
 
         let result_received = Mget::run(buffer_vec_mock_get1, &mut database_mock);
         let expected_vec = vec![

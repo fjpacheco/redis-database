@@ -1,6 +1,8 @@
 use crate::{
-    commands::check_empty_and_name_command,
-    database::{Database, TypeSaved},
+    commands::{
+        check_empty_and_name_command,
+        database_mock::{Database, TypeSaved},
+    },
     messages::redis_messages,
     native_types::{ErrorStruct, RSimpleString, RedisType},
 };
@@ -45,31 +47,33 @@ fn is_odd(buffer_vec: &[&str]) -> bool {
 
 #[cfg(test)]
 mod test_mset_function {
-    use crate::{
-        commands::strings::{get::Get, mset::Mset, set::Set},
-        database::Database,
-        messages::redis_messages,
-        native_types::{RBulkString, RedisType},
-    };
+
+    use crate::native_types::RBulkString;
+
+    use super::*;
 
     #[test]
     fn test01_mset_reemplace_value_old_of_key_and_insert_more_elements() {
-        let buffer_vec_mock1 = vec!["set", "key1", "value1"];
         let buffer_vec_mock2 = vec!["Mset", "key1", "value1_new", "key2", "value2"];
-        let buffer_vec_mock_get1 = vec!["get", "key1"];
-        let buffer_vec_mock_get2 = vec!["get", "key2"];
         let mut database_mock = Database::new();
-        let _ = Set::run(buffer_vec_mock1, &mut database_mock);
+        database_mock.insert("key1".to_string(), TypeSaved::String("value1".to_string()));
 
         let _ = Mset::run(buffer_vec_mock2, &mut database_mock);
 
-        let result_received1 = Get::run(buffer_vec_mock_get1, &mut database_mock);
+        let mut get_received_1 = String::new();
+        if let TypeSaved::String(item) = database_mock.get("key1").unwrap() {
+            get_received_1 = RBulkString::encode(item.to_string());
+        }
         let expected = RBulkString::encode("value1_new".to_string());
-        assert_eq!(expected, result_received1.unwrap());
+        assert_eq!(expected, get_received_1);
 
-        let result_received2 = Get::run(buffer_vec_mock_get2, &mut database_mock);
+        let mut get_received_2 = String::new();
+        if let TypeSaved::String(item) = database_mock.get("key2").unwrap() {
+            get_received_2 = RBulkString::encode(item.to_string());
+        }
+
         let expected = RBulkString::encode("value2".to_string());
-        assert_eq!(expected, result_received2.unwrap());
+        assert_eq!(expected, get_received_2);
     }
 
     #[test]

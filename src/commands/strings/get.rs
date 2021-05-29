@@ -1,6 +1,8 @@
 use crate::{
-    commands::check_empty_and_name_command,
-    database::{Database, TypeSaved},
+    commands::{
+        check_empty_and_name_command,
+        database_mock::{Database, TypeSaved},
+    },
     messages::redis_messages,
     native_types::{ErrorStruct, RBulkString, RedisType},
 };
@@ -47,17 +49,14 @@ fn check_error_cases(buffer_vec: &mut Vec<&str>) -> Result<(), ErrorStruct> {
 #[cfg(test)]
 mod test_get {
 
-    use crate::commands::strings::set::Set;
-
     use super::*;
 
     #[test]
     fn test01_get_value_of_key_correct_is_success() {
-        let buffer_vec_mock_set = vec!["set", "key", "value"];
         let buffer_vec_mock_get = vec!["get", "key"];
         let mut database_mock = Database::new();
 
-        let _ = Set::run(buffer_vec_mock_set, &mut database_mock);
+        database_mock.insert("key".to_string(), TypeSaved::String("value".to_string()));
         let result_received = Get::run(buffer_vec_mock_get, &mut database_mock);
 
         let expected_result = RBulkString::encode("value".to_string());
@@ -66,11 +65,10 @@ mod test_get {
 
     #[test]
     fn test02_get_value_of_key_inorrect_return_result_ok_with_nil() {
-        let buffer_vec_mock_set = vec!["set", "key", "value"];
         let buffer_vec_mock_get = vec!["get", "key_other"];
         let mut database_mock = Database::new();
 
-        let _ = Set::run(buffer_vec_mock_set, &mut database_mock);
+        database_mock.insert("key".to_string(), TypeSaved::String("value".to_string()));
         let result_received = Get::run(buffer_vec_mock_get, &mut database_mock);
         let received = result_received.unwrap();
 
