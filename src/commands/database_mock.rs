@@ -9,8 +9,8 @@ pub struct DatabaseMock {
 #[derive(Debug, PartialEq)]
 pub enum TypeSaved {
     String(String),
-    Lists(Vec<String>),
-    Sets(HashSet<String>),
+    List(Vec<String>),
+    Set(HashSet<String>),
 }
 
 impl DatabaseMock {
@@ -83,5 +83,48 @@ pub fn get_as_integer(value: &str) -> Result<isize, ErrorStruct> {
             "ERR".to_string(),
             "value is not an integer or out of range".to_string(),
         )),
+    }
+}
+
+// Lpush and rpush aux
+
+pub fn push_at(
+    index: usize,
+    mut buffer: Vec<&str>,
+    database: &mut DatabaseMock,
+    fill_list: fn(index: usize, buffer: Vec<&str>, list: &mut Vec<String>),
+) -> Result<String, ErrorStruct> {
+    let key = String::from(buffer.remove(0));
+    let size;
+    if let Some(typesaved) = database.get_mut(&key) {
+        match typesaved {
+            TypeSaved::List(list_of_values) => {
+                fill_list(index, buffer, list_of_values);
+                size = list_of_values.len();
+                Ok(RInteger::encode(size as isize))
+            }
+            _ => Err(ErrorStruct::new(
+                String::from("ERR"),
+                String::from("key provided is not from strings"),
+            )),
+        }
+    } else {
+        let mut new_list: Vec<String> = Vec::new();
+        fill_list(index, buffer, &mut new_list);
+        size = new_list.len();
+        database.insert(key, TypeSaved::List(new_list));
+        Ok(RInteger::encode(size as isize))
+    }
+}
+
+pub fn fill_list_from_top(index: usize, mut buffer: Vec<&str>, list: &mut Vec<String>) {
+    while !buffer.is_empty() {
+        list.insert(index, buffer.remove(0).to_string());
+    }
+}
+
+pub fn fill_list_from_bottom(_index: usize, mut buffer: Vec<&str>, list: &mut Vec<String>) {
+    while !buffer.is_empty() {
+        list.push(buffer.remove(0).to_string());
     }
 }
