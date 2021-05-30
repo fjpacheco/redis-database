@@ -1,7 +1,9 @@
 use crate::{messages::redis_messages, native_types::ErrorStruct};
 
 pub mod database_mock;
+pub mod sets;
 pub mod strings;
+
 // Duda 1:
 // Usar el paquete MOD para algo así es posible? Son funciones que usarán todos los commandos
 // he visto en creates externos que en los mod.rs dentro de una carpeta tienen tales funciones, y no se por qué
