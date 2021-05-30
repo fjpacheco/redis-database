@@ -46,10 +46,10 @@ pub fn execute_value_modification(
     mut buffer_vec: Vec<&str>,
     op: fn(isize, isize) -> isize,
 ) -> Result<String, ErrorStruct> {
-    let mut decr = String::from(buffer_vec.pop().unwrap()); // extract key and decrement from: Vec<&str> = ["mykey", "10"]
+    let decr = String::from(buffer_vec.pop().unwrap()); // extract key and decrement from: Vec<&str> = ["mykey", "10"]
     let key = String::from(buffer_vec.pop().unwrap());
 
-    let decr_int = get_as_integer(&mut decr)?; // check if decr is parsable as int
+    let decr_int = get_as_integer(&decr)?; // check if decr is parsable as int
 
     let current_key_value: isize = string_key_check(database, String::from(&key))?;
 
@@ -70,12 +70,12 @@ pub fn string_key_check(database: &mut DatabaseMock, key: String) -> Result<isiz
     } else {
         // key does not exist
         let key_cpy = key.clone();
-        database.insert(key_cpy.to_string(), TypeSaved::String("0".to_string()));
-        get_as_integer(&mut "0".to_string())
+        database.insert(key_cpy, TypeSaved::String("0".to_string()));
+        get_as_integer(&"0".to_string())
     }
 }
 
-pub fn get_as_integer(value: &String) -> Result<isize, ErrorStruct> {
+pub fn get_as_integer(value: &str) -> Result<isize, ErrorStruct> {
     // value es mut porque TypeSaved::String() devuelve &mut String
     match value.parse::<isize>() {
         Ok(value_int) => Ok(value_int), // if value is parsable as pointer size integer
