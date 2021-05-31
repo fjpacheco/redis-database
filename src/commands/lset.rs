@@ -42,20 +42,18 @@ pub fn replace_element_at(
     if index < 0 {
         index += len;
     }
-    if (index > 0 && index >= len) || (index < 0) {
-        // index > 0 is redundant
+    if (index >= len) || (index < 0) {
         Err(ErrorStruct::new(
             String::from("ERR"),
             String::from("index out of range"),
         ))
     } else {
-        let mut i = 0;
-        for element in values_list.iter_mut() {
-            if i == index {
+        for (i, element) in values_list.iter_mut().enumerate() {
+            if i == index as usize {
+                // at this point index couldn't be negative
                 *element = replacement;
                 break;
             }
-            i += 1;
         }
         Ok(RSimpleString::encode("OK".to_string()))
     }
