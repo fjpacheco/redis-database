@@ -18,7 +18,7 @@ impl Sismember {
 
         match database.get_mut(key) {
             Some(item) => match item {
-                TypeSaved::Sets(item) => {
+                TypeSaved::Set(item) => {
                     let result = match item.contains(member) {
                         true => 1,
                         false => 0,
@@ -70,7 +70,7 @@ mod test_sismember_function {
         set.insert(String::from("m1"));
         set.insert(String::from("m2"));
         let mut database_mock = Database::new();
-        database_mock.insert("key".to_string(), TypeSaved::Sets(set));
+        database_mock.insert("key".to_string(), TypeSaved::Set(set));
         let buffer_vec_mock_1 = vec!["sismember", "key", "m1"];
         let buffer_vec_mock_2 = vec!["sismember", "key", "m2"];
 
@@ -88,7 +88,7 @@ mod test_sismember_function {
         let mut set = HashSet::new();
         set.insert(String::from("m1"));
         let mut database_mock = Database::new();
-        database_mock.insert("key".to_string(), TypeSaved::Sets(set));
+        database_mock.insert("key".to_string(), TypeSaved::Set(set));
         let buffer_vec_mock = vec!["sismember", "key", "m_random"];
 
         let result_received = Sismember::run(buffer_vec_mock, &mut database_mock);
@@ -103,7 +103,7 @@ mod test_sismember_function {
         let mut set = HashSet::new();
         set.insert(String::from("m1"));
         let mut database_mock = Database::new();
-        database_mock.insert("key".to_string(), TypeSaved::Sets(set));
+        database_mock.insert("key".to_string(), TypeSaved::Set(set));
         let buffer_vec_mock = vec!["sismember", "key_random", "m_random"];
 
         let result_received = Sismember::run(buffer_vec_mock, &mut database_mock);
@@ -135,7 +135,7 @@ mod test_sismember_function {
         let mut database_mock = Database::new();
         database_mock.insert(
             "keyOfList".to_string(),
-            TypeSaved::Lists(vec!["value".to_string(), "value_other".to_string()]),
+            TypeSaved::List(vec!["value".to_string(), "value_other".to_string()]),
         );
         let buffer_vec_mock = vec!["sismember", "keyOfList", "value"];
 

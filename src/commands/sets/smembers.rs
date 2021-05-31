@@ -17,7 +17,7 @@ impl Smembers {
 
         match database.get_mut(key) {
             Some(item) => match item {
-                TypeSaved::Sets(a_set) => {
+                TypeSaved::Set(a_set) => {
                     let vector: Vec<String> =
                         a_set.iter().map(|member| member.to_string()).collect();
                     Ok(RArray::encode(vector))
@@ -68,7 +68,7 @@ mod test_smembers_function {
         set.insert(String::from("m1"));
         set.insert(String::from("m2"));
         let mut database_mock = Database::new();
-        database_mock.insert("key".to_string(), TypeSaved::Sets(set));
+        database_mock.insert("key".to_string(), TypeSaved::Set(set));
         let buffer_vec_mock = vec!["smembers", "key"];
 
         let result_received = Smembers::run(buffer_vec_mock, &mut database_mock);
@@ -86,7 +86,7 @@ mod test_smembers_function {
         set.insert(String::from("m1"));
         set.insert(String::from("m2"));
         let mut database_mock = Database::new();
-        database_mock.insert("key".to_string(), TypeSaved::Sets(set));
+        database_mock.insert("key".to_string(), TypeSaved::Set(set));
         let buffer_vec_mock = vec!["smembers", "key_other"];
 
         let result_received = Smembers::run(buffer_vec_mock, &mut database_mock);
@@ -99,7 +99,7 @@ mod test_smembers_function {
     fn test03_smembers_return_an_empty_array_if_set_is_empty() {
         let set = HashSet::new();
         let mut database_mock = Database::new();
-        database_mock.insert("key".to_string(), TypeSaved::Sets(set));
+        database_mock.insert("key".to_string(), TypeSaved::Set(set));
         let buffer_vec_mock = vec!["smembers", "key"];
 
         let result_received = Smembers::run(buffer_vec_mock, &mut database_mock);
@@ -131,7 +131,7 @@ mod test_smembers_function {
         let mut database_mock = Database::new();
         database_mock.insert(
             "keyOfList".to_string(),
-            TypeSaved::Lists(vec!["value1".to_string(), "value2".to_string()]),
+            TypeSaved::List(vec!["value1".to_string(), "value2".to_string()]),
         );
         let buffer_vec_mock = vec!["smembers", "keyOfList"];
 

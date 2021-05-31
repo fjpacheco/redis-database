@@ -20,7 +20,7 @@ impl Sadd {
 
         match database.get_mut(key) {
             Some(item) => match item {
-                TypeSaved::Sets(item) => {
+                TypeSaved::Set(item) => {
                     count_insert = insert_in_set(&buffer_vec, item);
                     Ok(())
                 }
@@ -35,7 +35,7 @@ impl Sadd {
             None => {
                 let mut set: HashSet<String> = HashSet::new();
                 count_insert = insert_in_set(&buffer_vec, &mut set);
-                database.insert(key.to_string(), TypeSaved::Sets(set));
+                database.insert(key.to_string(), TypeSaved::Set(set));
                 Ok(())
             }
         }?;
@@ -125,7 +125,7 @@ mod test_sadd_function {
         let mut database_mock = Database::new();
         database_mock.insert(
             "key".to_string(),
-            TypeSaved::Lists(vec!["valueOfList".to_string()]),
+            TypeSaved::List(vec!["valueOfList".to_string()]),
         );
         let buffer_vec_mock = vec![
             "sadd", "key", "member2", "member1", "member1", "member3", "member2", "member1",

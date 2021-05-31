@@ -17,7 +17,7 @@ impl Srem {
 
         match database.get_mut(key) {
             Some(item) => match item {
-                TypeSaved::Sets(item) => {
+                TypeSaved::Set(item) => {
                     let count_deleted = buffer_vec
                         .iter()
                         .skip(2)
@@ -80,7 +80,7 @@ mod test_srem_function {
         set.insert(String::from("m5")); // m5
         set.insert(String::from("m1"));
         let mut database_mock = Database::new();
-        database_mock.insert("key".to_string(), TypeSaved::Sets(set));
+        database_mock.insert("key".to_string(), TypeSaved::Set(set));
         let buffer_vec_mock_1 = vec!["srem", "key", "m1"];
         let buffer_vec_mock_2 = vec!["srem", "key", "m2"];
 
@@ -91,7 +91,7 @@ mod test_srem_function {
         let excepted_2 = RInteger::encode(1);
         assert_eq!(excepted_1, result_received_1.unwrap());
         assert_eq!(excepted_2, result_received_2.unwrap());
-        if let TypeSaved::Sets(set_post_srem) = database_mock.get("key").unwrap() {
+        if let TypeSaved::Set(set_post_srem) = database_mock.get("key").unwrap() {
             assert!(!set_post_srem.contains("m1")); // deleted
             assert!(!set_post_srem.contains("m2")); // deleted
             assert!(set_post_srem.contains("m3"));
@@ -106,7 +106,7 @@ mod test_srem_function {
         set.insert(String::from("m1")); // m1
         set.insert(String::from("m2")); // m2
         let mut database_mock = Database::new();
-        database_mock.insert("key".to_string(), TypeSaved::Sets(set));
+        database_mock.insert("key".to_string(), TypeSaved::Set(set));
         let buffer_vec_mock = vec![
             "srem", "key", "m1901020", "m1", "m1", "m1", "m192192", "m1", "m1",
         ];
@@ -115,7 +115,7 @@ mod test_srem_function {
 
         let excepted = RInteger::encode(1);
         assert_eq!(excepted, result_received.unwrap());
-        if let TypeSaved::Sets(set_post_srem) = database_mock.get("key").unwrap() {
+        if let TypeSaved::Set(set_post_srem) = database_mock.get("key").unwrap() {
             assert!(!set_post_srem.contains("m1")); // deleted one time
             assert!(set_post_srem.contains("m2"));
             assert!(set_post_srem.len().eq(&1))
@@ -128,14 +128,14 @@ mod test_srem_function {
         set.insert(String::from("m1")); // m1
         set.insert(String::from("m2")); // m2
         let mut database_mock = Database::new();
-        database_mock.insert("key".to_string(), TypeSaved::Sets(set));
+        database_mock.insert("key".to_string(), TypeSaved::Set(set));
         let buffer_vec_mock = vec!["srem", "key", "m3", "m4"];
 
         let result_received = Srem::run(buffer_vec_mock, &mut database_mock);
 
         let excepted = RInteger::encode(0);
         assert_eq!(excepted, result_received.unwrap());
-        if let TypeSaved::Sets(set_post_srem) = database_mock.get("key").unwrap() {
+        if let TypeSaved::Set(set_post_srem) = database_mock.get("key").unwrap() {
             assert!(set_post_srem.contains("m1")); // unmodified
             assert!(set_post_srem.contains("m2")); // unmodified
             assert!(set_post_srem.len().eq(&2))
@@ -146,7 +146,7 @@ mod test_srem_function {
     fn test04_srem_return_zero_if_key_does_not_exist_in_database() {
         let set = HashSet::new();
         let mut database_mock = Database::new();
-        database_mock.insert("key".to_string(), TypeSaved::Sets(set));
+        database_mock.insert("key".to_string(), TypeSaved::Set(set));
         let buffer_vec_mock = vec!["srem", "key_random", "m1"];
 
         let result_received = Srem::run(buffer_vec_mock, &mut database_mock);
@@ -178,7 +178,7 @@ mod test_srem_function {
         let mut database_mock = Database::new();
         database_mock.insert(
             "keyOfList".to_string(),
-            TypeSaved::Lists(vec!["value1".to_string(), "value2".to_string()]),
+            TypeSaved::List(vec!["value1".to_string(), "value2".to_string()]),
         );
         let buffer_vec_mock = vec!["srem", "keyOfList", "value1", "value2"];
 
@@ -209,14 +209,14 @@ mod test_srem_function {
     fn test08_srem_return_zero_if_set_is_empty() {
         let set = HashSet::new();
         let mut database_mock = Database::new();
-        database_mock.insert("key".to_string(), TypeSaved::Sets(set));
+        database_mock.insert("key".to_string(), TypeSaved::Set(set));
         let buffer_vec_mock = vec!["srem", "key", "value1", "value2"];
 
         let result_received = Srem::run(buffer_vec_mock, &mut database_mock);
 
         let excepted = RInteger::encode(0);
         assert_eq!(excepted, result_received.unwrap());
-        if let TypeSaved::Sets(set_post_srem) = database_mock.get("key").unwrap() {
+        if let TypeSaved::Set(set_post_srem) = database_mock.get("key").unwrap() {
             assert!(set_post_srem.len().eq(&0))
         }
     }

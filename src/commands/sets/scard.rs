@@ -16,7 +16,7 @@ impl Scard {
 
         match database.get_mut(key) {
             Some(item) => match item {
-                TypeSaved::Sets(item) => Ok(RInteger::encode(item.len() as isize)),
+                TypeSaved::Set(item) => Ok(RInteger::encode(item.len() as isize)),
                 _ => {
                     let message_error = redis_messages::wrongtype();
                     Err(ErrorStruct::new(
@@ -63,7 +63,7 @@ mod test_scard_function {
         set.insert(String::from("m2"));
         set.insert(String::from("m3"));
         let mut database_mock = Database::new();
-        database_mock.insert("key".to_string(), TypeSaved::Sets(set));
+        database_mock.insert("key".to_string(), TypeSaved::Set(set));
         let buffer_vec_mock = vec!["scard", "key"];
 
         let result_received = Scard::run(buffer_vec_mock, &mut database_mock);
@@ -88,7 +88,7 @@ mod test_scard_function {
         set.insert(String::from("m3"));
         set.insert(String::from("m3"));
         let mut database_mock = Database::new();
-        database_mock.insert("key".to_string(), TypeSaved::Sets(set));
+        database_mock.insert("key".to_string(), TypeSaved::Set(set));
         let buffer_vec_mock = vec!["scard", "key"];
 
         let result_received = Scard::run(buffer_vec_mock, &mut database_mock);
@@ -101,7 +101,7 @@ mod test_scard_function {
     fn test03_scard_return_zero_if_the_set_is_empty() {
         let set: HashSet<String> = HashSet::new();
         let mut database_mock = Database::new();
-        database_mock.insert("key".to_string(), TypeSaved::Sets(set));
+        database_mock.insert("key".to_string(), TypeSaved::Set(set));
         let buffer_vec_mock = vec!["scard", "key"];
 
         let result_received = Scard::run(buffer_vec_mock, &mut database_mock);
@@ -114,7 +114,7 @@ mod test_scard_function {
     fn test04_scard_return_zero_if_the_set_dont_exist() {
         let set: HashSet<String> = HashSet::new();
         let mut database_mock = Database::new();
-        database_mock.insert("key".to_string(), TypeSaved::Sets(set));
+        database_mock.insert("key".to_string(), TypeSaved::Set(set));
         let buffer_vec_mock = vec!["scard", "key_random"];
 
         let result_received = Scard::run(buffer_vec_mock, &mut database_mock);
@@ -146,7 +146,7 @@ mod test_scard_function {
         let mut database_mock = Database::new();
         database_mock.insert(
             "keyOfList".to_string(),
-            TypeSaved::Lists(vec!["value1".to_string(), "value2".to_string()]),
+            TypeSaved::List(vec!["value1".to_string(), "value2".to_string()]),
         );
         let buffer_vec_mock = vec!["scard", "keyOfList"];
 

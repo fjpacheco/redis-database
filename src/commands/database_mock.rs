@@ -7,8 +7,8 @@ pub struct Database {
 #[derive(Debug, PartialEq)]
 pub enum TypeSaved {
     String(String),
-    Lists(Vec<String>),
-    Sets(HashSet<String>),
+    List(Vec<String>),
+    Set(HashSet<String>),
 }
 
 impl Database {
