@@ -86,6 +86,20 @@ pub fn get_as_integer(value: &str) -> Result<isize, ErrorStruct> {
     }
 }
 
+// Lpush, rpush, lpushx and rpushx aux
+
+pub fn fill_list_from_top(mut buffer: Vec<&str>, list: &mut LinkedList<String>) {
+    while !buffer.is_empty() {
+        list.push_front(buffer.remove(0).to_string());
+    }
+}
+
+pub fn fill_list_from_bottom(mut buffer: Vec<&str>, list: &mut LinkedList<String>) {
+    while !buffer.is_empty() {
+        list.push_back(buffer.remove(0).to_string());
+    }
+}
+
 // Lpush and rpush aux
 
 pub fn push_at(
@@ -116,19 +130,7 @@ pub fn push_at(
     }
 }
 
-pub fn fill_list_from_top(mut buffer: Vec<&str>, list: &mut LinkedList<String>) {
-    while !buffer.is_empty() {
-        list.push_front(buffer.remove(0).to_string());
-    }
-}
-
-pub fn fill_list_from_bottom(mut buffer: Vec<&str>, list: &mut LinkedList<String>) {
-    while !buffer.is_empty() {
-        list.push_back(buffer.remove(0).to_string());
-    }
-}
-
-// Lpushx aux
+// Lpushx and rpushx aux
 
 pub fn pushx_at(
     mut buffer: Vec<&str>,
