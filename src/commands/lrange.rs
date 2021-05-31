@@ -22,7 +22,7 @@ impl Lrange {
             match typesaved {
                 TypeSaved::List(values_list) => find_elements_in_range(values_list, buffer),
                 _ => Err(ErrorStruct::new(
-                    String::from("ERR"),
+                    String::from("WRONGTYPE"),
                     String::from("Operation against a key holding the wrong kind of value"),
                 )),
             }
@@ -146,7 +146,7 @@ pub mod test_lrange {
         let error = Lrange::run(buffer, &mut data);
         assert_eq!(
             error.unwrap_err().print_it(),
-            "ERR Operation against a key holding the wrong kind of value".to_string()
+            "WRONGTYPE Operation against a key holding the wrong kind of value".to_string()
         );
     }
 
