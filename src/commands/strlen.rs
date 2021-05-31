@@ -47,7 +47,7 @@ pub mod test_strlen {
     }
 
     #[test]
-    fn test02_incrby_non_existing_key() {
+    fn test02_srlen_non_existing_key() {
         let mut data = DatabaseMock::new();
         // redis> STRLEN nonexisting ---> (integer) 0
         let buffer: Vec<&str> = vec!["mykey"];

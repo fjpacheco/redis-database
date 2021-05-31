@@ -71,5 +71,16 @@ pub mod test_llen {
     }
 
     #[test]
-    fn test03_llen_to_key_storing_non_list() {}
+    fn test03_llen_to_key_storing_non_list() {
+        let mut data = DatabaseMock::new();
+        // redis> SET mykey 10
+        data.insert("key".to_string(), TypeSaved::String("value".to_string()));
+
+        let buffer = vec!["key"];
+        let error = Llen::run(buffer, &mut data);
+        assert_eq!(
+            error.unwrap_err().print_it(),
+            "ERR value stored at key is not a list".to_string()
+        );
+    }
 }
