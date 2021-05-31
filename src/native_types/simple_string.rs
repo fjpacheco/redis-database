@@ -47,8 +47,8 @@ pub mod test_simple_string {
     }
 
     #[test]
-    fn test03_decoding_of_bad_simple_string_throws_parsing_error() {
-        let mut encoded = "Good Morning\r\r".to_string();
+    fn test06_bad_decoding_of_simple_string_throws_a_parsing_error() {
+        let mut encoded = "Good Morning".to_string();
         let should_be_error = RSimpleString::decode(&mut encoded);
         match should_be_error {
             Ok(_string) => {}

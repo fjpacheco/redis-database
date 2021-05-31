@@ -1,11 +1,8 @@
 use std::collections::{HashMap, HashSet, LinkedList};
 
-use crate::native_types::{
-    array::RArray, bulk_string::RBulkString, error::ErrorStruct, integer::RInteger,
-    redis_type::RedisType,
-};
+use crate::native_types::{ErrorStruct, RArray, RBulkString, RInteger, RedisType};
 
-pub struct DatabaseMock {
+pub struct Database {
     elements: HashMap<String, TypeSaved>,
 }
 
@@ -16,11 +13,15 @@ pub enum TypeSaved {
     Set(HashSet<String>),
 }
 
-impl DatabaseMock {
+impl Database {
     pub fn new() -> Self {
-        DatabaseMock {
+        Database {
             elements: HashMap::new(),
         }
+    }
+
+    pub fn remove(&mut self, key: &str) -> Option<TypeSaved> {
+        self.elements.remove(key)
     }
 
     pub fn insert(&mut self, key: String, value: TypeSaved) -> Option<TypeSaved> {
@@ -36,7 +37,7 @@ impl DatabaseMock {
     }
 }
 
-impl Default for DatabaseMock {
+impl Default for Database {
     fn default() -> Self {
         Self::new()
     }
@@ -45,7 +46,7 @@ impl Default for DatabaseMock {
 // Aux functions
 
 pub fn execute_value_modification(
-    database: &mut DatabaseMock,
+    database: &mut Database,
     mut buffer_vec: Vec<&str>,
     op: fn(isize, isize) -> isize,
 ) -> Result<String, ErrorStruct> {
@@ -61,7 +62,7 @@ pub fn execute_value_modification(
     Ok(RInteger::encode(new_value)) // as isize
 }
 
-pub fn string_key_check(database: &mut DatabaseMock, key: String) -> Result<isize, ErrorStruct> {
+pub fn string_key_check(database: &mut Database, key: String) -> Result<isize, ErrorStruct> {
     if let Some(typesaved) = database.get_mut(&key) {
         match typesaved {
             TypeSaved::String(old_value) => get_as_integer(&old_value),
@@ -107,7 +108,7 @@ pub fn fill_list_from_bottom(mut buffer: Vec<&str>, list: &mut LinkedList<String
 
 pub fn push_at(
     mut buffer: Vec<&str>,
-    database: &mut DatabaseMock,
+    database: &mut Database,
     fill_list: fn(buffer: Vec<&str>, list: &mut LinkedList<String>),
 ) -> Result<String, ErrorStruct> {
     let key = String::from(buffer.remove(0));
@@ -137,7 +138,7 @@ pub fn push_at(
 
 pub fn pushx_at(
     mut buffer: Vec<&str>,
-    database: &mut DatabaseMock,
+    database: &mut Database,
     fill_list: fn(buffer: Vec<&str>, list: &mut LinkedList<String>),
 ) -> Result<String, ErrorStruct> {
     let key = String::from(buffer.remove(0));
@@ -164,7 +165,7 @@ pub fn pushx_at(
 
 pub fn pop_at(
     mut buffer: Vec<&str>,
-    database: &mut DatabaseMock,
+    database: &mut Database,
     fill_list: fn(list: &mut LinkedList<String>, counter: usize) -> String,
 ) -> Result<String, ErrorStruct> {
     are_there_more_values(&buffer)?;

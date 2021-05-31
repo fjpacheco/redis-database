@@ -27,7 +27,7 @@ impl RedisType<String> for RBulkString {
         } else {
             Err(ErrorStruct::new(
                 "ERR_PARSE".to_string(),
-                "Failed to parse redis bulk string".to_string(),
+                "Failed to parse redis simple string".to_string(),
             ))
         }
     }
@@ -38,7 +38,7 @@ mod test_bulk_string {
 
     use super::*;
     #[test]
-    fn test01_bulk_string_encoding() {
+    fn test04_encoding_and_decoding_of_a_bulk_string() {
         let bulk = String::from("Hello world");
         let encoded = RBulkString::encode(bulk);
         assert_eq!(encoded, "$11\r\nHello world\r\n".to_string());
@@ -61,36 +61,7 @@ mod test_bulk_string {
     }
 
     #[test]
-    fn test04_bulk_string_empty_string_encoding() {
-        let encoded = RBulkString::encode(String::from(""));
-        // Averiguar si es correcto considerar este caso
-        assert_eq!(encoded, "$0\r\n\r\n".to_string());
-    }
-
-    #[test]
-    fn test05_bulk_string_empty_string_decoding() {
-        let mut encoded = RBulkString::encode(String::from(""));
-        encoded.remove(0);
-        let decoded = RBulkString::decode(&mut encoded);
-        assert_eq!(decoded.unwrap(), "".to_string());
-    }
-
-    #[test]
-    fn test06_bulk_string_nil_encoding() {
-        let encoded = RBulkString::encode(String::from("(nil)"));
-        assert_eq!(encoded, "$-1\r\n".to_string());
-    }
-
-    #[test]
-    fn test07_bulk_string_nil_decoding() {
-        let mut encoded = RBulkString::encode(String::from("(nil)"));
-        encoded.remove(0);
-        let decoded = RBulkString::decode(&mut encoded);
-        assert_eq!(decoded.unwrap(), "(nil)".to_string());
-    }
-
-    #[test]
-    fn test08_wrong_bulk_string_decoding_throws_parsing_error() {
+    fn test08_bad_decoding_of_bulk_string_throws_a_parsing_error() {
         let mut encoded = "$Good Morning".to_string();
         let should_be_error = RBulkString::decode(&mut encoded);
         match should_be_error {
@@ -98,7 +69,7 @@ mod test_bulk_string {
             Err(error) => {
                 assert_eq!(
                     error.print_it(),
-                    "ERR_PARSE Failed to parse redis bulk string".to_string()
+                    "ERR_PARSE Failed to parse redis simple string".to_string()
                 );
             }
         }
@@ -127,7 +98,7 @@ mod test_bulk_string {
     }
 
     #[test]
-    fn test09_set_key_value_simulation() {
+    fn test10_set_key_value_simulation() {
         let input = "SET ping pong";
         let mut v: Vec<&str> = input.rsplit(' ').collect();
         let command = v.pop().unwrap().to_string();

@@ -1,6 +1,6 @@
 use super::redis_type::{remove_first_cr_lf, RedisType};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ErrorStruct {
     prefix: String,
     message: String,
@@ -16,6 +16,11 @@ impl ErrorStruct {
         printed.push(' ');
         printed.push_str(&self.message.to_string());
         printed
+    }
+
+    // Para tests... investigar si existe una macro así: #[metodo_para_test]
+    pub fn get_encoded_message_complete(&self) -> String {
+        RError::encode(self.clone())
     }
 }
 pub struct RError;
@@ -60,7 +65,7 @@ mod test_error {
 
     use super::*;
     #[test]
-    fn test01_encoding_and_decoding_of_an_error() {
+    fn test05_encoding_and_decoding_of_an_error() {
         let error = ErrorStruct::new("ERR".to_string(), "esto es un error generico".to_string());
         let mut encoded = RError::encode(error);
         assert_eq!(encoded, "-ERR esto es un error generico\r\n".to_string());

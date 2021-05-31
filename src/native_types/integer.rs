@@ -49,7 +49,7 @@ pub mod test_integer {
     }
 
     #[test]
-    fn test02_bad_decoding_of_integer_throws_a_parsing_error() {
+    fn test07_bad_decoding_of_integer_throws_a_parsing_error() {
         let mut encoded = "123a\r\n".to_string();
         let should_be_error = RInteger::decode(&mut encoded);
         match should_be_error {

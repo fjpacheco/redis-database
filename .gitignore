@@ -1,3 +1,4 @@
 /target
 target/.rustc_info.json
 .DS_Store
+.vscode
