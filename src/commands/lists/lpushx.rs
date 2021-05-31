@@ -1,17 +1,18 @@
-use super::database_mock::{fill_list_from_top, push_at};
-use crate::commands::database_mock::DatabaseMock;
+use crate::commands::database_mock::fill_list_from_top;
+use crate::commands::database_mock::pushx_at;
+use crate::commands::database_mock::Database;
 use crate::native_types::error::ErrorStruct;
 
-pub struct LPush;
+pub struct LPushx;
 
-impl LPush {
-    pub fn run(buffer: Vec<&str>, database: &mut DatabaseMock) -> Result<String, ErrorStruct> {
-        push_at(buffer, database, fill_list_from_top)
+impl LPushx {
+    pub fn run(buffer: Vec<&str>, database: &mut Database) -> Result<String, ErrorStruct> {
+        pushx_at(buffer, database, fill_list_from_top)
     }
 }
 
 #[cfg(test)]
-pub mod test_lpush {
+pub mod test_lpushx {
 
     use std::collections::LinkedList;
 
@@ -19,8 +20,8 @@ pub mod test_lpush {
     use crate::commands::database_mock::TypeSaved;
 
     #[test]
-    fn test01_lpush_values_on_an_existing_list() {
-        let mut data = DatabaseMock::new();
+    fn test01_lpushx_values_on_an_existing_list() {
+        let mut data = Database::new();
         let mut new_list = LinkedList::new();
         new_list.push_back("with".to_string());
         new_list.push_back("new".to_string());
@@ -28,7 +29,7 @@ pub mod test_lpush {
         data.insert("key".to_string(), TypeSaved::List(new_list));
 
         let buffer = vec!["key", "list", "a", "is", "this"];
-        let encode = LPush::run(buffer, &mut data);
+        let encode = LPushx::run(buffer, &mut data);
         assert_eq!(encode.unwrap(), ":7\r\n".to_string());
         match data.get_mut("key").unwrap() {
             TypeSaved::List(list) => {
@@ -45,19 +46,13 @@ pub mod test_lpush {
     }
 
     #[test]
-    fn test02_lpush_values_on_a_non_existing_list() {
-        let mut data = DatabaseMock::new();
+    fn test02_lpushx_values_on_a_non_existing_list() {
+        let mut data = Database::new();
         let buffer: Vec<&str> = vec!["key", "this", "is", "a", "list"];
-        let encode = LPush::run(buffer, &mut data);
-        assert_eq!(encode.unwrap(), ":4\r\n".to_string());
-        match data.get_mut("key").unwrap() {
-            TypeSaved::List(list) => {
-                assert_eq!(list.pop_front().unwrap(), "list");
-                assert_eq!(list.pop_front().unwrap(), "a");
-                assert_eq!(list.pop_front().unwrap(), "is");
-                assert_eq!(list.pop_front().unwrap(), "this");
-            }
-            _ => {}
-        }
+        let error = LPushx::run(buffer, &mut data);
+        assert_eq!(
+            error.unwrap_err().print_it(),
+            "ERR no list found with entered key".to_string()
+        );
     }
 }

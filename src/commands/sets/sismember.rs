@@ -50,7 +50,7 @@ fn check_error_cases(buffer_vec: &mut Vec<&str>) -> Result<(), ErrorStruct> {
 
 #[cfg(test)]
 mod test_sismember_function {
-    use std::collections::HashSet;
+    use std::collections::{HashSet, LinkedList};
 
     use crate::{
         commands::{
@@ -130,10 +130,11 @@ mod test_sismember_function {
     #[test]
     fn test05_sismember_return_error_wrongtype_if_execute_with_key_of_list() {
         let mut database_mock = Database::new();
-        database_mock.insert(
-            "keyOfList".to_string(),
-            TypeSaved::List(vec!["value".to_string(), "value_other".to_string()]),
-        );
+        let mut new_list = LinkedList::new();
+        new_list.push_back("value".to_string());
+        new_list.push_back("value_other".to_string());
+        database_mock.insert("keyOfList".to_string(), TypeSaved::List(new_list));
+
         let buffer_vec_mock = vec!["sismember", "keyOfList", "value"];
 
         let result_received = Sismember::run(buffer_vec_mock, &mut database_mock);

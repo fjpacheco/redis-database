@@ -1,4 +1,4 @@
-use crate::commands::database_mock::{DatabaseMock, TypeSaved};
+use crate::commands::database_mock::{Database, TypeSaved};
 use crate::native_types::{error::ErrorStruct, integer::RInteger, redis_type::RedisType};
 pub struct Strlen;
 
@@ -7,10 +7,7 @@ pub struct Strlen;
 /// Return value: Integer reply: the length of the string at key, or 0 when key does not exist.
 
 impl Strlen {
-    pub fn run(
-        mut buffer_vec: Vec<&str>,
-        database: &mut DatabaseMock,
-    ) -> Result<String, ErrorStruct> {
+    pub fn run(mut buffer_vec: Vec<&str>, database: &mut Database) -> Result<String, ErrorStruct> {
         let key = String::from(buffer_vec.pop().unwrap());
         if let Some(typesaved) = database.get_mut(&key) {
             match typesaved {
@@ -33,7 +30,7 @@ pub mod test_strlen {
 
     #[test]
     fn test01_strlen_existing_key() {
-        let mut data = DatabaseMock::new();
+        let mut data = Database::new();
         // redis> SET mykey somevalue ---> "OK"
         data.insert(
             "mykey".to_string(),
@@ -48,7 +45,7 @@ pub mod test_strlen {
 
     #[test]
     fn test02_srlen_non_existing_key() {
-        let mut data = DatabaseMock::new();
+        let mut data = Database::new();
         // redis> STRLEN nonexisting ---> (integer) 0
         let buffer: Vec<&str> = vec!["mykey"];
         let encoded = Strlen::run(buffer, &mut data);

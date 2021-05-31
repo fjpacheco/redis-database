@@ -1,11 +1,12 @@
-use super::database_mock::{fill_list_from_bottom, pushx_at};
-use crate::commands::database_mock::DatabaseMock;
-use crate::native_types::error::ErrorStruct;
+use crate::{
+    commands::database_mock::{fill_list_from_bottom, pushx_at, Database},
+    native_types::error::ErrorStruct,
+};
 
 pub struct RPushx;
 
 impl RPushx {
-    pub fn run(buffer: Vec<&str>, database: &mut DatabaseMock) -> Result<String, ErrorStruct> {
+    pub fn run(buffer: Vec<&str>, database: &mut Database) -> Result<String, ErrorStruct> {
         pushx_at(buffer, database, fill_list_from_bottom)
     }
 }
@@ -16,11 +17,11 @@ pub mod test_rpushx {
     use std::collections::LinkedList;
 
     use super::*;
-    use crate::commands::database_mock::TypeSaved;
+    use crate::commands::database_mock::{Database, TypeSaved};
 
     #[test]
     fn test01_rpushx_values_on_an_existing_list() {
-        let mut data = DatabaseMock::new();
+        let mut data = Database::new();
         let mut new_list = LinkedList::new();
         new_list.push_back("this".to_string());
         new_list.push_back("is".to_string());
@@ -47,7 +48,7 @@ pub mod test_rpushx {
 
     #[test]
     fn test02_rpushx_values_on_a_non_existing_list() {
-        let mut data = DatabaseMock::new();
+        let mut data = Database::new();
         let buffer: Vec<&str> = vec!["key", "this", "is", "a", "list"];
         let error = RPushx::run(buffer, &mut data);
         assert_eq!(

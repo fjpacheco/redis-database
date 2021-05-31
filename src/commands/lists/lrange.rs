@@ -1,9 +1,8 @@
 use std::collections::LinkedList;
 
+use crate::commands::database_mock::{get_as_integer, TypeSaved};
 use crate::native_types::{array::RArray, error::ErrorStruct, simple_string::RSimpleString};
-use crate::{commands::database_mock::DatabaseMock, native_types::redis_type::RedisType};
-
-use super::database_mock::{get_as_integer, TypeSaved};
+use crate::{commands::database_mock::Database, native_types::redis_type::RedisType};
 
 pub struct Lrange;
 
@@ -16,7 +15,7 @@ pub struct Lrange;
 // the penultimate, and so on.
 
 impl Lrange {
-    pub fn run(mut buffer: Vec<&str>, database: &mut DatabaseMock) -> Result<String, ErrorStruct> {
+    pub fn run(mut buffer: Vec<&str>, database: &mut Database) -> Result<String, ErrorStruct> {
         let key = String::from(buffer.remove(0));
         if let Some(typesaved) = database.get_mut(&key) {
             match typesaved {
@@ -89,8 +88,8 @@ pub fn get_list_elements_in_range(
 pub mod test_lrange {
 
     use crate::commands::{
-        database_mock::{DatabaseMock, TypeSaved},
-        llen::Llen,
+        database_mock::{Database, TypeSaved},
+        lists::llen::Llen,
     };
     use std::collections::LinkedList;
 
@@ -98,7 +97,7 @@ pub mod test_lrange {
 
     #[test]
     fn test01_lrange_list_with_one_element_positive_indexing() {
-        let mut data = DatabaseMock::new();
+        let mut data = Database::new();
 
         let mut new_list = LinkedList::new();
         new_list.push_back("value".to_string());
@@ -121,7 +120,7 @@ pub mod test_lrange {
 
     #[test]
     fn test02_lrange_list_with_one_element_negative_indexing() {
-        let mut data = DatabaseMock::new();
+        let mut data = Database::new();
 
         let mut new_list = LinkedList::new();
         new_list.push_back("value".to_string());
@@ -138,7 +137,7 @@ pub mod test_lrange {
 
     #[test]
     fn test03_lrange_to_key_storing_non_list() {
-        let mut data = DatabaseMock::new();
+        let mut data = Database::new();
         // redis> SET mykey 10
         data.insert("key".to_string(), TypeSaved::String("value".to_string()));
 
@@ -152,7 +151,7 @@ pub mod test_lrange {
 
     #[test]
     fn test04_lrange_positive_range_start_bigger_than_stop() {
-        let mut data = DatabaseMock::new();
+        let mut data = Database::new();
 
         let mut new_list = LinkedList::new();
         new_list.push_back("foo".to_string());
@@ -167,7 +166,7 @@ pub mod test_lrange {
 
     #[test]
     fn test05_lrange_negative_range_start_bigger_than_stop() {
-        let mut data = DatabaseMock::new();
+        let mut data = Database::new();
 
         let mut new_list = LinkedList::new();
         new_list.push_back("foo".to_string());
@@ -182,7 +181,7 @@ pub mod test_lrange {
 
     #[test]
     fn test06_lrange_existing_list_with_many_elements_positive_range() {
-        let mut data = DatabaseMock::new();
+        let mut data = Database::new();
 
         let mut new_list = LinkedList::new();
         new_list.push_back("value1".to_string());
@@ -202,7 +201,7 @@ pub mod test_lrange {
 
     #[test]
     fn test07_lrange_existing_list_with_many_elements_from_negative_first_index_to_zero() {
-        let mut data = DatabaseMock::new();
+        let mut data = Database::new();
 
         let mut new_list = LinkedList::new();
         new_list.push_back("value1".to_string());
@@ -221,7 +220,7 @@ pub mod test_lrange {
 
     #[test]
     fn test08_lrange_existing_list_with_many_elements_from_zero_to_negative_last_index() {
-        let mut data = DatabaseMock::new();
+        let mut data = Database::new();
 
         let mut new_list = LinkedList::new();
         new_list.push_back("value1".to_string());
@@ -242,7 +241,7 @@ pub mod test_lrange {
     #[test]
     fn test09_lrange_existing_list_with_many_elements_from_negative_out_of_range_number_to_valid_negative_index(
     ) {
-        let mut data = DatabaseMock::new();
+        let mut data = Database::new();
 
         let mut new_list = LinkedList::new();
         new_list.push_back("value1".to_string());

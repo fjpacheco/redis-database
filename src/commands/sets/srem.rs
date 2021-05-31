@@ -53,7 +53,7 @@ fn check_error_cases(buffer_vec: &mut Vec<&str>) -> Result<(), ErrorStruct> {
 
 #[cfg(test)]
 mod test_srem_function {
-    use std::collections::HashSet;
+    use std::collections::{HashSet, LinkedList};
 
     use crate::{
         commands::{
@@ -173,10 +173,11 @@ mod test_srem_function {
     #[test]
     fn test06_srem_return_error_wrongtype_if_execute_with_key_of_list() {
         let mut database_mock = Database::new();
-        database_mock.insert(
-            "keyOfList".to_string(),
-            TypeSaved::List(vec!["value1".to_string(), "value2".to_string()]),
-        );
+        let mut new_list = LinkedList::new();
+        new_list.push_back("value1".to_string());
+        new_list.push_back("value2".to_string());
+        database_mock.insert("keyOfList".to_string(), TypeSaved::List(new_list));
+
         let buffer_vec_mock = vec!["srem", "keyOfList", "value1", "value2"];
 
         let result_received = Srem::run(buffer_vec_mock, &mut database_mock);
