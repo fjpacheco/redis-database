@@ -43,3 +43,13 @@ fn check_empty_and_name_command(buffer: &&mut Vec<&str>, name: &str) -> Result<(
     }
     Ok(())
 }
+
+#[macro_export]
+macro_rules! wrongtype {
+    () => {
+        Err(ErrorStruct::new(
+            redis_messages::wrongtype().get_prefix(),
+            redis_messages::wrongtype().get_message(),
+        ))
+    };
+}

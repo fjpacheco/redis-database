@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use crate::{
     commands::{
         check_empty_and_name_command,
@@ -7,7 +5,9 @@ use crate::{
     },
     messages::redis_messages,
     native_types::{ErrorStruct, RInteger, RedisType},
+    wrongtype,
 };
+use std::collections::HashSet;
 
 pub struct Sadd;
 
@@ -25,11 +25,7 @@ impl Sadd {
                     Ok(())
                 }
                 _ => {
-                    let message_error = redis_messages::wrongtype();
-                    Err(ErrorStruct::new(
-                        message_error.get_prefix(),
-                        message_error.get_message(),
-                    ))
+                    wrongtype!()
                 }
             },
             None => {

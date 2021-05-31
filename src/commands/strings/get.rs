@@ -5,6 +5,7 @@ use crate::{
     },
     messages::redis_messages,
     native_types::{ErrorStruct, RBulkString, RedisType},
+    wrongtype,
 };
 
 pub struct Get;
@@ -19,11 +20,7 @@ impl Get {
             Some(item) => match item {
                 TypeSaved::String(item) => Ok(RBulkString::encode(item.to_string())),
                 _ => {
-                    let message_error = redis_messages::wrongtype();
-                    Err(ErrorStruct::new(
-                        message_error.get_prefix(),
-                        message_error.get_message(),
-                    ))
+                    wrongtype!()
                 }
             },
             None => Ok(RBulkString::encode(redis_messages::nil())),

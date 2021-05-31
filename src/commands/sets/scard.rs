@@ -5,6 +5,7 @@ use crate::{
     },
     messages::redis_messages,
     native_types::{ErrorStruct, RInteger, RedisType},
+    wrongtype,
 };
 
 pub struct Scard;
@@ -18,11 +19,7 @@ impl Scard {
             Some(item) => match item {
                 TypeSaved::Set(item) => Ok(RInteger::encode(item.len() as isize)),
                 _ => {
-                    let message_error = redis_messages::wrongtype();
-                    Err(ErrorStruct::new(
-                        message_error.get_prefix(),
-                        message_error.get_message(),
-                    ))
+                    wrongtype!()
                 }
             },
             None => Ok(RInteger::encode(0)),

@@ -5,6 +5,7 @@ use crate::{
     },
     messages::redis_messages,
     native_types::{ErrorStruct, RArray, RedisType},
+    wrongtype,
 };
 
 pub struct Smembers;
@@ -23,11 +24,7 @@ impl Smembers {
                     Ok(RArray::encode(vector))
                 }
                 _ => {
-                    let message_error = redis_messages::wrongtype();
-                    Err(ErrorStruct::new(
-                        message_error.get_prefix(),
-                        message_error.get_message(),
-                    ))
+                    wrongtype!()
                 }
             },
             None => Ok(RArray::encode(vec![])), // Empty array! => "*0\r\n"
