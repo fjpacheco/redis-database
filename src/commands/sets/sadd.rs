@@ -25,7 +25,7 @@ impl Sadd {
                     Ok(())
                 }
                 _ => {
-                    let message_error = redis_messages::wrongtype_in_get_key();
+                    let message_error = redis_messages::wrongtype();
                     Err(ErrorStruct::new(
                         message_error.get_prefix(),
                         message_error.get_message(),

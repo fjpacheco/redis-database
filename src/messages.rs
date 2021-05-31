@@ -56,7 +56,7 @@ pub mod redis_messages {
         }
     }
 
-    pub fn wrongtype_in_get_key() -> MessageRedis {
+    pub fn wrongtype() -> MessageRedis {
         MessageRedis {
             prefix: "WRONGTYPE".to_string(),
             message: "Operation against a key holding the wrong kind of value".to_string(),

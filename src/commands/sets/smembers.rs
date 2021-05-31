@@ -23,7 +23,7 @@ impl Smembers {
                     Ok(RArray::encode(vector))
                 }
                 _ => {
-                    let message_error = redis_messages::wrongtype_in_get_key();
+                    let message_error = redis_messages::wrongtype();
                     Err(ErrorStruct::new(
                         message_error.get_prefix(),
                         message_error.get_message(),
@@ -120,7 +120,7 @@ mod test_smembers_function {
         let result_received = Smembers::run(buffer_vec_mock, &mut database_mock);
         let result_received_encoded = result_received.unwrap_err().get_encoded_message_complete();
 
-        let expected_message_redis = redis_messages::wrongtype_in_get_key();
+        let expected_message_redis = redis_messages::wrongtype();
         let expected_result =
             ("-".to_owned() + &expected_message_redis.get_message_complete() + "\r\n").to_string();
         assert_eq!(expected_result, result_received_encoded);
@@ -138,7 +138,7 @@ mod test_smembers_function {
         let result_received = Smembers::run(buffer_vec_mock, &mut database_mock);
         let result_received_encoded = result_received.unwrap_err().get_encoded_message_complete();
 
-        let expected_message_redis = redis_messages::wrongtype_in_get_key();
+        let expected_message_redis = redis_messages::wrongtype();
         let expected_result =
             ("-".to_owned() + &expected_message_redis.get_message_complete() + "\r\n").to_string();
         assert_eq!(expected_result, result_received_encoded);
