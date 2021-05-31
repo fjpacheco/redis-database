@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet, LinkedList};
 
 use crate::native_types::{error::ErrorStruct, integer::RInteger, redis_type::RedisType};
 
@@ -9,7 +9,7 @@ pub struct DatabaseMock {
 #[derive(Debug, PartialEq)]
 pub enum TypeSaved {
     String(String),
-    List(Vec<String>),
+    List(LinkedList<String>),
     Set(HashSet<String>),
 }
 
@@ -89,17 +89,16 @@ pub fn get_as_integer(value: &str) -> Result<isize, ErrorStruct> {
 // Lpush and rpush aux
 
 pub fn push_at(
-    index: usize,
     mut buffer: Vec<&str>,
     database: &mut DatabaseMock,
-    fill_list: fn(index: usize, buffer: Vec<&str>, list: &mut Vec<String>),
+    fill_list: fn(buffer: Vec<&str>, list: &mut LinkedList<String>),
 ) -> Result<String, ErrorStruct> {
     let key = String::from(buffer.remove(0));
     let size;
     if let Some(typesaved) = database.get_mut(&key) {
         match typesaved {
             TypeSaved::List(list_of_values) => {
-                fill_list(index, buffer, list_of_values);
+                fill_list(buffer, list_of_values);
                 size = list_of_values.len();
                 Ok(RInteger::encode(size as isize))
             }
@@ -109,22 +108,22 @@ pub fn push_at(
             )),
         }
     } else {
-        let mut new_list: Vec<String> = Vec::new();
-        fill_list(index, buffer, &mut new_list);
+        let mut new_list: LinkedList<String> = LinkedList::new();
+        fill_list(buffer, &mut new_list);
         size = new_list.len();
         database.insert(key, TypeSaved::List(new_list));
         Ok(RInteger::encode(size as isize))
     }
 }
 
-pub fn fill_list_from_top(index: usize, mut buffer: Vec<&str>, list: &mut Vec<String>) {
+pub fn fill_list_from_top(mut buffer: Vec<&str>, list: &mut LinkedList<String>) {
     while !buffer.is_empty() {
-        list.insert(index, buffer.remove(0).to_string());
+        list.push_front(buffer.remove(0).to_string());
     }
 }
 
-pub fn fill_list_from_bottom(_index: usize, mut buffer: Vec<&str>, list: &mut Vec<String>) {
+pub fn fill_list_from_bottom(mut buffer: Vec<&str>, list: &mut LinkedList<String>) {
     while !buffer.is_empty() {
-        list.push(buffer.remove(0).to_string());
+        list.push_back(buffer.remove(0).to_string());
     }
 }
