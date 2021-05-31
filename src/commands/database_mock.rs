@@ -127,3 +127,32 @@ pub fn fill_list_from_bottom(mut buffer: Vec<&str>, list: &mut LinkedList<String
         list.push_back(buffer.remove(0).to_string());
     }
 }
+
+// Lpushx aux
+
+pub fn pushx_at(
+    mut buffer: Vec<&str>,
+    database: &mut DatabaseMock,
+    fill_list: fn(buffer: Vec<&str>, list: &mut LinkedList<String>),
+) -> Result<String, ErrorStruct> {
+    let key = String::from(buffer.remove(0));
+    let size;
+    if let Some(typesaved) = database.get_mut(&key) {
+        match typesaved {
+            TypeSaved::List(list_of_values) => {
+                fill_list(buffer, list_of_values);
+                size = list_of_values.len();
+                Ok(RInteger::encode(size as isize))
+            }
+            _ => Err(ErrorStruct::new(
+                String::from("ERR"),
+                String::from("key provided is not from strings"),
+            )),
+        }
+    } else {
+        Err(ErrorStruct::new(
+            String::from("ERR"),
+            String::from("no list found with entered key"),
+        ))
+    }
+}
