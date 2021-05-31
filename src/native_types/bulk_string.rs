@@ -38,7 +38,7 @@ mod test_bulk_string {
 
     use super::*;
     #[test]
-    fn test01_bulk_string_enconding() {
+    fn test01_bulk_string_encoding() {
         let bulk = String::from("Hello world");
         let encoded = RBulkString::encode(bulk);
         assert_eq!(encoded, "$11\r\nHello world\r\n".to_string());
