@@ -27,7 +27,7 @@ impl Llen {
             }
         } else {
             // Key does not exist, interpreted as empty list
-            Ok(RInteger::encode(0 as isize))
+            Ok(RInteger::encode(0_isize))
         }
     }
 }
