@@ -1,7 +1,8 @@
 use crate::{
     commands::{
         check_empty_and_name_command,
-        database_mock::{Database, TypeSaved},
+        database_mock::{DatabaseMock, TypeSaved},
+        Runnable,
     },
     messages::redis_messages,
     native_types::{ErrorStruct, RSimpleString, RedisType},
@@ -9,8 +10,12 @@ use crate::{
 
 pub struct Mset;
 
-impl Mset {
-    pub fn run(mut buffer_vec: Vec<&str>, database: &mut Database) -> Result<String, ErrorStruct> {
+impl Runnable for Mset {
+    fn run(
+        &self,
+        mut buffer_vec: Vec<&str>,
+        database: &mut DatabaseMock,
+    ) -> Result<String, ErrorStruct> {
         check_error_cases(&mut buffer_vec)?;
 
         let keys_and_value = buffer_vec.chunks(2);
@@ -55,10 +60,10 @@ mod test_mset_function {
     #[test]
     fn test01_mset_reemplace_value_old_of_key_and_insert_more_elements() {
         let buffer_vec_mock2 = vec!["Mset", "key1", "value1_new", "key2", "value2"];
-        let mut database_mock = Database::new();
+        let mut database_mock = DatabaseMock::new();
         database_mock.insert("key1".to_string(), TypeSaved::String("value1".to_string()));
 
-        let _ = Mset::run(buffer_vec_mock2, &mut database_mock);
+        let _ = Mset.run(buffer_vec_mock2, &mut database_mock);
 
         let mut get_received_1 = String::new();
         if let TypeSaved::String(item) = database_mock.get("key1").unwrap() {
@@ -79,9 +84,9 @@ mod test_mset_function {
     #[test]
     fn test02_mset_with_bad_args_return_err() {
         let buffer_vec_mock = vec!["Mset", "key1", "value1_new", "key2"];
-        let mut database_mock = Database::new();
+        let mut database_mock = DatabaseMock::new();
 
-        let result_received = Mset::run(buffer_vec_mock, &mut database_mock);
+        let result_received = Mset.run(buffer_vec_mock, &mut database_mock);
         let result_received_encoded = result_received.unwrap_err().get_encoded_message_complete();
 
         let expected_message_redis = redis_messages::wrong_number_args_for("mset");

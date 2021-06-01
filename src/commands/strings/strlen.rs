@@ -1,4 +1,5 @@
-use crate::commands::database_mock::{Database, TypeSaved};
+use crate::commands::database_mock::{DatabaseMock, TypeSaved};
+use crate::commands::Runnable;
 use crate::native_types::{error::ErrorStruct, integer::RInteger, redis_type::RedisType};
 pub struct Strlen;
 
@@ -6,8 +7,12 @@ pub struct Strlen;
 ///
 /// Return value: Integer reply: the length of the string at key, or 0 when key does not exist.
 
-impl Strlen {
-    pub fn run(mut buffer_vec: Vec<&str>, database: &mut Database) -> Result<String, ErrorStruct> {
+impl Runnable for Strlen {
+    fn run(
+        &self,
+        mut buffer_vec: Vec<&str>,
+        database: &mut DatabaseMock,
+    ) -> Result<String, ErrorStruct> {
         let key = String::from(buffer_vec.pop().unwrap());
         if let Some(typesaved) = database.get_mut(&key) {
             match typesaved {
@@ -30,7 +35,7 @@ pub mod test_strlen {
 
     #[test]
     fn test01_strlen_existing_key() {
-        let mut data = Database::new();
+        let mut data = DatabaseMock::new();
         // redis> SET mykey somevalue ---> "OK"
         data.insert(
             "mykey".to_string(),
@@ -38,17 +43,17 @@ pub mod test_strlen {
         );
         // redis> STRLEN mykey ---> (integer) 9
         let buffer: Vec<&str> = vec!["mykey"];
-        let encoded = Strlen::run(buffer, &mut data);
+        let encoded = Strlen.run(buffer, &mut data);
 
         assert_eq!(encoded.unwrap(), ":9\r\n".to_string());
     }
 
     #[test]
     fn test02_srlen_non_existing_key() {
-        let mut data = Database::new();
+        let mut data = DatabaseMock::new();
         // redis> STRLEN nonexisting ---> (integer) 0
         let buffer: Vec<&str> = vec!["mykey"];
-        let encoded = Strlen::run(buffer, &mut data);
+        let encoded = Strlen.run(buffer, &mut data);
 
         assert_eq!(encoded.unwrap(), ":0\r\n".to_string());
     }

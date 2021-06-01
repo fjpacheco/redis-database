@@ -1,17 +1,22 @@
 use crate::{
     commands::{
         check_empty_and_name_command,
-        database_mock::{Database, TypeSaved},
+        database_mock::{DatabaseMock, TypeSaved},
+        Runnable,
     },
+    err_wrongtype,
     messages::redis_messages,
     native_types::{ErrorStruct, RBulkString, RedisType},
-    wrongtype,
 };
 
 pub struct Get;
 
-impl Get {
-    pub fn run(mut buffer_vec: Vec<&str>, database: &mut Database) -> Result<String, ErrorStruct> {
+impl Runnable for Get {
+    fn run(
+        &self,
+        mut buffer_vec: Vec<&str>,
+        database: &mut DatabaseMock,
+    ) -> Result<String, ErrorStruct> {
         check_error_cases(&mut buffer_vec)?;
 
         let key = buffer_vec[1].to_string();
@@ -20,7 +25,7 @@ impl Get {
             Some(item) => match item {
                 TypeSaved::String(item) => Ok(RBulkString::encode(item.to_string())),
                 _ => {
-                    wrongtype!()
+                    err_wrongtype!()
                 }
             },
             None => Ok(RBulkString::encode(redis_messages::nil())),
@@ -51,10 +56,10 @@ mod test_get {
     #[test]
     fn test01_get_value_of_key_correct_is_success() {
         let buffer_vec_mock_get = vec!["get", "key"];
-        let mut database_mock = Database::new();
+        let mut database_mock = DatabaseMock::new();
 
         database_mock.insert("key".to_string(), TypeSaved::String("value".to_string()));
-        let result_received = Get::run(buffer_vec_mock_get, &mut database_mock);
+        let result_received = Get.run(buffer_vec_mock_get, &mut database_mock);
 
         let expected_result = RBulkString::encode("value".to_string());
         assert_eq!(expected_result, result_received.unwrap());
@@ -63,10 +68,10 @@ mod test_get {
     #[test]
     fn test02_get_value_of_key_inorrect_return_result_ok_with_nil() {
         let buffer_vec_mock_get = vec!["get", "key_other"];
-        let mut database_mock = Database::new();
+        let mut database_mock = DatabaseMock::new();
 
         database_mock.insert("key".to_string(), TypeSaved::String("value".to_string()));
-        let result_received = Get::run(buffer_vec_mock_get, &mut database_mock);
+        let result_received = Get.run(buffer_vec_mock_get, &mut database_mock);
         let received = result_received.unwrap();
 
         let expected_result = "$-1\r\n".to_string();

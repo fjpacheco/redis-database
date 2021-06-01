@@ -1,7 +1,8 @@
 use crate::{
     commands::{
         check_empty_and_name_command,
-        database_mock::{Database, TypeSaved},
+        database_mock::{DatabaseMock, TypeSaved},
+        Runnable,
     },
     messages::redis_messages,
     native_types::{ErrorStruct, RArray, RedisType},
@@ -9,8 +10,12 @@ use crate::{
 
 pub struct Mget;
 
-impl Mget {
-    pub fn run(mut buffer_vec: Vec<&str>, database: &mut Database) -> Result<String, ErrorStruct> {
+impl Runnable for Mget {
+    fn run(
+        &self,
+        mut buffer_vec: Vec<&str>,
+        database: &mut DatabaseMock,
+    ) -> Result<String, ErrorStruct> {
         check_error_cases(&mut buffer_vec)?;
 
         buffer_vec.remove(0);
@@ -53,11 +58,11 @@ mod test_get {
     #[test]
     fn test01_mget_value_of_key_correct_is_success() {
         let buffer_vec_mock_get = vec!["mget", "key2", "asd", "key1"];
-        let mut database_mock = Database::new();
+        let mut database_mock = DatabaseMock::new();
 
         database_mock.insert("key1".to_string(), TypeSaved::String("value1".to_string()));
         database_mock.insert("key2".to_string(), TypeSaved::String("value2".to_string()));
-        let result_received = Mget::run(buffer_vec_mock_get, &mut database_mock);
+        let result_received = Mget.run(buffer_vec_mock_get, &mut database_mock);
 
         // ->> "*3\r\n $5\r\nvalue\r\n $-1\r\n $5\r\nvalue\r\n"
         let expected_vec = vec![
@@ -74,12 +79,12 @@ mod test_get {
         let buffer_vec_mock_get1 = vec!["mget", "key2", "asd", "key1"];
         let buffer_vec_mock_get2 = vec!["mget", "asd", "key2", "key1"];
         let buffer_vec_mock_get3 = vec!["mget", "key1", "key2", "asd"];
-        let mut database_mock = Database::new();
+        let mut database_mock = DatabaseMock::new();
 
         database_mock.insert("key1".to_string(), TypeSaved::String("value1".to_string()));
         database_mock.insert("key2".to_string(), TypeSaved::String("value2".to_string()));
 
-        let result_received = Mget::run(buffer_vec_mock_get1, &mut database_mock);
+        let result_received = Mget.run(buffer_vec_mock_get1, &mut database_mock);
         let expected_vec = vec![
             "value2".to_string(),
             "(nil)".to_string(),
@@ -88,7 +93,7 @@ mod test_get {
         let expected_vec_encoded = RArray::encode(expected_vec);
         assert_eq!(expected_vec_encoded, result_received.unwrap());
 
-        let result_received = Mget::run(buffer_vec_mock_get2, &mut database_mock);
+        let result_received = Mget.run(buffer_vec_mock_get2, &mut database_mock);
         let expected_vec = vec![
             "(nil)".to_string(),
             "value2".to_string(),
@@ -97,7 +102,7 @@ mod test_get {
         let expected_vec_encoded = RArray::encode(expected_vec);
         assert_eq!(expected_vec_encoded, result_received.unwrap());
 
-        let result_received = Mget::run(buffer_vec_mock_get3, &mut database_mock);
+        let result_received = Mget.run(buffer_vec_mock_get3, &mut database_mock);
         let expected_vec = vec![
             "value1".to_string(),
             "value2".to_string(),

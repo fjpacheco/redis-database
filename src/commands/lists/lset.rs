@@ -1,8 +1,9 @@
 use std::collections::LinkedList;
 
 use crate::commands::database_mock::{get_as_integer, TypeSaved};
+use crate::commands::Runnable;
 use crate::native_types::{error::ErrorStruct, simple_string::RSimpleString};
-use crate::{commands::database_mock::Database, native_types::redis_type::RedisType};
+use crate::{commands::database_mock::DatabaseMock, native_types::redis_type::RedisType};
 
 pub struct Lset;
 
@@ -10,8 +11,12 @@ pub struct Lset;
 //
 // An error is returned for out of range indexes.
 
-impl Lset {
-    pub fn run(mut buffer: Vec<&str>, database: &mut Database) -> Result<String, ErrorStruct> {
+impl Runnable for Lset {
+    fn run(
+        &self,
+        mut buffer: Vec<&str>,
+        database: &mut DatabaseMock,
+    ) -> Result<String, ErrorStruct> {
         let key = String::from(buffer.remove(0));
         let replacement = String::from(buffer.remove(0));
         let index = get_as_integer(buffer.pop().unwrap()).unwrap();
@@ -61,14 +66,14 @@ pub fn replace_element_at(
 #[cfg(test)]
 pub mod test_lset {
 
-    use crate::commands::database_mock::{Database, TypeSaved};
+    use crate::commands::database_mock::{DatabaseMock, TypeSaved};
     use std::collections::{linked_list::Iter, LinkedList};
 
-    use super::Lset;
+    use super::*;
 
     #[test]
     fn test01_lset_list_with_one_element_positive_indexing() {
-        let mut data = Database::new();
+        let mut data = DatabaseMock::new();
 
         let mut new_list = LinkedList::new();
         new_list.push_back("value".to_string());
@@ -78,7 +83,7 @@ pub mod test_lset {
         data.insert(key, TypeSaved::List(new_list));
 
         let buffer = vec!["key", "new_value", "0"];
-        let encoded = Lset::run(buffer, &mut data);
+        let encoded = Lset.run(buffer, &mut data);
 
         // Check return value is simple string OK
         assert_eq!(encoded.unwrap(), "+OK\r\n".to_string());
@@ -95,7 +100,7 @@ pub mod test_lset {
 
     #[test]
     fn test02_lset_list_with_one_element_negative_indexing() {
-        let mut data = Database::new();
+        let mut data = DatabaseMock::new();
 
         let mut new_list = LinkedList::new();
         new_list.push_back("value".to_string());
@@ -105,7 +110,7 @@ pub mod test_lset {
         data.insert(key, TypeSaved::List(new_list));
 
         let buffer = vec!["key", "new_value", "-1"];
-        let encoded = Lset::run(buffer, &mut data);
+        let encoded = Lset.run(buffer, &mut data);
 
         // Check return value is simple string OK
         assert_eq!(encoded.unwrap(), "+OK\r\n".to_string());
@@ -121,7 +126,7 @@ pub mod test_lset {
     }
     #[test]
     fn test03_lset_list_with_out_of_range_positive_index() {
-        let mut data = Database::new();
+        let mut data = DatabaseMock::new();
 
         let mut new_list = LinkedList::new();
         new_list.push_back("value".to_string());
@@ -130,7 +135,7 @@ pub mod test_lset {
         data.insert(key, TypeSaved::List(new_list));
 
         let buffer = vec!["key", "new_value", "1"];
-        let error = Lset::run(buffer, &mut data);
+        let error = Lset.run(buffer, &mut data);
         assert_eq!(
             error.unwrap_err().print_it(),
             "ERR index out of range".to_string()
@@ -139,7 +144,7 @@ pub mod test_lset {
 
     #[test]
     fn test04_lset_list_with_out_of_range_negative_index() {
-        let mut data = Database::new();
+        let mut data = DatabaseMock::new();
 
         let mut new_list = LinkedList::new();
         new_list.push_back("value".to_string());
@@ -148,7 +153,7 @@ pub mod test_lset {
         data.insert(key, TypeSaved::List(new_list));
 
         let buffer = vec!["key", "new_value", "-2"];
-        let error = Lset::run(buffer, &mut data);
+        let error = Lset.run(buffer, &mut data);
         assert_eq!(
             error.unwrap_err().print_it(),
             "ERR index out of range".to_string()
@@ -157,7 +162,7 @@ pub mod test_lset {
 
     #[test]
     fn test05_lset_list_non_existent_key() {
-        let mut data = Database::new();
+        let mut data = DatabaseMock::new();
 
         let mut new_list = LinkedList::new();
         new_list.push_back("value".to_string());
@@ -167,18 +172,18 @@ pub mod test_lset {
 
         // key2 was not inserted (key1 was)
         let buffer = vec!["key2", "new_value", "-2"];
-        let error = Lset::run(buffer, &mut data);
+        let error = Lset.run(buffer, &mut data);
         assert_eq!(error.unwrap_err().print_it(), "ERR no such key".to_string());
     }
 
     #[test]
     fn test06_lset_non_list() {
-        let mut data = Database::new();
+        let mut data = DatabaseMock::new();
         // redis> SET mykey 10
         data.insert("key".to_string(), TypeSaved::String("value".to_string()));
 
         let buffer = vec!["key", "new_value", "1"];
-        let error = Lset::run(buffer, &mut data);
+        let error = Lset.run(buffer, &mut data);
         assert_eq!(
             error.unwrap_err().print_it(),
             "WRONGTYPE Operation against a key holding the wrong kind of value".to_string()
@@ -187,7 +192,7 @@ pub mod test_lset {
 
     #[test]
     fn test07_lset_list_with_many_elements_at_top() {
-        let mut data = Database::new();
+        let mut data = DatabaseMock::new();
 
         let mut new_list = LinkedList::new();
         new_list.push_back("value1".to_string());
@@ -199,7 +204,7 @@ pub mod test_lset {
         data.insert(key, TypeSaved::List(new_list));
 
         let buffer = vec!["key", "new_value", "0"];
-        let encoded = Lset::run(buffer, &mut data);
+        let encoded = Lset.run(buffer, &mut data);
 
         // Check return value is simple string OK
         assert_eq!(encoded.unwrap(), "+OK\r\n".to_string());
@@ -216,7 +221,7 @@ pub mod test_lset {
 
     #[test]
     fn test08_lset_list_with_many_elements_at_middle() {
-        let mut data = Database::new();
+        let mut data = DatabaseMock::new();
 
         let mut new_list = LinkedList::new();
         new_list.push_back("value1".to_string());
@@ -228,7 +233,7 @@ pub mod test_lset {
         data.insert(key, TypeSaved::List(new_list));
 
         let buffer = vec!["key", "new_value", "1"];
-        let encoded = Lset::run(buffer, &mut data);
+        let encoded = Lset.run(buffer, &mut data);
 
         // Check return value is simple string OK
         assert_eq!(encoded.unwrap(), "+OK\r\n".to_string());
@@ -242,7 +247,7 @@ pub mod test_lset {
 
     #[test]
     fn test09_lset_list_with_many_elements_at_bottom() {
-        let mut data = Database::new();
+        let mut data = DatabaseMock::new();
 
         let mut new_list = LinkedList::new();
         new_list.push_back("value1".to_string());
@@ -254,7 +259,7 @@ pub mod test_lset {
         data.insert(key, TypeSaved::List(new_list));
 
         let buffer = vec!["key", "new_value", "2"];
-        let encoded = Lset::run(buffer, &mut data);
+        let encoded = Lset.run(buffer, &mut data);
 
         // Check return value is simple string OK
         assert_eq!(encoded.unwrap(), "+OK\r\n".to_string());

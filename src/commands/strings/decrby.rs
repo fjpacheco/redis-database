@@ -1,5 +1,8 @@
 use crate::{
-    commands::database_mock::{execute_value_modification, Database},
+    commands::{
+        database_mock::{execute_value_modification, DatabaseMock},
+        Runnable,
+    },
     native_types::error::ErrorStruct,
 };
 
@@ -11,8 +14,12 @@ pub struct Decrby;
 ///
 /// Operation is limited to 64 bit signed integers.
 
-impl Decrby {
-    pub fn run(buffer_vec: Vec<&str>, database: &mut Database) -> Result<String, ErrorStruct> {
+impl Runnable for Decrby {
+    fn run(
+        &self,
+        buffer_vec: Vec<&str>,
+        database: &mut DatabaseMock,
+    ) -> Result<String, ErrorStruct> {
         execute_value_modification(database, buffer_vec, decr)
     }
 }
@@ -30,12 +37,12 @@ pub mod test_decrby {
 
     #[test]
     fn test01_decrby_existing_key() {
-        let mut data = Database::new();
+        let mut data = DatabaseMock::new();
         // redis> SET mykey 10
         data.insert("mykey".to_string(), TypeSaved::String("10".to_string()));
         // redis> DECRBY mykey 3 ---> (integer) 7
         let buffer: Vec<&str> = vec!["mykey", "3"];
-        let encoded = Decrby::run(buffer, &mut data);
+        let encoded = Decrby.run(buffer, &mut data);
 
         assert_eq!(encoded.unwrap(), ":7\r\n".to_string());
         assert_eq!(data.get("mykey"), Some(&TypeSaved::String("7".to_string())));
@@ -43,12 +50,12 @@ pub mod test_decrby {
 
     #[test]
     fn test02_decrby_existing_key_by_negative_integer() {
-        let mut data = Database::new();
+        let mut data = DatabaseMock::new();
         // redis> SET mykey 10
         data.insert("mykey".to_string(), TypeSaved::String("10".to_string()));
         // redis> DECRBY mykey -3
         let buffer: Vec<&str> = vec!["mykey", "-3"];
-        let encoded = Decrby::run(buffer, &mut data);
+        let encoded = Decrby.run(buffer, &mut data);
 
         assert_eq!(encoded.unwrap(), ":13\r\n".to_string());
         assert_eq!(
@@ -59,12 +66,12 @@ pub mod test_decrby {
 
     #[test]
     fn test03_decrby_existing_key_with_negative_integer_value() {
-        let mut data = Database::new();
+        let mut data = DatabaseMock::new();
         // redis> SET mykey -10
         data.insert("mykey".to_string(), TypeSaved::String("-10".to_string()));
         // redis> DECRBY mykey 3
         let buffer: Vec<&str> = vec!["mykey", "3"];
-        let encoded = Decrby::run(buffer, &mut data);
+        let encoded = Decrby.run(buffer, &mut data);
 
         assert_eq!(encoded.unwrap(), ":-13\r\n".to_string());
         assert_eq!(
@@ -75,12 +82,12 @@ pub mod test_decrby {
 
     #[test]
     fn test04_decrby_existing_key_with_negative_integer_value_by_negative_integer() {
-        let mut data = Database::new();
+        let mut data = DatabaseMock::new();
         // redis> SET mykey -10
         data.insert("mykey".to_string(), TypeSaved::String("-10".to_string()));
         // redis> DECRBY mykey -3
         let buffer: Vec<&str> = vec!["mykey", "-3"];
-        let encoded = Decrby::run(buffer, &mut data);
+        let encoded = Decrby.run(buffer, &mut data);
 
         assert_eq!(encoded.unwrap(), ":-7\r\n".to_string());
         assert_eq!(
@@ -91,9 +98,9 @@ pub mod test_decrby {
 
     #[test]
     fn test05_decrby_non_existing_key() {
-        let mut data = Database::new();
+        let mut data = DatabaseMock::new();
         let buffer: Vec<&str> = vec!["mykey", "3"];
-        let encoded = Decrby::run(buffer, &mut data);
+        let encoded = Decrby.run(buffer, &mut data);
 
         assert_eq!(encoded.unwrap(), ":-3\r\n".to_string());
         assert_eq!(
@@ -104,12 +111,12 @@ pub mod test_decrby {
 
     #[test]
     fn test06_decrby_existing_key_with_non_decrementable_value() {
-        let mut data = Database::new();
+        let mut data = DatabaseMock::new();
         // redis> SET mykey value
         data.insert("mykey".to_string(), TypeSaved::String("value".to_string()));
         // redis> DECRBY mykey 1
         let buffer: Vec<&str> = vec!["mykey", "value"];
-        let error = Decrby::run(buffer, &mut data);
+        let error = Decrby.run(buffer, &mut data);
 
         assert_eq!(
             error.unwrap_err().print_it(),
@@ -119,12 +126,12 @@ pub mod test_decrby {
 
     #[test]
     fn test07_decrby_existing_key_by_non_integer() {
-        let mut data = Database::new();
+        let mut data = DatabaseMock::new();
         // redis> SET mykey 10
         data.insert("mykey".to_string(), TypeSaved::String("10".to_string()));
         // redis> DECRBY mykey a
         let buffer: Vec<&str> = vec!["mykey", "a"];
-        let error = Decrby::run(buffer, &mut data);
+        let error = Decrby.run(buffer, &mut data);
 
         assert_eq!(
             error.unwrap_err().print_it(),

@@ -1,18 +1,23 @@
 use crate::{
     commands::{
         check_empty_and_name_command,
-        database_mock::{Database, TypeSaved},
+        database_mock::{DatabaseMock, TypeSaved},
+        Runnable,
     },
+    err_wrongtype,
     messages::redis_messages,
     native_types::{ErrorStruct, RInteger, RedisType},
-    wrongtype,
 };
 use std::collections::HashSet;
 
 pub struct Sadd;
 
-impl Sadd {
-    pub fn run(mut buffer_vec: Vec<&str>, database: &mut Database) -> Result<String, ErrorStruct> {
+impl Runnable for Sadd {
+    fn run(
+        &self,
+        mut buffer_vec: Vec<&str>,
+        database: &mut DatabaseMock,
+    ) -> Result<String, ErrorStruct> {
         check_error_cases(&mut buffer_vec)?;
 
         let key = buffer_vec[1];
@@ -25,7 +30,7 @@ impl Sadd {
                     Ok(())
                 }
                 _ => {
-                    wrongtype!()
+                    err_wrongtype!()
                 }
             },
             None => {
@@ -69,20 +74,14 @@ mod test_sadd_function {
 
     use std::collections::LinkedList;
 
-    use crate::{
-        commands::{
-            database_mock::{Database, TypeSaved},
-            sets::sadd::Sadd,
-        },
-        native_types::{RInteger, RedisType},
-    };
+    use super::*;
 
     #[test]
     fn test01_sadd_insert_and_return_amount_insertions() {
         let buffer_vec_mock = vec!["sadd", "key", "member1", "member2"];
-        let mut database_mock = Database::new();
+        let mut database_mock = DatabaseMock::new();
 
-        let result_received = Sadd::run(buffer_vec_mock, &mut database_mock);
+        let result_received = Sadd.run(buffer_vec_mock, &mut database_mock);
         let amount_received = result_received.unwrap();
 
         let expected = RInteger::encode(2);
@@ -95,9 +94,9 @@ mod test_sadd_function {
             "sadd", "key", "member2", "member1", "member1", "member3", "member2", "member1",
             "member1", "member3",
         ];
-        let mut database_mock = Database::new();
+        let mut database_mock = DatabaseMock::new();
 
-        let result_received = Sadd::run(buffer_vec_mock, &mut database_mock);
+        let result_received = Sadd.run(buffer_vec_mock, &mut database_mock);
         let amount_received = result_received.unwrap();
 
         let expected = RInteger::encode(3);
@@ -106,21 +105,21 @@ mod test_sadd_function {
 
     #[test]
     fn test03_sadd_does_not_insert_elements_over_an_existing_key_string() {
-        let mut database_mock = Database::new();
+        let mut database_mock = DatabaseMock::new();
         database_mock.insert("key".to_string(), TypeSaved::String("value".to_string()));
         let buffer_vec_mock = vec![
             "sadd", "key", "member2", "member1", "member1", "member3", "member2", "member1",
             "member1", "member3",
         ];
 
-        let result_received = Sadd::run(buffer_vec_mock, &mut database_mock);
+        let result_received = Sadd.run(buffer_vec_mock, &mut database_mock);
 
         assert!(result_received.is_err())
     }
 
     #[test]
     fn test04_sadd_does_not_insert_elements_over_an_existing_key_list() {
-        let mut database_mock = Database::new();
+        let mut database_mock = DatabaseMock::new();
         let mut new_list = LinkedList::new();
         new_list.push_back("valueOfList".to_string());
         database_mock.insert("key".to_string(), TypeSaved::List(new_list));
@@ -130,7 +129,7 @@ mod test_sadd_function {
             "member1", "member3",
         ];
 
-        let result_received = Sadd::run(buffer_vec_mock, &mut database_mock);
+        let result_received = Sadd.run(buffer_vec_mock, &mut database_mock);
 
         assert!(result_received.is_err())
     }
