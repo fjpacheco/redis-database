@@ -1,9 +1,6 @@
 use crate::{
-    commands::{
-        check_empty_and_name_command,
-        database_mock::{DatabaseMock, TypeSaved},
-        Runnable,
-    },
+    commands::{check_empty_and_name_command, Runnable},
+    database::{Database, TypeSaved},
     err_wrongtype,
     messages::redis_messages,
     native_types::{ErrorStruct, RInteger, RedisType},
@@ -15,16 +12,16 @@ impl Runnable for Sismember {
     fn run(
         &self,
         mut buffer_vec: Vec<&str>,
-        database: &mut DatabaseMock,
+        database: &mut Database,
     ) -> Result<String, ErrorStruct> {
         check_error_cases(&mut buffer_vec)?;
 
         let key = buffer_vec[1];
-        let member = buffer_vec[2];
 
         match database.get_mut(key) {
             Some(item) => match item {
                 TypeSaved::Set(item) => {
+                    let member = buffer_vec[2];
                     let result = match item.contains(member) {
                         true => 1,
                         false => 0,
@@ -64,7 +61,7 @@ mod test_sismember_function {
         let mut set = HashSet::new();
         set.insert(String::from("m1"));
         set.insert(String::from("m2"));
-        let mut database_mock = DatabaseMock::new();
+        let mut database_mock = Database::new();
         database_mock.insert("key".to_string(), TypeSaved::Set(set));
         let buffer_vec_mock_1 = vec!["sismember", "key", "m1"];
         let buffer_vec_mock_2 = vec!["sismember", "key", "m2"];
@@ -82,7 +79,7 @@ mod test_sismember_function {
     fn test02_sismember_return_number_zero_if_member_is_not_contained_in_set() {
         let mut set = HashSet::new();
         set.insert(String::from("m1"));
-        let mut database_mock = DatabaseMock::new();
+        let mut database_mock = Database::new();
         database_mock.insert("key".to_string(), TypeSaved::Set(set));
         let buffer_vec_mock = vec!["sismember", "key", "m_random"];
 
@@ -97,7 +94,7 @@ mod test_sismember_function {
         // TODO: revisar nombres de tests... "in database" ...
         let mut set = HashSet::new();
         set.insert(String::from("m1"));
-        let mut database_mock = DatabaseMock::new();
+        let mut database_mock = Database::new();
         database_mock.insert("key".to_string(), TypeSaved::Set(set));
         let buffer_vec_mock = vec!["sismember", "key_random", "m_random"];
 
@@ -109,7 +106,7 @@ mod test_sismember_function {
 
     #[test]
     fn test04_sismember_return_error_wrongtype_if_execute_with_key_of_string() {
-        let mut database_mock = DatabaseMock::new();
+        let mut database_mock = Database::new();
         database_mock.insert(
             "keyOfString".to_string(),
             TypeSaved::String("value".to_string()),
@@ -127,7 +124,7 @@ mod test_sismember_function {
 
     #[test]
     fn test05_sismember_return_error_wrongtype_if_execute_with_key_of_list() {
-        let mut database_mock = DatabaseMock::new();
+        let mut database_mock = Database::new();
         let mut new_list = LinkedList::new();
         new_list.push_back("value".to_string());
         new_list.push_back("value_other".to_string());
@@ -146,7 +143,7 @@ mod test_sismember_function {
 
     #[test]
     fn test06_sismember_return_error_arguments_invalid_if_buffer_has_more_than_3_arguments() {
-        let mut database_mock = DatabaseMock::new();
+        let mut database_mock = Database::new();
         let buffer_vec_mock = vec!["sismember", "arg1", "arg2", "arg3"];
 
         let result_received = Sismember.run(buffer_vec_mock, &mut database_mock);
@@ -160,7 +157,7 @@ mod test_sismember_function {
 
     #[test]
     fn test07_sismember_return_error_arguments_invalid_if_buffer_dont_have_arguments() {
-        let mut database_mock = DatabaseMock::new();
+        let mut database_mock = Database::new();
         let buffer_vec_mock = vec!["sismember"];
 
         let result_received = Sismember.run(buffer_vec_mock, &mut database_mock);

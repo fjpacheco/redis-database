@@ -1,9 +1,11 @@
 use std::collections::LinkedList;
 
-use crate::commands::database_mock::{get_as_integer, TypeSaved};
+use crate::commands::get_as_integer;
 use crate::commands::Runnable;
+use crate::database::Database;
+use crate::database::TypeSaved;
+use crate::native_types::RedisType;
 use crate::native_types::{error::ErrorStruct, simple_string::RSimpleString};
-use crate::{commands::database_mock::DatabaseMock, native_types::redis_type::RedisType};
 
 pub struct Lset;
 
@@ -12,11 +14,7 @@ pub struct Lset;
 // An error is returned for out of range indexes.
 
 impl Runnable for Lset {
-    fn run(
-        &self,
-        mut buffer: Vec<&str>,
-        database: &mut DatabaseMock,
-    ) -> Result<String, ErrorStruct> {
+    fn run(&self, mut buffer: Vec<&str>, database: &mut Database) -> Result<String, ErrorStruct> {
         let key = String::from(buffer.remove(0));
         let replacement = String::from(buffer.remove(0));
         let index = get_as_integer(buffer.pop().unwrap()).unwrap();
@@ -66,14 +64,13 @@ pub fn replace_element_at(
 #[cfg(test)]
 pub mod test_lset {
 
-    use crate::commands::database_mock::{DatabaseMock, TypeSaved};
     use std::collections::{linked_list::Iter, LinkedList};
 
     use super::*;
 
     #[test]
     fn test01_lset_list_with_one_element_positive_indexing() {
-        let mut data = DatabaseMock::new();
+        let mut data = Database::new();
 
         let mut new_list = LinkedList::new();
         new_list.push_back("value".to_string());
@@ -100,7 +97,7 @@ pub mod test_lset {
 
     #[test]
     fn test02_lset_list_with_one_element_negative_indexing() {
-        let mut data = DatabaseMock::new();
+        let mut data = Database::new();
 
         let mut new_list = LinkedList::new();
         new_list.push_back("value".to_string());
@@ -126,7 +123,7 @@ pub mod test_lset {
     }
     #[test]
     fn test03_lset_list_with_out_of_range_positive_index() {
-        let mut data = DatabaseMock::new();
+        let mut data = Database::new();
 
         let mut new_list = LinkedList::new();
         new_list.push_back("value".to_string());
@@ -144,7 +141,7 @@ pub mod test_lset {
 
     #[test]
     fn test04_lset_list_with_out_of_range_negative_index() {
-        let mut data = DatabaseMock::new();
+        let mut data = Database::new();
 
         let mut new_list = LinkedList::new();
         new_list.push_back("value".to_string());
@@ -162,7 +159,7 @@ pub mod test_lset {
 
     #[test]
     fn test05_lset_list_non_existent_key() {
-        let mut data = DatabaseMock::new();
+        let mut data = Database::new();
 
         let mut new_list = LinkedList::new();
         new_list.push_back("value".to_string());
@@ -178,7 +175,7 @@ pub mod test_lset {
 
     #[test]
     fn test06_lset_non_list() {
-        let mut data = DatabaseMock::new();
+        let mut data = Database::new();
         // redis> SET mykey 10
         data.insert("key".to_string(), TypeSaved::String("value".to_string()));
 
@@ -192,7 +189,7 @@ pub mod test_lset {
 
     #[test]
     fn test07_lset_list_with_many_elements_at_top() {
-        let mut data = DatabaseMock::new();
+        let mut data = Database::new();
 
         let mut new_list = LinkedList::new();
         new_list.push_back("value1".to_string());
@@ -221,7 +218,7 @@ pub mod test_lset {
 
     #[test]
     fn test08_lset_list_with_many_elements_at_middle() {
-        let mut data = DatabaseMock::new();
+        let mut data = Database::new();
 
         let mut new_list = LinkedList::new();
         new_list.push_back("value1".to_string());
@@ -247,7 +244,7 @@ pub mod test_lset {
 
     #[test]
     fn test09_lset_list_with_many_elements_at_bottom() {
-        let mut data = DatabaseMock::new();
+        let mut data = Database::new();
 
         let mut new_list = LinkedList::new();
         new_list.push_back("value1".to_string());

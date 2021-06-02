@@ -1,9 +1,6 @@
 use crate::{
-    commands::{
-        check_empty_and_name_command,
-        database_mock::{DatabaseMock, TypeSaved},
-        Runnable,
-    },
+    commands::{check_empty_and_name_command, Runnable},
+    database::{Database, TypeSaved},
     err_wrongtype,
     messages::redis_messages,
     native_types::{ErrorStruct, RBulkString, RedisType},
@@ -15,7 +12,7 @@ impl Runnable for Get {
     fn run(
         &self,
         mut buffer_vec: Vec<&str>,
-        database: &mut DatabaseMock,
+        database: &mut Database,
     ) -> Result<String, ErrorStruct> {
         check_error_cases(&mut buffer_vec)?;
 
@@ -56,7 +53,7 @@ mod test_get {
     #[test]
     fn test01_get_value_of_key_correct_is_success() {
         let buffer_vec_mock_get = vec!["get", "key"];
-        let mut database_mock = DatabaseMock::new();
+        let mut database_mock = Database::new();
 
         database_mock.insert("key".to_string(), TypeSaved::String("value".to_string()));
         let result_received = Get.run(buffer_vec_mock_get, &mut database_mock);
@@ -68,7 +65,7 @@ mod test_get {
     #[test]
     fn test02_get_value_of_key_inorrect_return_result_ok_with_nil() {
         let buffer_vec_mock_get = vec!["get", "key_other"];
-        let mut database_mock = DatabaseMock::new();
+        let mut database_mock = Database::new();
 
         database_mock.insert("key".to_string(), TypeSaved::String("value".to_string()));
         let result_received = Get.run(buffer_vec_mock_get, &mut database_mock);

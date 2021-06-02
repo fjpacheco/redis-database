@@ -1,9 +1,7 @@
-use crate::commands::database_mock::TypeSaved;
-use crate::commands::Runnable;
-use crate::native_types::error::ErrorStruct;
 use crate::{
-    commands::database_mock::DatabaseMock,
-    native_types::{integer::RInteger, redis_type::RedisType},
+    commands::Runnable,
+    database::{Database, TypeSaved},
+    native_types::{ErrorStruct, RInteger, RedisType},
 };
 
 pub struct Llen;
@@ -13,11 +11,7 @@ pub struct Llen;
 // the value stored at key is not a list.
 
 impl Runnable for Llen {
-    fn run(
-        &self,
-        mut buffer: Vec<&str>,
-        database: &mut DatabaseMock,
-    ) -> Result<String, ErrorStruct> {
+    fn run(&self, mut buffer: Vec<&str>, database: &mut Database) -> Result<String, ErrorStruct> {
         let key = String::from(buffer.remove(0));
         if let Some(typesaved) = database.get_mut(&key) {
             match typesaved {
@@ -40,12 +34,11 @@ impl Runnable for Llen {
 pub mod test_llen {
 
     use super::*;
-    use crate::commands::database_mock::{DatabaseMock, TypeSaved};
     use std::collections::LinkedList;
 
     #[test]
     fn test01_llen_an_existing_list_of_one_element() {
-        let mut data = DatabaseMock::new();
+        let mut data = Database::new();
 
         let mut new_list = LinkedList::new();
         new_list.push_back("value".to_string());
@@ -59,7 +52,7 @@ pub mod test_llen {
 
     #[test]
     fn test02_llen_an_existing_list_of_many_elements() {
-        let mut data = DatabaseMock::new();
+        let mut data = Database::new();
 
         let mut new_list = LinkedList::new();
         new_list.push_back("this".to_string());
@@ -76,7 +69,7 @@ pub mod test_llen {
 
     #[test]
     fn test03_llen_to_key_storing_non_list() {
-        let mut data = DatabaseMock::new();
+        let mut data = Database::new();
         // redis> SET mykey 10
         data.insert("key".to_string(), TypeSaved::String("value".to_string()));
 

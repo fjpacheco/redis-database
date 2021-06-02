@@ -1,9 +1,6 @@
 use crate::{
-    commands::{
-        check_empty_and_name_command,
-        database_mock::{DatabaseMock, TypeSaved},
-        Runnable,
-    },
+    commands::{check_empty_and_name_command, Runnable},
+    database::{Database, TypeSaved},
     err_wrongtype,
     messages::redis_messages,
     native_types::{ErrorStruct, RInteger, RedisType},
@@ -15,7 +12,7 @@ impl Runnable for Srem {
     fn run(
         &self,
         mut buffer_vec: Vec<&str>,
-        database: &mut DatabaseMock,
+        database: &mut Database,
     ) -> Result<String, ErrorStruct> {
         check_error_cases(&mut buffer_vec)?;
 
@@ -60,15 +57,7 @@ fn check_error_cases(buffer_vec: &mut Vec<&str>) -> Result<(), ErrorStruct> {
 mod test_srem_function {
     use std::collections::{HashSet, LinkedList};
 
-    use crate::{
-        commands::{
-            database_mock::{DatabaseMock, TypeSaved},
-            sets::srem::Srem,
-            Runnable,
-        },
-        messages::redis_messages,
-        native_types::{RInteger, RedisType},
-    };
+    use super::*;
 
     #[test]
     fn test01_srem_remove_members_of_set_and_return_the_eliminated_amount() {
@@ -82,7 +71,7 @@ mod test_srem_function {
         set.insert(String::from("m4")); // m4
         set.insert(String::from("m5")); // m5
         set.insert(String::from("m1"));
-        let mut database_mock = DatabaseMock::new();
+        let mut database_mock = Database::new();
         database_mock.insert("key".to_string(), TypeSaved::Set(set));
         let buffer_vec_mock_1 = vec!["srem", "key", "m1"];
         let buffer_vec_mock_2 = vec!["srem", "key", "m2"];
@@ -108,7 +97,7 @@ mod test_srem_function {
         let mut set = HashSet::new();
         set.insert(String::from("m1")); // m1
         set.insert(String::from("m2")); // m2
-        let mut database_mock = DatabaseMock::new();
+        let mut database_mock = Database::new();
         database_mock.insert("key".to_string(), TypeSaved::Set(set));
         let buffer_vec_mock = vec![
             "srem", "key", "m1901020", "m1", "m1", "m1", "m192192", "m1", "m1",
@@ -130,7 +119,7 @@ mod test_srem_function {
         let mut set = HashSet::new();
         set.insert(String::from("m1")); // m1
         set.insert(String::from("m2")); // m2
-        let mut database_mock = DatabaseMock::new();
+        let mut database_mock = Database::new();
         database_mock.insert("key".to_string(), TypeSaved::Set(set));
         let buffer_vec_mock = vec!["srem", "key", "m3", "m4"];
 
@@ -148,7 +137,7 @@ mod test_srem_function {
     #[test]
     fn test04_srem_return_zero_if_key_does_not_exist_in_database() {
         let set = HashSet::new();
-        let mut database_mock = DatabaseMock::new();
+        let mut database_mock = Database::new();
         database_mock.insert("key".to_string(), TypeSaved::Set(set));
         let buffer_vec_mock = vec!["srem", "key_random", "m1"];
 
@@ -160,7 +149,7 @@ mod test_srem_function {
 
     #[test]
     fn test05_srem_return_error_wrongtype_if_execute_with_key_of_string() {
-        let mut database_mock = DatabaseMock::new();
+        let mut database_mock = Database::new();
         database_mock.insert(
             "keyOfString".to_string(),
             TypeSaved::String("value".to_string()),
@@ -178,7 +167,7 @@ mod test_srem_function {
 
     #[test]
     fn test06_srem_return_error_wrongtype_if_execute_with_key_of_list() {
-        let mut database_mock = DatabaseMock::new();
+        let mut database_mock = Database::new();
         let mut new_list = LinkedList::new();
         new_list.push_back("value1".to_string());
         new_list.push_back("value2".to_string());
@@ -197,7 +186,7 @@ mod test_srem_function {
 
     #[test]
     fn test07_srem_return_error_arguments_invalid_if_buffer_dont_have_arguments() {
-        let mut database_mock = DatabaseMock::new();
+        let mut database_mock = Database::new();
         let buffer_vec_mock = vec!["srem"];
 
         let result_received = Srem.run(buffer_vec_mock, &mut database_mock);
@@ -212,7 +201,7 @@ mod test_srem_function {
     #[test]
     fn test08_srem_return_zero_if_set_is_empty() {
         let set = HashSet::new();
-        let mut database_mock = DatabaseMock::new();
+        let mut database_mock = Database::new();
         database_mock.insert("key".to_string(), TypeSaved::Set(set));
         let buffer_vec_mock = vec!["srem", "key", "value1", "value2"];
 

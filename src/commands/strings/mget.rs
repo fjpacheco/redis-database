@@ -1,9 +1,6 @@
 use crate::{
-    commands::{
-        check_empty_and_name_command,
-        database_mock::{DatabaseMock, TypeSaved},
-        Runnable,
-    },
+    commands::{check_empty_and_name_command, Runnable},
+    database::{Database, TypeSaved},
     messages::redis_messages,
     native_types::{ErrorStruct, RArray, RedisType},
 };
@@ -14,7 +11,7 @@ impl Runnable for Mget {
     fn run(
         &self,
         mut buffer_vec: Vec<&str>,
-        database: &mut DatabaseMock,
+        database: &mut Database,
     ) -> Result<String, ErrorStruct> {
         check_error_cases(&mut buffer_vec)?;
 
@@ -58,7 +55,7 @@ mod test_get {
     #[test]
     fn test01_mget_value_of_key_correct_is_success() {
         let buffer_vec_mock_get = vec!["mget", "key2", "asd", "key1"];
-        let mut database_mock = DatabaseMock::new();
+        let mut database_mock = Database::new();
 
         database_mock.insert("key1".to_string(), TypeSaved::String("value1".to_string()));
         database_mock.insert("key2".to_string(), TypeSaved::String("value2".to_string()));
@@ -79,7 +76,7 @@ mod test_get {
         let buffer_vec_mock_get1 = vec!["mget", "key2", "asd", "key1"];
         let buffer_vec_mock_get2 = vec!["mget", "asd", "key2", "key1"];
         let buffer_vec_mock_get3 = vec!["mget", "key1", "key2", "asd"];
-        let mut database_mock = DatabaseMock::new();
+        let mut database_mock = Database::new();
 
         database_mock.insert("key1".to_string(), TypeSaved::String("value1".to_string()));
         database_mock.insert("key2".to_string(), TypeSaved::String("value2".to_string()));

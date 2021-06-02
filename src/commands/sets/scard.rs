@@ -1,9 +1,6 @@
 use crate::{
-    commands::{
-        check_empty_and_name_command,
-        database_mock::{DatabaseMock, TypeSaved},
-        Runnable,
-    },
+    commands::{check_empty_and_name_command, Runnable},
+    database::{Database, TypeSaved},
     err_wrongtype,
     messages::redis_messages,
     native_types::{ErrorStruct, RInteger, RedisType},
@@ -15,9 +12,10 @@ impl Runnable for Scard {
     fn run(
         &self,
         mut buffer_vec: Vec<&str>,
-        database: &mut DatabaseMock,
+        database: &mut Database,
     ) -> Result<String, ErrorStruct> {
         check_error_cases(&mut buffer_vec)?;
+
         let key = buffer_vec[1];
 
         match database.get_mut(key) {
@@ -57,7 +55,7 @@ mod test_scard_function {
         set.insert(String::from("m1"));
         set.insert(String::from("m2"));
         set.insert(String::from("m3"));
-        let mut database_mock = DatabaseMock::new();
+        let mut database_mock = Database::new();
         database_mock.insert("key".to_string(), TypeSaved::Set(set));
         let buffer_vec_mock = vec!["scard", "key"];
 
@@ -82,7 +80,7 @@ mod test_scard_function {
         set.insert(String::from("m3"));
         set.insert(String::from("m3"));
         set.insert(String::from("m3"));
-        let mut database_mock = DatabaseMock::new();
+        let mut database_mock = Database::new();
         database_mock.insert("key".to_string(), TypeSaved::Set(set));
         let buffer_vec_mock = vec!["scard", "key"];
 
@@ -95,7 +93,7 @@ mod test_scard_function {
     #[test]
     fn test03_scard_return_zero_if_the_set_is_empty() {
         let set: HashSet<String> = HashSet::new();
-        let mut database_mock = DatabaseMock::new();
+        let mut database_mock = Database::new();
         database_mock.insert("key".to_string(), TypeSaved::Set(set));
         let buffer_vec_mock = vec!["scard", "key"];
 
@@ -108,7 +106,7 @@ mod test_scard_function {
     #[test]
     fn test04_scard_return_zero_if_the_set_dont_exist() {
         let set: HashSet<String> = HashSet::new();
-        let mut database_mock = DatabaseMock::new();
+        let mut database_mock = Database::new();
         database_mock.insert("key".to_string(), TypeSaved::Set(set));
         let buffer_vec_mock = vec!["scard", "key_random"];
 
@@ -120,7 +118,7 @@ mod test_scard_function {
 
     #[test]
     fn test05_scard_return_error_wrongtype_if_execute_with_key_of_string() {
-        let mut database_mock = DatabaseMock::new();
+        let mut database_mock = Database::new();
         database_mock.insert(
             "keyOfString".to_string(),
             TypeSaved::String("value".to_string()),
@@ -138,7 +136,7 @@ mod test_scard_function {
 
     #[test]
     fn test06_scard_return_error_wrongtype_if_execute_with_key_of_lists() {
-        let mut database_mock = DatabaseMock::new();
+        let mut database_mock = Database::new();
         let mut new_list = LinkedList::new();
         new_list.push_back("value1".to_string());
         new_list.push_back("value2".to_string());
@@ -156,7 +154,7 @@ mod test_scard_function {
 
     #[test]
     fn test07_scard_return_error_arguments_invalid_if_buffer_has_many_one_key() {
-        let mut database_mock = DatabaseMock::new();
+        let mut database_mock = Database::new();
         let buffer_vec_mock = vec!["scard", "key1", "key2", "key3"];
 
         let result_received = Scard.run(buffer_vec_mock, &mut database_mock);
@@ -170,7 +168,7 @@ mod test_scard_function {
 
     #[test]
     fn test07_scard_return_error_arguments_invalid_if_buffer_dont_have_key() {
-        let mut database_mock = DatabaseMock::new();
+        let mut database_mock = Database::new();
         let buffer_vec_mock = vec!["scard"];
 
         let result_received = Scard.run(buffer_vec_mock, &mut database_mock);
