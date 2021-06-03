@@ -4,7 +4,7 @@ pub struct Database {
     elements: HashMap<String, TypeSaved>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum TypeSaved {
     String(String),
     List(LinkedList<String>),
@@ -26,12 +26,16 @@ impl Database {
         self.elements.insert(key, value)
     }
 
-    pub fn get(&mut self, key: &str) -> Option<&TypeSaved> {
+    pub fn get(&self, key: &str) -> Option<&TypeSaved> {
         self.elements.get(key)
     }
 
     pub fn get_mut(&mut self, key: &str) -> Option<&mut TypeSaved> {
         self.elements.get_mut(key)
+    }
+
+    pub fn contains_key(&self, key: &str) -> bool {
+        self.elements.contains_key(key)
     }
 }
 

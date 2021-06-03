@@ -1,5 +1,6 @@
 use crate::{database::Database, messages::redis_messages, native_types::ErrorStruct};
 
+pub mod keys;
 pub mod lists;
 pub mod sets;
 pub mod strings;
