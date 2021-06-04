@@ -1,8 +1,10 @@
+use std::io::BufRead;
+
 use super::{bulk_string::RBulkString, error::ErrorStruct};
 
 pub trait RedisType<T> {
     fn encode(t: T) -> String;
-    fn decode(redis_encoded_line: &mut String) -> Result<T, ErrorStruct>;
+    fn decode(redis_encoded_line: &mut dyn BufRead) -> Result<T, ErrorStruct>;
 }
 
 pub fn remove_first_cr_lf(slice: &mut String) -> Option<String> {
@@ -24,7 +26,7 @@ pub fn remove_first_cr_lf(slice: &mut String) -> Option<String> {
 #[allow(dead_code)]
 pub fn verify_parsable_array_size(
     sliced_size: String,
-    rest: &mut String,
+    rest: &mut dyn BufRead,
 ) -> Result<Vec<String>, ErrorStruct> {
     if let Ok(size) = sliced_size.parse::<isize>() {
         // *0\r\n
@@ -51,20 +53,37 @@ pub fn verify_parsable_array_size(
 }
 
 #[allow(dead_code)]
-fn get_bulk_string_vector(size: isize, rest: &mut String) -> Result<Vec<String>, ErrorStruct> {
+fn get_bulk_string_vector(size: isize, rest: &mut dyn BufRead) -> Result<Vec<String>, ErrorStruct> {
     let mut decoded_vec: Vec<String> = Vec::new();
     for __ in 0..size {
-        rest.remove(0);
-        let array_elem = RBulkString::decode(rest)?;
-        decoded_vec.push(array_elem);
+        fill_bulk_string_vector(rest, &mut decoded_vec)?;
     }
     Ok(decoded_vec)
 }
 
 #[allow(dead_code)]
+fn fill_bulk_string_vector(
+    rest: &mut dyn BufRead,
+    decoded_vec: &mut Vec<String>,
+) -> Result<(), ErrorStruct> {
+    let mut buf = vec![0; 1];
+    match rest.read_exact(&mut buf) {
+        Ok(_) => {
+            let array_elem = RBulkString::decode(rest)?;
+            decoded_vec.push(array_elem);
+            Ok(())
+        }
+        Err(_) => Err(ErrorStruct::new(
+            "ERR_PARSE".to_string(),
+            "Failed to parse array".to_string(),
+        )),
+    }
+}
+
+#[allow(dead_code)]
 pub fn verify_parsable_bulk_size(
     sliced_size: String,
-    rest_of: &mut String,
+    rest_of: &mut dyn BufRead,
 ) -> Result<String, ErrorStruct> {
     if let Ok(size) = sliced_size.parse::<isize>() {
         if size == -1 {
@@ -87,14 +106,18 @@ pub fn verify_parsable_bulk_size(
 }
 
 #[allow(dead_code)]
-fn split_b_string(size: isize, rest_of: &mut String) -> Result<String, ErrorStruct> {
-    if let Some(sliced_b_string) = remove_first_cr_lf(rest_of) {
-        verify_b_string_size(size, sliced_b_string)
-    } else {
-        Err(ErrorStruct::new(
+fn split_b_string(size: isize, rest_of: &mut dyn BufRead) -> Result<String, ErrorStruct> {
+    let mut sliced_b_string = String::new();
+    match rest_of.read_line(&mut sliced_b_string) {
+        Ok(_) => {
+            sliced_b_string.pop();
+            sliced_b_string.pop();
+            verify_b_string_size(size, sliced_b_string)
+        }
+        Err(_) => Err(ErrorStruct::new(
             "ERR_PARSE".to_string(),
-            "Failed to parse redis simple string".to_string(),
-        ))
+            "Failed to parse redis string".to_string(),
+        )),
     }
 }
 

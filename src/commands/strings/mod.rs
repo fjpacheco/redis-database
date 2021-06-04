@@ -1,12 +1,15 @@
 use crate::{
     database::{Database, TypeSaved},
-    native_types::{ErrorStruct, RInteger, RedisType},
+    native_types::{ErrorStruct, RBulkString, RInteger, RedisType},
 };
 
 use super::get_as_integer;
 
+pub mod append;
 pub mod decrby;
 pub mod get;
+pub mod getdel;
+pub mod getset;
 pub mod incrby;
 pub mod mget;
 pub mod mset;
@@ -44,5 +47,41 @@ pub fn string_key_check(database: &mut Database, key: String) -> Result<isize, E
         let key_cpy = key.clone();
         database.insert(key_cpy, TypeSaved::String("0".to_string()));
         get_as_integer(&"0".to_string())
+    }
+}
+
+fn pop_value(buffer: &mut Vec<&str>) -> Result<String, ErrorStruct> {
+    if let Some(value) = buffer.pop() {
+        Ok(String::from(value))
+    } else {
+        Err(ErrorStruct::new(
+            String::from("ERR"),
+            String::from("wrong number of arguments for 'append' command"),
+        ))
+    }
+}
+
+fn no_more_values(buffer: &[&str]) -> Result<(), ErrorStruct> {
+    if buffer.is_empty() {
+        Ok(())
+    } else {
+        Err(ErrorStruct::new(
+            String::from("ERR"),
+            String::from("wrong number of arguments for 'append' command"),
+        ))
+    }
+}
+
+fn replace_value(
+    database: &mut Database,
+    key: String,
+    new_value: String,
+) -> Result<String, ErrorStruct> {
+    match database.insert(key, TypeSaved::String(new_value)).unwrap() {
+        TypeSaved::String(old_value) => Ok(RBulkString::encode(old_value)),
+        _ => Err(ErrorStruct::new(
+            String::from("UNKNOWN_ERR"),
+            String::from(""),
+        )),
     }
 }

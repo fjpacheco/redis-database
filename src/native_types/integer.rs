@@ -1,7 +1,6 @@
-use super::{
-    error::ErrorStruct,
-    redis_type::{remove_first_cr_lf, RedisType},
-};
+use std::io::BufRead;
+
+use super::{error::ErrorStruct, redis_type::RedisType};
 
 pub struct RInteger;
 
@@ -14,21 +13,25 @@ impl RedisType<isize> for RInteger {
         encoded
     }
 
-    fn decode(value: &mut String) -> Result<isize, ErrorStruct> {
-        if let Some(sliced_value) = remove_first_cr_lf(value) {
-            if let Ok(integer) = sliced_value.parse::<isize>() {
-                Ok(integer)
-            } else {
-                Err(ErrorStruct::new(
-                    "ERR_PARSE".to_string(),
-                    "Failed to parse redis simple string".to_string(),
-                ))
+    fn decode(value: &mut dyn BufRead) -> Result<isize, ErrorStruct> {
+        let mut sliced_value = String::new();
+        match value.read_line(&mut sliced_value) {
+            Ok(_) => {
+                sliced_value.pop();
+                sliced_value.pop();
+                if let Ok(integer) = sliced_value.parse::<isize>() {
+                    Ok(integer)
+                } else {
+                    Err(ErrorStruct::new(
+                        "ERR_PARSE".to_string(),
+                        "Failed to parse redis simple string".to_string(),
+                    ))
+                }
             }
-        } else {
-            Err(ErrorStruct::new(
+            Err(_) => Err(ErrorStruct::new(
                 "ERR_PARSE".to_string(),
                 "Failed to parse redis simple string".to_string(),
-            ))
+            )),
         }
     }
 }
@@ -43,15 +46,14 @@ pub mod test_integer {
         let mut encoded = RInteger::encode(integer);
         assert_eq!(encoded, ":1234\r\n".to_string());
         encoded.remove(0);
-        let integer_decoded = RInteger::decode(&mut encoded);
+        let integer_decoded = RInteger::decode(&mut encoded.as_bytes());
         assert_eq!(integer_decoded.unwrap(), 1234);
-        assert_eq!(encoded, "".to_string());
     }
 
     #[test]
-    fn test07_bad_decoding_of_integer_throws_a_parsing_error() {
-        let mut encoded = "123a\r\n".to_string();
-        let should_be_error = RInteger::decode(&mut encoded);
+    fn test02_bad_decoding_of_integer_throws_a_parsing_error() {
+        let encoded = "123a\r\n".to_string();
+        let should_be_error = RInteger::decode(&mut encoded.as_bytes());
         match should_be_error {
             Ok(_string) => {}
             Err(error) => {
@@ -62,8 +64,8 @@ pub mod test_integer {
             }
         }
 
-        let mut encoded = "123".to_string();
-        let should_be_error = RInteger::decode(&mut encoded);
+        let encoded = "123".to_string();
+        let should_be_error = RInteger::decode(&mut encoded.as_bytes());
         match should_be_error {
             Ok(_string) => {}
             Err(error) => {

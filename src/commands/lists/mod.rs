@@ -5,6 +5,8 @@ use crate::{
     native_types::{ErrorStruct, RArray, RBulkString, RInteger, RedisType},
 };
 
+//ARREGLAR DESPUES DE PASAR EL DATABASE A VECDEQUE
+//pub mod lindex;
 pub mod llen;
 pub mod lpop;
 pub mod lpush;
@@ -183,5 +185,39 @@ pub fn remove_values_from_bottom(list: &mut LinkedList<String>, counter: usize) 
         RArray::encode(popped)
     } else {
         RBulkString::encode(list.pop_back().unwrap())
+    }
+}
+
+// LIndex
+
+#[allow(dead_code)]
+fn parse_index(buffer: &mut LinkedList<String>) -> Result<isize, ErrorStruct> {
+    if let Some(value) = buffer.pop_front() {
+        if let Ok(index) = value.parse::<isize>() {
+            Ok(index)
+        } else {
+            Err(ErrorStruct::new(
+                String::from("ERR"),
+                String::from("value is not an integer or out of range"),
+            ))
+        }
+    } else {
+        Err(ErrorStruct::new(
+            String::from("ERR"),
+            String::from("wrong number of arguments for 'lindex' command"),
+        ))
+    }
+}
+
+#[allow(dead_code)]
+fn get_from_index(mut index: isize, list: &[String]) -> String {
+    if index < 0 {
+        index += list.len() as isize;
+    }
+
+    if let Some(string) = list.get(index as usize) {
+        RBulkString::encode(String::from(string))
+    } else {
+        RBulkString::encode("(nil)".to_string())
     }
 }

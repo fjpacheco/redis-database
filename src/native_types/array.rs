@@ -1,7 +1,9 @@
+use std::io::BufRead;
+
 use super::{
     bulk_string::RBulkString,
     error::ErrorStruct,
-    redis_type::{remove_first_cr_lf, verify_parsable_array_size, RedisType},
+    redis_type::{verify_parsable_array_size, RedisType},
 };
 
 pub struct RArray;
@@ -24,15 +26,38 @@ impl RedisType<Vec<String>> for RArray {
         }
     }
 
-    fn decode(bulk_array: &mut String) -> Result<Vec<String>, ErrorStruct> {
-        // 2 \r\n$ 3\r\nfoo\r\n $ 3\r\nbar\r\n
-        if let Some(sliced_size) = remove_first_cr_lf(bulk_array) {
-            verify_parsable_array_size(sliced_size, bulk_array)
+    /*
+
+    pub fn remove_first_cr_lf(slice: &mut String) -> Option<String> {
+    if let Some(first_cr) = slice.find('\r') {
+        if slice.remove(first_cr + 1) == '\n' {
+            slice.remove(first_cr);
+            let rest = slice.split_off(first_cr);
+            let swap = slice.to_string();
+            *slice = rest;
+            Some(swap)
         } else {
-            Err(ErrorStruct::new(
+            None
+        }
+    } else {
+        None
+    }
+    }
+     */
+
+    fn decode(bulk_array: &mut dyn BufRead) -> Result<Vec<String>, ErrorStruct> {
+        // 2 \r\n$ 3\r\nfoo\r\n $ 3\r\nbar\r\n
+        let mut sliced_size = String::new();
+        match bulk_array.read_line(&mut sliced_size) {
+            Ok(_) => {
+                sliced_size.pop();
+                sliced_size.pop();
+                verify_parsable_array_size(sliced_size, bulk_array)
+            }
+            Err(_) => Err(ErrorStruct::new(
                 "ERR_PARSE".to_string(),
-                "Failed to parse redis simple string".to_string(),
-            ))
+                "Failed to parse redis array".to_string(),
+            )),
         }
     }
 }
@@ -54,7 +79,7 @@ mod test_array {
         let vec2 = vec1.clone();
         let mut encoded: String = RArray::encode(vec1);
         encoded.remove(0); // Saco el '*'
-        let decoded = RArray::decode(&mut encoded).unwrap();
+        let decoded = RArray::decode(&mut encoded.as_bytes()).unwrap();
         for i in 0..(vec2.len()) {
             assert_eq!(decoded[i], vec2[i]); // OJO
         }
@@ -72,7 +97,7 @@ mod test_array {
         let vec1: Vec<String> = vec![];
         let mut encoded: String = RArray::encode(vec1);
         encoded.remove(0); // Saco el '*'
-        let decoded = RArray::decode(&mut encoded);
+        let decoded = RArray::decode(&mut encoded.as_bytes());
         assert_eq!(
             decoded.unwrap_err().print_it(),
             "ERR_EMPTY (empty array)".to_string()
@@ -91,12 +116,10 @@ mod test_array {
         );
 
         encoded.remove(0);
-        let mut decoded = RArray::decode(&mut encoded).unwrap();
+        let mut decoded = RArray::decode(&mut encoded.as_bytes()).unwrap();
 
         assert_eq!(decoded.remove(0), "SET".to_string());
         assert_eq!(decoded.remove(0), "ping".to_string());
         assert_eq!(decoded.remove(0), "pong".to_string());
-
-        assert!(encoded.is_empty());
     }
 }
