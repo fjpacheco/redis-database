@@ -5,8 +5,7 @@ pub mod lists;
 pub mod sets;
 pub mod strings;
 
-// esto podria no chequearse y estar en un nivel mas arriba de jerarquia de chequeos de comandos en general.. ojo!
-fn check_empty_and_name_command(buffer: &&mut Vec<&str>, name: &str) -> Result<(), ErrorStruct> {
+fn check_empty(buffer: &&mut Vec<&str>, name: &str) -> Result<(), ErrorStruct> {
     if buffer.is_empty() {
         let message_error = redis_messages::not_empty_values_for(name);
         return Err(ErrorStruct::new(
@@ -14,15 +13,7 @@ fn check_empty_and_name_command(buffer: &&mut Vec<&str>, name: &str) -> Result<(
             message_error.get_message(),
         ));
     }
-    let command_lowercase = buffer[0].to_lowercase();
-    if !command_lowercase.eq(name) {
-        let concat_vector_buffer = buffer.join(" ");
-        let error_message = redis_messages::command_not_found_in(concat_vector_buffer);
-        return Err(ErrorStruct::new(
-            error_message.get_prefix(),
-            error_message.get_message(),
-        ));
-    }
+
     Ok(())
 }
 
@@ -43,10 +34,10 @@ pub trait Runnable {
     /// Basic usage:
     ///
     /// ```
-    /// use redis_oxidado::database::Database;
-    /// use redis_oxidado::commands::strings::set::Set;
-    /// use redis_oxidado::native_types::ErrorStruct;
-    /// use redis_oxidado::commands::Runnable;
+    /// use proyecto_taller_1::database::Database;
+    /// use proyecto_taller_1::commands::strings::set::Set;
+    /// use proyecto_taller_1::native_types::ErrorStruct;
+    /// use proyecto_taller_1::commands::Runnable;
     ///
     /// fn execute(command: &dyn Runnable,
     ///            buffer: Vec<&str>,
@@ -57,7 +48,7 @@ pub trait Runnable {
     /// }
     ///
     /// let mut database = Database::new();
-    /// let buffer = vec!["set", "key", "value"];
+    /// let buffer = vec!["key", "value"];
     /// let object_commmand = Set;
     /// let result_received = execute(&object_commmand, buffer, &mut database);
     ///

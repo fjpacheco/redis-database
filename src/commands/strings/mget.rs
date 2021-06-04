@@ -1,5 +1,5 @@
 use crate::{
-    commands::{check_empty_and_name_command, Runnable},
+    commands::{check_empty, Runnable},
     database::{Database, TypeSaved},
     messages::redis_messages,
     native_types::{ErrorStruct, RArray, RedisType},
@@ -15,7 +15,6 @@ impl Runnable for Mget {
     ) -> Result<String, ErrorStruct> {
         check_error_cases(&mut buffer_vec)?;
 
-        buffer_vec.remove(0);
         let mut values_obtained: Vec<String> = Vec::new();
         buffer_vec
             .iter()
@@ -33,11 +32,11 @@ impl Runnable for Mget {
 }
 
 fn check_error_cases(buffer_vec: &mut Vec<&str>) -> Result<(), ErrorStruct> {
-    check_empty_and_name_command(&buffer_vec, "mget")?;
+    check_empty(&buffer_vec, "mget")?;
 
     if buffer_vec.len() == 1 {
         // never "mget" alone
-        let error_message = redis_messages::wrong_number_args_for("mget");
+        let error_message = redis_messages::arguments_invalid_to("mget");
         return Err(ErrorStruct::new(
             error_message.get_prefix(),
             error_message.get_message(),
@@ -54,7 +53,7 @@ mod test_get {
 
     #[test]
     fn test01_mget_value_of_key_correct_is_success() {
-        let buffer_vec_mock_get = vec!["mget", "key2", "asd", "key1"];
+        let buffer_vec_mock_get = vec!["key2", "asd", "key1"];
         let mut database_mock = Database::new();
 
         database_mock.insert("key1".to_string(), TypeSaved::String("value1".to_string()));
@@ -73,9 +72,9 @@ mod test_get {
 
     #[test]
     fn test02_mget_does_not_maintain_order() {
-        let buffer_vec_mock_get1 = vec!["mget", "key2", "asd", "key1"];
-        let buffer_vec_mock_get2 = vec!["mget", "asd", "key2", "key1"];
-        let buffer_vec_mock_get3 = vec!["mget", "key1", "key2", "asd"];
+        let buffer_vec_mock_get1 = vec!["key2", "asd", "key1"];
+        let buffer_vec_mock_get2 = vec!["asd", "key2", "key1"];
+        let buffer_vec_mock_get3 = vec!["key1", "key2", "asd"];
         let mut database_mock = Database::new();
 
         database_mock.insert("key1".to_string(), TypeSaved::String("value1".to_string()));

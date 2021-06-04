@@ -16,7 +16,7 @@ impl Runnable for Getset {
     ) -> Result<String, ErrorStruct> {
         let new_value = pop_value(&mut buffer_vec)?;
         let key = pop_value(&mut buffer_vec)?;
-        no_more_values(&buffer_vec)?;
+        no_more_values(&buffer_vec, "getset")?;
 
         if let Some(typesaved) = database.get(&key) {
             match typesaved {

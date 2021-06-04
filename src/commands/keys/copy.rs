@@ -1,5 +1,5 @@
 use crate::{
-    commands::{check_empty_and_name_command, Runnable},
+    commands::{check_empty, Runnable},
     database::Database,
     messages::redis_messages,
     native_types::{ErrorStruct, RInteger, RedisType},
@@ -15,8 +15,8 @@ impl Runnable for Copy {
     ) -> Result<String, ErrorStruct> {
         check_error_cases(&mut buffer_vec)?;
 
-        let key_source = buffer_vec[1];
-        let key_destinty = buffer_vec[2];
+        let key_source = buffer_vec[0];
+        let key_destinty = buffer_vec[1];
 
         if !database.contains_key(key_source) | database.contains_key(key_destinty) {
             Ok(RInteger::encode(0))
@@ -29,20 +29,11 @@ impl Runnable for Copy {
 }
 
 fn check_error_cases(buffer_vec: &mut Vec<&str>) -> Result<(), ErrorStruct> {
-    check_empty_and_name_command(&buffer_vec, "copy")?;
+    check_empty(&buffer_vec, "copy")?;
 
-    if buffer_vec.len() == 1 || buffer_vec.len() == 2 {
+    if buffer_vec.len() != 2 {
         // never "copy" or "copy arg1"
-        let error_message = redis_messages::arguments_invalid_to(&*buffer_vec[0].to_string());
-        return Err(ErrorStruct::new(
-            error_message.get_prefix(),
-            error_message.get_message(),
-        ));
-    }
-
-    if buffer_vec.len() >= 4 {
-        // never "copy arg1 arg2 arg3 ... "
-        let error_message = redis_messages::syntax_error(); // Different error output => checked with official Redis
+        let error_message = redis_messages::arguments_invalid_to("copy");
         return Err(ErrorStruct::new(
             error_message.get_prefix(),
             error_message.get_message(),
@@ -66,7 +57,7 @@ mod test_copy_function {
     ) {
         let mut database_mock = Database::new();
         database_mock.insert("key".to_string(), TypeSaved::String("value".to_string()));
-        let buffer_vec_mock_get = vec!["copy", "key", "key_new"];
+        let buffer_vec_mock_get = vec!["key", "key_new"];
 
         let result_received = Copy.run(buffer_vec_mock_get, &mut database_mock);
 
@@ -91,7 +82,7 @@ mod test_copy_function {
             "key_new".to_string(),
             TypeSaved::String("value".to_string()),
         );
-        let buffer_vec_mock_get = vec!["copy", "key", "key_new"];
+        let buffer_vec_mock_get = vec!["key", "key_new"];
 
         let result_received = Copy.run(buffer_vec_mock_get, &mut database_mock);
 
@@ -104,7 +95,7 @@ mod test_copy_function {
     ) {
         let mut database_mock = Database::new();
         database_mock.insert("key".to_string(), TypeSaved::String("value".to_string()));
-        let buffer_vec_mock_get = vec!["copy", "key_random", "key_new"];
+        let buffer_vec_mock_get = vec!["key_random", "key_new"];
 
         let result_received = Copy.run(buffer_vec_mock_get, &mut database_mock);
 
@@ -121,7 +112,7 @@ mod test_copy_function {
         let mut database_mock = Database::new();
         database_mock.insert("key".to_string(), TypeSaved::Set(set));
 
-        let buffer_vec_mock_get = vec!["copy", "key", "key_new"];
+        let buffer_vec_mock_get = vec!["key", "key_new"];
 
         let result_received = Copy.run(buffer_vec_mock_get, &mut database_mock);
 
@@ -150,7 +141,7 @@ mod test_copy_function {
         new_list.push_back("value2".to_string());
         database_mock.insert("key".to_string(), TypeSaved::List(new_list));
 
-        let buffer_vec_mock_get = vec!["copy", "key", "key_new"];
+        let buffer_vec_mock_get = vec!["key", "key_new"];
 
         let result_received = Copy.run(buffer_vec_mock_get, &mut database_mock);
 

@@ -15,7 +15,7 @@ impl Runnable for Getdel {
         database: &mut Database,
     ) -> Result<String, ErrorStruct> {
         let key = pop_value(&mut buffer_vec)?;
-        no_more_values(&buffer_vec)?;
+        no_more_values(&buffer_vec, "getdel")?;
 
         if let Some(value) = database.remove(&key) {
             match value {
@@ -72,7 +72,7 @@ pub mod test_getdel {
             Ok(_value) => {}
             Err(error) => assert_eq!(
                 error.print_it(),
-                "ERR wrong number of arguments for 'append' command"
+                "ERR wrong number of arguments for 'getdel' command"
             ),
         }
     }

@@ -1,5 +1,5 @@
 use crate::{
-    commands::{check_empty_and_name_command, Runnable},
+    commands::{check_empty, Runnable},
     database::{Database, TypeSaved},
     messages::redis_messages,
     native_types::{ErrorStruct, RSimpleString, RedisType},
@@ -28,12 +28,11 @@ impl Runnable for Mset {
 }
 
 fn check_error_cases(buffer_vec: &mut Vec<&str>) -> Result<(), ErrorStruct> {
-    check_empty_and_name_command(&buffer_vec, "mset")?;
+    check_empty(&buffer_vec, "mset")?;
 
-    buffer_vec.remove(0);
     if buffer_vec.is_empty() || is_odd(&*buffer_vec) {
         // never odd => "key1 value1 key2 value2 ...""
-        let error_message = redis_messages::wrong_number_args_for("mset");
+        let error_message = redis_messages::arguments_invalid_to("mset");
         return Err(ErrorStruct::new(
             error_message.get_prefix(),
             error_message.get_message(),
@@ -56,7 +55,7 @@ mod test_mset_function {
 
     #[test]
     fn test01_mset_reemplace_value_old_of_key_and_insert_more_elements() {
-        let buffer_vec_mock2 = vec!["Mset", "key1", "value1_new", "key2", "value2"];
+        let buffer_vec_mock2 = vec!["key1", "value1_new", "key2", "value2"];
         let mut database_mock = Database::new();
         database_mock.insert("key1".to_string(), TypeSaved::String("value1".to_string()));
 
@@ -80,13 +79,13 @@ mod test_mset_function {
 
     #[test]
     fn test02_mset_with_bad_args_return_err() {
-        let buffer_vec_mock = vec!["Mset", "key1", "value1_new", "key2"];
+        let buffer_vec_mock = vec!["key1", "value1_new", "key2"];
         let mut database_mock = Database::new();
 
         let result_received = Mset.run(buffer_vec_mock, &mut database_mock);
         let result_received_encoded = result_received.unwrap_err().get_encoded_message_complete();
 
-        let expected_message_redis = redis_messages::wrong_number_args_for("mset");
+        let expected_message_redis = redis_messages::arguments_invalid_to("mset");
         let expected_result: String =
             ("-".to_owned() + &expected_message_redis.get_message_complete() + "\r\n").to_string();
         assert_eq!(expected_result, result_received_encoded);

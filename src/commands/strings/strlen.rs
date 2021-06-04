@@ -1,6 +1,9 @@
+use super::no_more_values;
 use crate::commands::Runnable;
 use crate::database::Database;
 use crate::database::TypeSaved;
+use crate::err_wrongtype;
+use crate::messages::redis_messages;
 use crate::native_types::{error::ErrorStruct, integer::RInteger, redis_type::RedisType};
 pub struct Strlen;
 
@@ -15,13 +18,11 @@ impl Runnable for Strlen {
         database: &mut Database,
     ) -> Result<String, ErrorStruct> {
         let key = String::from(buffer_vec.pop().unwrap());
+        no_more_values(&buffer_vec, "strlen")?;
         if let Some(typesaved) = database.get_mut(&key) {
             match typesaved {
                 TypeSaved::String(old_value) => Ok(RInteger::encode(old_value.len() as isize)),
-                _ => Err(ErrorStruct::new(
-                    String::from("ERR"),
-                    String::from("key provided is not from strings"),
-                )),
+                _ => err_wrongtype!(),
             }
         } else {
             Ok(RInteger::encode(0))

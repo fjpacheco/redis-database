@@ -42,20 +42,6 @@ pub mod redis_messages {
         }
     }
 
-    pub fn syntax_error() -> MessageRedis {
-        MessageRedis {
-            prefix: "ERR".to_string(),
-            message: "syntax error".to_string(),
-        }
-    }
-
-    pub fn wrong_number_args_for(item: &str) -> MessageRedis {
-        MessageRedis {
-            prefix: "ERR".to_string(),
-            message: "wrong number of arguments for ".to_owned() + "\'" + item + "\'" + " command",
-        }
-    }
-
     pub fn wrongtype() -> MessageRedis {
         MessageRedis {
             prefix: "WRONGTYPE".to_string(),

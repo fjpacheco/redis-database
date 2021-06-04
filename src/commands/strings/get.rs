@@ -1,10 +1,12 @@
 use crate::{
-    commands::{check_empty_and_name_command, Runnable},
+    commands::{check_empty, Runnable},
     database::{Database, TypeSaved},
     err_wrongtype,
     messages::redis_messages,
     native_types::{ErrorStruct, RBulkString, RedisType},
 };
+
+use super::no_more_values;
 
 pub struct Get;
 
@@ -14,9 +16,11 @@ impl Runnable for Get {
         mut buffer_vec: Vec<&str>,
         database: &mut Database,
     ) -> Result<String, ErrorStruct> {
-        check_error_cases(&mut buffer_vec)?;
+        check_empty(&&mut buffer_vec, "get")?;
 
-        let key = buffer_vec[1].to_string();
+        let key = buffer_vec.pop().unwrap().to_string();
+
+        no_more_values(&buffer_vec, "get")?;
 
         match database.get(&key) {
             Some(item) => match item {
@@ -30,21 +34,6 @@ impl Runnable for Get {
     }
 }
 
-fn check_error_cases(buffer_vec: &mut Vec<&str>) -> Result<(), ErrorStruct> {
-    check_empty_and_name_command(&buffer_vec, "get")?;
-
-    if buffer_vec.len() != 2 {
-        // only "get key"
-        let error_message = redis_messages::wrong_number_args_for("get");
-        return Err(ErrorStruct::new(
-            error_message.get_prefix(),
-            error_message.get_message(),
-        ));
-    }
-
-    Ok(())
-}
-
 #[cfg(test)]
 mod test_get {
 
@@ -52,7 +41,7 @@ mod test_get {
 
     #[test]
     fn test01_get_value_of_key_correct_is_success() {
-        let buffer_vec_mock_get = vec!["get", "key"];
+        let buffer_vec_mock_get = vec!["key"];
         let mut database_mock = Database::new();
 
         database_mock.insert("key".to_string(), TypeSaved::String("value".to_string()));
@@ -64,7 +53,7 @@ mod test_get {
 
     #[test]
     fn test02_get_value_of_key_inorrect_return_result_ok_with_nil() {
-        let buffer_vec_mock_get = vec!["get", "key_other"];
+        let buffer_vec_mock_get = vec!["key_other"];
         let mut database_mock = Database::new();
 
         database_mock.insert("key".to_string(), TypeSaved::String("value".to_string()));

@@ -61,13 +61,13 @@ fn pop_value(buffer: &mut Vec<&str>) -> Result<String, ErrorStruct> {
     }
 }
 
-fn no_more_values(buffer: &[&str]) -> Result<(), ErrorStruct> {
+fn no_more_values(buffer: &[&str], name: &str) -> Result<(), ErrorStruct> {
     if buffer.is_empty() {
         Ok(())
     } else {
         Err(ErrorStruct::new(
             String::from("ERR"),
-            String::from("wrong number of arguments for 'append' command"),
+            "wrong number of arguments for ".to_owned() + "\'" + name + "\'" + " command",
         ))
     }
 }

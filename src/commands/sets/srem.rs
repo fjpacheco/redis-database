@@ -1,5 +1,5 @@
 use crate::{
-    commands::{check_empty_and_name_command, Runnable},
+    commands::{check_empty, Runnable},
     database::{Database, TypeSaved},
     err_wrongtype,
     messages::redis_messages,
@@ -16,14 +16,14 @@ impl Runnable for Srem {
     ) -> Result<String, ErrorStruct> {
         check_error_cases(&mut buffer_vec)?;
 
-        let key = buffer_vec[1];
+        let key = buffer_vec[0];
 
         match database.get_mut(key) {
             Some(item) => match item {
                 TypeSaved::Set(item) => {
                     let count_deleted = buffer_vec
                         .iter()
-                        .skip(2)
+                        .skip(1)
                         .map(|member| item.remove(*member))
                         .filter(|x| *x)
                         .count();
@@ -40,10 +40,10 @@ impl Runnable for Srem {
 }
 
 fn check_error_cases(buffer_vec: &mut Vec<&str>) -> Result<(), ErrorStruct> {
-    check_empty_and_name_command(&buffer_vec, "srem")?;
+    check_empty(&buffer_vec, "srem")?;
 
-    if buffer_vec.len() < 3 {
-        let error_message = redis_messages::wrong_number_args_for("srem");
+    if buffer_vec.len() < 2 {
+        let error_message = redis_messages::arguments_invalid_to("srem");
         return Err(ErrorStruct::new(
             error_message.get_prefix(),
             error_message.get_message(),
@@ -73,8 +73,8 @@ mod test_srem_function {
         set.insert(String::from("m1"));
         let mut database_mock = Database::new();
         database_mock.insert("key".to_string(), TypeSaved::Set(set));
-        let buffer_vec_mock_1 = vec!["srem", "key", "m1"];
-        let buffer_vec_mock_2 = vec!["srem", "key", "m2"];
+        let buffer_vec_mock_1 = vec!["key", "m1"];
+        let buffer_vec_mock_2 = vec!["key", "m2"];
 
         let result_received_1 = Srem.run(buffer_vec_mock_1, &mut database_mock);
         let result_received_2 = Srem.run(buffer_vec_mock_2, &mut database_mock);
@@ -99,9 +99,7 @@ mod test_srem_function {
         set.insert(String::from("m2")); // m2
         let mut database_mock = Database::new();
         database_mock.insert("key".to_string(), TypeSaved::Set(set));
-        let buffer_vec_mock = vec![
-            "srem", "key", "m1901020", "m1", "m1", "m1", "m192192", "m1", "m1",
-        ];
+        let buffer_vec_mock = vec!["key", "m1901020", "m1", "m1", "m1", "m192192", "m1", "m1"];
 
         let result_received = Srem.run(buffer_vec_mock, &mut database_mock);
 
@@ -121,7 +119,7 @@ mod test_srem_function {
         set.insert(String::from("m2")); // m2
         let mut database_mock = Database::new();
         database_mock.insert("key".to_string(), TypeSaved::Set(set));
-        let buffer_vec_mock = vec!["srem", "key", "m3", "m4"];
+        let buffer_vec_mock = vec!["key", "m3", "m4"];
 
         let result_received = Srem.run(buffer_vec_mock, &mut database_mock);
 
@@ -139,7 +137,7 @@ mod test_srem_function {
         let set = HashSet::new();
         let mut database_mock = Database::new();
         database_mock.insert("key".to_string(), TypeSaved::Set(set));
-        let buffer_vec_mock = vec!["srem", "key_random", "m1"];
+        let buffer_vec_mock = vec!["key_random", "m1"];
 
         let result_received = Srem.run(buffer_vec_mock, &mut database_mock);
 
@@ -154,7 +152,7 @@ mod test_srem_function {
             "keyOfString".to_string(),
             TypeSaved::String("value".to_string()),
         );
-        let buffer_vec_mock = vec!["srem", "keyOfString", "value"];
+        let buffer_vec_mock = vec!["keyOfString", "value"];
 
         let result_received = Srem.run(buffer_vec_mock, &mut database_mock);
         let result_received_encoded = result_received.unwrap_err().get_encoded_message_complete();
@@ -173,7 +171,7 @@ mod test_srem_function {
         new_list.push_back("value2".to_string());
         database_mock.insert("keyOfList".to_string(), TypeSaved::List(new_list));
 
-        let buffer_vec_mock = vec!["srem", "keyOfList", "value1", "value2"];
+        let buffer_vec_mock = vec!["keyOfList", "value1", "value2"];
 
         let result_received = Srem.run(buffer_vec_mock, &mut database_mock);
         let result_received_encoded = result_received.unwrap_err().get_encoded_message_complete();
@@ -185,25 +183,11 @@ mod test_srem_function {
     }
 
     #[test]
-    fn test07_srem_return_error_arguments_invalid_if_buffer_dont_have_arguments() {
-        let mut database_mock = Database::new();
-        let buffer_vec_mock = vec!["srem"];
-
-        let result_received = Srem.run(buffer_vec_mock, &mut database_mock);
-        let result_received_encoded = result_received.unwrap_err().get_encoded_message_complete();
-
-        let expected_message_redis = redis_messages::arguments_invalid_to("srem");
-        let expected_result =
-            ("-".to_owned() + &expected_message_redis.get_message_complete() + "\r\n").to_string();
-        assert_eq!(expected_result, result_received_encoded);
-    }
-
-    #[test]
-    fn test08_srem_return_zero_if_set_is_empty() {
+    fn test07_srem_return_zero_if_set_is_empty() {
         let set = HashSet::new();
         let mut database_mock = Database::new();
         database_mock.insert("key".to_string(), TypeSaved::Set(set));
-        let buffer_vec_mock = vec!["srem", "key", "value1", "value2"];
+        let buffer_vec_mock = vec!["key", "value1", "value2"];
 
         let result_received = Srem.run(buffer_vec_mock, &mut database_mock);
 

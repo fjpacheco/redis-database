@@ -1,4 +1,4 @@
-use crate::commands::Runnable;
+use crate::commands::{check_empty, Runnable};
 use crate::database::{Database, TypeSaved};
 use crate::native_types::error::ErrorStruct;
 use crate::native_types::integer::RInteger;
@@ -13,9 +13,11 @@ impl Runnable for Append {
         mut buffer_vec: Vec<&str>,
         database: &mut Database,
     ) -> Result<String, ErrorStruct> {
+        check_empty(&&mut buffer_vec, "append")?;
+
         let new_value = pop_value(&mut buffer_vec)?;
         let key = pop_value(&mut buffer_vec)?;
-        no_more_values(&buffer_vec)?;
+        no_more_values(&buffer_vec, "append")?;
         let size: usize;
 
         if let Some(typesaved) = database.get_mut(&key) {
