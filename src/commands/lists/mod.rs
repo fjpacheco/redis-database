@@ -5,6 +5,7 @@ use crate::{
     native_types::{ErrorStruct, RArray, RBulkString, RInteger, RedisType},
 };
 
+pub mod lindex;
 pub mod llen;
 pub mod lpop;
 pub mod lpush;
