@@ -34,13 +34,13 @@ impl Runnable for Llen {
 pub mod test_llen {
 
     use super::*;
-    use std::collections::LinkedList;
+    use std::collections::VecDeque;
 
     #[test]
     fn test01_llen_an_existing_list_of_one_element() {
         let mut data = Database::new();
 
-        let mut new_list = LinkedList::new();
+        let mut new_list = VecDeque::new();
         new_list.push_back("value".to_string());
 
         data.insert("key".to_string(), TypeSaved::List(new_list));
@@ -54,7 +54,7 @@ pub mod test_llen {
     fn test02_llen_an_existing_list_of_many_elements() {
         let mut data = Database::new();
 
-        let mut new_list = LinkedList::new();
+        let mut new_list = VecDeque::new();
         new_list.push_back("this".to_string());
         new_list.push_back("is".to_string());
         new_list.push_back("a".to_string());

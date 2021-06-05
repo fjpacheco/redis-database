@@ -1,4 +1,4 @@
-use std::collections::LinkedList;
+use std::collections::VecDeque;
 
 use crate::commands::get_as_integer;
 use crate::database::Database;
@@ -35,7 +35,7 @@ impl Lrange {
 }
 
 pub fn find_elements_in_range(
-    values_list: &mut LinkedList<String>,
+    values_list: &mut VecDeque<String>,
     mut buffer: Vec<&str>,
 ) -> Result<String, ErrorStruct> {
     let mut stop = get_as_integer(buffer.pop().unwrap()).unwrap();
@@ -66,7 +66,7 @@ pub fn find_elements_in_range(
 pub fn get_list_elements_in_range(
     start: isize,
     stop: isize,
-    values_list: &mut LinkedList<String>,
+    values_list: &mut VecDeque<String>,
 ) -> Result<String, ErrorStruct> {
     let mut iter = values_list.iter();
     let mut iter_elem = None;
@@ -96,13 +96,13 @@ pub mod test_lrange {
     use crate::commands::{lists::llen::Llen, Runnable};
 
     use super::*;
-    use std::collections::LinkedList;
+    use std::collections::VecDeque;
 
     #[test]
     fn test01_lrange_list_with_one_element_positive_indexing() {
         let mut data = Database::new();
 
-        let mut new_list = LinkedList::new();
+        let mut new_list = VecDeque::new();
         new_list.push_back("value".to_string());
 
         data.insert("key".to_string(), TypeSaved::List(new_list));
@@ -125,7 +125,7 @@ pub mod test_lrange {
     fn test02_lrange_list_with_one_element_negative_indexing() {
         let mut data = Database::new();
 
-        let mut new_list = LinkedList::new();
+        let mut new_list = VecDeque::new();
         new_list.push_back("value".to_string());
 
         data.insert("key".to_string(), TypeSaved::List(new_list));
@@ -156,7 +156,7 @@ pub mod test_lrange {
     fn test04_lrange_positive_range_start_bigger_than_stop() {
         let mut data = Database::new();
 
-        let mut new_list = LinkedList::new();
+        let mut new_list = VecDeque::new();
         new_list.push_back("foo".to_string());
         new_list.push_back("bar".to_string());
 
@@ -171,7 +171,7 @@ pub mod test_lrange {
     fn test05_lrange_negative_range_start_bigger_than_stop() {
         let mut data = Database::new();
 
-        let mut new_list = LinkedList::new();
+        let mut new_list = VecDeque::new();
         new_list.push_back("foo".to_string());
         new_list.push_back("bar".to_string());
 
@@ -186,7 +186,7 @@ pub mod test_lrange {
     fn test06_lrange_list_with_many_elements_positive_range() {
         let mut data = Database::new();
 
-        let mut new_list = LinkedList::new();
+        let mut new_list = VecDeque::new();
         new_list.push_back("value1".to_string());
         new_list.push_back("value2".to_string());
         new_list.push_back("value3".to_string());
@@ -206,7 +206,7 @@ pub mod test_lrange {
     fn test07_lrange_list_with_many_elements_from_negative_first_index_to_zero() {
         let mut data = Database::new();
 
-        let mut new_list = LinkedList::new();
+        let mut new_list = VecDeque::new();
         new_list.push_back("value1".to_string());
         new_list.push_back("value2".to_string());
         new_list.push_back("value3".to_string());
@@ -225,7 +225,7 @@ pub mod test_lrange {
     fn test08_lrange_list_with_many_elements_from_zero_to_negative_last_index() {
         let mut data = Database::new();
 
-        let mut new_list = LinkedList::new();
+        let mut new_list = VecDeque::new();
         new_list.push_back("value1".to_string());
         new_list.push_back("value2".to_string());
         new_list.push_back("value3".to_string());
@@ -246,7 +246,7 @@ pub mod test_lrange {
     ) {
         let mut data = Database::new();
 
-        let mut new_list = LinkedList::new();
+        let mut new_list = VecDeque::new();
         new_list.push_back("value1".to_string());
         new_list.push_back("value2".to_string());
         new_list.push_back("value3".to_string());
@@ -267,7 +267,7 @@ pub mod test_lrange {
     ) {
         let mut data = Database::new();
 
-        let mut new_list = LinkedList::new();
+        let mut new_list = VecDeque::new();
         new_list.push_back("value1".to_string());
         new_list.push_back("value2".to_string());
         new_list.push_back("value3".to_string());
@@ -285,7 +285,7 @@ pub mod test_lrange {
     ) {
         let mut data = Database::new();
 
-        let mut new_list = LinkedList::new();
+        let mut new_list = VecDeque::new();
         new_list.push_back("value1".to_string());
         new_list.push_back("value2".to_string());
         new_list.push_back("value3".to_string());
@@ -306,7 +306,7 @@ pub mod test_lrange {
     fn test12_lrange_list_with_many_elements_from_negative_out_of_range_number_to_list_bottom() {
         let mut data = Database::new();
 
-        let mut new_list = LinkedList::new();
+        let mut new_list = VecDeque::new();
         new_list.push_back("value1".to_string());
         new_list.push_back("value2".to_string());
         new_list.push_back("value3".to_string());
@@ -327,7 +327,7 @@ pub mod test_lrange {
     fn test13_lrange_list_many_element_negative_indexing() {
         let mut data = Database::new();
 
-        let mut new_list = LinkedList::new();
+        let mut new_list = VecDeque::new();
         new_list.push_back("value1".to_string());
         new_list.push_back("value2".to_string());
         new_list.push_back("value3".to_string());
@@ -346,7 +346,7 @@ pub mod test_lrange {
     fn test14_lrange_list_many_element_from_negative_index_to_zero() {
         let mut data = Database::new();
 
-        let mut new_list = LinkedList::new();
+        let mut new_list = VecDeque::new();
         new_list.push_back("value1".to_string());
         new_list.push_back("value2".to_string());
         new_list.push_back("value3".to_string());

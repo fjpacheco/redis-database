@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet, LinkedList};
+use std::collections::{HashMap, HashSet, VecDeque};
 
 pub struct Database {
     elements: HashMap<String, TypeSaved>,
@@ -7,7 +7,7 @@ pub struct Database {
 #[derive(Debug, PartialEq, Clone)]
 pub enum TypeSaved {
     String(String),
-    List(LinkedList<String>),
+    List(VecDeque<String>),
     Set(HashSet<String>),
 }
 

@@ -55,7 +55,7 @@ fn check_error_cases(buffer_vec: &mut Vec<&str>) -> Result<(), ErrorStruct> {
 
 #[cfg(test)]
 mod test_srem_function {
-    use std::collections::{HashSet, LinkedList};
+    use std::collections::{HashSet, VecDeque};
 
     use super::*;
 
@@ -166,7 +166,7 @@ mod test_srem_function {
     #[test]
     fn test06_srem_return_error_wrongtype_if_execute_with_key_of_list() {
         let mut database_mock = Database::new();
-        let mut new_list = LinkedList::new();
+        let mut new_list = VecDeque::new();
         new_list.push_back("value1".to_string());
         new_list.push_back("value2".to_string());
         database_mock.insert("keyOfList".to_string(), TypeSaved::List(new_list));

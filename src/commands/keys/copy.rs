@@ -46,7 +46,7 @@ fn check_error_cases(buffer_vec: &mut Vec<&str>) -> Result<(), ErrorStruct> {
 #[cfg(test)]
 mod test_copy_function {
 
-    use std::collections::{HashSet, LinkedList};
+    use std::collections::{HashSet, VecDeque};
 
     use crate::database::TypeSaved;
 
@@ -136,7 +136,7 @@ mod test_copy_function {
     fn test06_copy_value_list_of_key_source_existent_into_key_destiny_non_existent_return_success_one(
     ) {
         let mut database_mock = Database::new();
-        let mut new_list = LinkedList::new();
+        let mut new_list = VecDeque::new();
         new_list.push_back("value1".to_string());
         new_list.push_back("value2".to_string());
         database_mock.insert("key".to_string(), TypeSaved::List(new_list));

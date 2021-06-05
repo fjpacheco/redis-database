@@ -1,4 +1,4 @@
-use std::collections::LinkedList;
+use std::collections::VecDeque;
 
 use crate::commands::get_as_integer;
 use crate::commands::Runnable;
@@ -38,7 +38,7 @@ impl Runnable for Lset {
 pub fn replace_element_at(
     mut index: isize,
     replacement: String,
-    values_list: &mut LinkedList<String>,
+    values_list: &mut VecDeque<String>,
 ) -> Result<String, ErrorStruct> {
     let len = values_list.len() as isize;
     if index < 0 {
@@ -64,7 +64,7 @@ pub fn replace_element_at(
 #[cfg(test)]
 pub mod test_lset {
 
-    use std::collections::{linked_list::Iter, LinkedList};
+    use std::collections::{vec_deque::Iter, VecDeque};
 
     use super::*;
 
@@ -72,7 +72,7 @@ pub mod test_lset {
     fn test01_lset_list_with_one_element_positive_indexing() {
         let mut data = Database::new();
 
-        let mut new_list = LinkedList::new();
+        let mut new_list = VecDeque::new();
         new_list.push_back("value".to_string());
 
         let key = "key".to_string();
@@ -99,7 +99,7 @@ pub mod test_lset {
     fn test02_lset_list_with_one_element_negative_indexing() {
         let mut data = Database::new();
 
-        let mut new_list = LinkedList::new();
+        let mut new_list = VecDeque::new();
         new_list.push_back("value".to_string());
 
         let key = "key".to_string();
@@ -125,7 +125,7 @@ pub mod test_lset {
     fn test03_lset_list_with_out_of_range_positive_index() {
         let mut data = Database::new();
 
-        let mut new_list = LinkedList::new();
+        let mut new_list = VecDeque::new();
         new_list.push_back("value".to_string());
 
         let key = "key".to_string();
@@ -143,7 +143,7 @@ pub mod test_lset {
     fn test04_lset_list_with_out_of_range_negative_index() {
         let mut data = Database::new();
 
-        let mut new_list = LinkedList::new();
+        let mut new_list = VecDeque::new();
         new_list.push_back("value".to_string());
 
         let key = "key".to_string();
@@ -161,7 +161,7 @@ pub mod test_lset {
     fn test05_lset_list_non_existent_key() {
         let mut data = Database::new();
 
-        let mut new_list = LinkedList::new();
+        let mut new_list = VecDeque::new();
         new_list.push_back("value".to_string());
 
         let key = "key1".to_string();
@@ -191,7 +191,7 @@ pub mod test_lset {
     fn test07_lset_list_with_many_elements_at_top() {
         let mut data = Database::new();
 
-        let mut new_list = LinkedList::new();
+        let mut new_list = VecDeque::new();
         new_list.push_back("value1".to_string());
         new_list.push_back("value2".to_string());
         new_list.push_back("value3".to_string());
@@ -220,7 +220,7 @@ pub mod test_lset {
     fn test08_lset_list_with_many_elements_at_middle() {
         let mut data = Database::new();
 
-        let mut new_list = LinkedList::new();
+        let mut new_list = VecDeque::new();
         new_list.push_back("value1".to_string());
         new_list.push_back("value2".to_string());
         new_list.push_back("value3".to_string());
@@ -246,7 +246,7 @@ pub mod test_lset {
     fn test09_lset_list_with_many_elements_at_bottom() {
         let mut data = Database::new();
 
-        let mut new_list = LinkedList::new();
+        let mut new_list = VecDeque::new();
         new_list.push_back("value1".to_string());
         new_list.push_back("value2".to_string());
         new_list.push_back("value3".to_string());

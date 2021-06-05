@@ -16,7 +16,7 @@ impl Runnable for RPush {
 #[cfg(test)]
 pub mod test_rpush {
 
-    use std::collections::LinkedList;
+    use std::collections::VecDeque;
 
     use crate::database::TypeSaved;
 
@@ -25,7 +25,7 @@ pub mod test_rpush {
     #[test]
     fn test01_rpush_values_on_an_existing_list() {
         let mut data = Database::new();
-        let mut new_list = LinkedList::new();
+        let mut new_list = VecDeque::new();
         new_list.push_back("this".to_string());
         new_list.push_back("is".to_string());
         new_list.push_back("a".to_string());

@@ -1,17 +1,16 @@
-use std::collections::LinkedList;
+use std::collections::VecDeque;
 
 use crate::{
     database::{Database, TypeSaved},
     native_types::{ErrorStruct, RArray, RBulkString, RInteger, RedisType},
 };
 
-//ARREGLAR DESPUES DE PASAR EL DATABASE A VECDEQUE
-//pub mod lindex;
 pub mod llen;
 pub mod lpop;
 pub mod lpush;
 pub mod lpushx;
 pub mod lrange;
+pub mod lrem;
 pub mod lset;
 pub mod rpop;
 pub mod rpush;
@@ -19,13 +18,13 @@ pub mod rpushx;
 
 // Lpush, rpush, lpushx and rpushx aux
 
-pub fn fill_list_from_top(mut buffer: Vec<&str>, list: &mut LinkedList<String>) {
+pub fn fill_list_from_top(mut buffer: Vec<&str>, list: &mut VecDeque<String>) {
     while !buffer.is_empty() {
         list.push_front(buffer.remove(0).to_string());
     }
 }
 
-pub fn fill_list_from_bottom(mut buffer: Vec<&str>, list: &mut LinkedList<String>) {
+pub fn fill_list_from_bottom(mut buffer: Vec<&str>, list: &mut VecDeque<String>) {
     while !buffer.is_empty() {
         list.push_back(buffer.remove(0).to_string());
     }
@@ -36,7 +35,7 @@ pub fn fill_list_from_bottom(mut buffer: Vec<&str>, list: &mut LinkedList<String
 pub fn push_at(
     mut buffer: Vec<&str>,
     database: &mut Database,
-    fill_list: fn(buffer: Vec<&str>, list: &mut LinkedList<String>),
+    fill_list: fn(buffer: Vec<&str>, list: &mut VecDeque<String>),
 ) -> Result<String, ErrorStruct> {
     let key = String::from(buffer.remove(0));
     let size;
@@ -53,7 +52,7 @@ pub fn push_at(
             )),
         }
     } else {
-        let mut new_list: LinkedList<String> = LinkedList::new();
+        let mut new_list: VecDeque<String> = VecDeque::new();
         fill_list(buffer, &mut new_list);
         size = new_list.len();
         database.insert(key, TypeSaved::List(new_list));
@@ -66,7 +65,7 @@ pub fn push_at(
 pub fn pushx_at(
     mut buffer: Vec<&str>,
     database: &mut Database,
-    fill_list: fn(buffer: Vec<&str>, list: &mut LinkedList<String>),
+    fill_list: fn(buffer: Vec<&str>, list: &mut VecDeque<String>),
 ) -> Result<String, ErrorStruct> {
     let key = String::from(buffer.remove(0));
     let size;
@@ -93,7 +92,7 @@ pub fn pushx_at(
 pub fn pop_at(
     mut buffer: Vec<&str>,
     database: &mut Database,
-    fill_list: fn(list: &mut LinkedList<String>, counter: usize) -> String,
+    fill_list: fn(list: &mut VecDeque<String>, counter: usize) -> String,
 ) -> Result<String, ErrorStruct> {
     are_there_more_values(&buffer)?;
     let key = String::from(buffer.remove(0));
@@ -164,7 +163,7 @@ fn parse_count(buffer: &mut Vec<&str>) -> Result<usize, ErrorStruct> {
     }
 }
 
-pub fn remove_values_from_top(list: &mut LinkedList<String>, counter: usize) -> String {
+pub fn remove_values_from_top(list: &mut VecDeque<String>, counter: usize) -> String {
     let mut popped: Vec<String> = Vec::new();
     if counter > 1 {
         for _ in 0..counter {
@@ -176,7 +175,7 @@ pub fn remove_values_from_top(list: &mut LinkedList<String>, counter: usize) -> 
     }
 }
 
-pub fn remove_values_from_bottom(list: &mut LinkedList<String>, counter: usize) -> String {
+pub fn remove_values_from_bottom(list: &mut VecDeque<String>, counter: usize) -> String {
     let mut popped: Vec<String> = Vec::new();
     if counter > 1 {
         for _ in 0..counter {
@@ -185,39 +184,5 @@ pub fn remove_values_from_bottom(list: &mut LinkedList<String>, counter: usize) 
         RArray::encode(popped)
     } else {
         RBulkString::encode(list.pop_back().unwrap())
-    }
-}
-
-// LIndex
-
-#[allow(dead_code)]
-fn parse_index(buffer: &mut LinkedList<String>) -> Result<isize, ErrorStruct> {
-    if let Some(value) = buffer.pop_front() {
-        if let Ok(index) = value.parse::<isize>() {
-            Ok(index)
-        } else {
-            Err(ErrorStruct::new(
-                String::from("ERR"),
-                String::from("value is not an integer or out of range"),
-            ))
-        }
-    } else {
-        Err(ErrorStruct::new(
-            String::from("ERR"),
-            String::from("wrong number of arguments for 'lindex' command"),
-        ))
-    }
-}
-
-#[allow(dead_code)]
-fn get_from_index(mut index: isize, list: &[String]) -> String {
-    if index < 0 {
-        index += list.len() as isize;
-    }
-
-    if let Some(string) = list.get(index as usize) {
-        RBulkString::encode(String::from(string))
-    } else {
-        RBulkString::encode("(nil)".to_string())
     }
 }

@@ -66,7 +66,7 @@ fn check_error_cases(buffer_vec: &mut Vec<&str>) -> Result<(), ErrorStruct> {
 #[cfg(test)]
 mod test_sadd_function {
 
-    use std::collections::LinkedList;
+    use std::collections::VecDeque;
 
     use super::*;
 
@@ -114,7 +114,7 @@ mod test_sadd_function {
     #[test]
     fn test04_sadd_does_not_insert_elements_over_an_existing_key_list() {
         let mut database_mock = Database::new();
-        let mut new_list = LinkedList::new();
+        let mut new_list = VecDeque::new();
         new_list.push_back("valueOfList".to_string());
         database_mock.insert("key".to_string(), TypeSaved::List(new_list));
 

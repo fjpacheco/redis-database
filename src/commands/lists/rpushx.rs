@@ -13,16 +13,14 @@ impl Runnable for RPushx {
 #[cfg(test)]
 pub mod test_rpushx {
 
-    use std::collections::LinkedList;
-
-    use crate::database::TypeSaved;
-
     use super::*;
+    use crate::database::TypeSaved;
+    use std::collections::VecDeque;
 
     #[test]
     fn test01_rpushx_values_on_an_existing_list() {
         let mut data = Database::new();
-        let mut new_list = LinkedList::new();
+        let mut new_list = VecDeque::new();
         new_list.push_back("this".to_string());
         new_list.push_back("is".to_string());
         new_list.push_back("a".to_string());

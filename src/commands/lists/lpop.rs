@@ -13,16 +13,16 @@ impl Runnable for LPop {
 }
 
 #[cfg(test)]
-pub mod test_lop {
+pub mod test_lpop {
 
     use crate::database::TypeSaved;
 
     use super::*;
-    use std::collections::LinkedList;
+    use std::collections::VecDeque;
     #[test]
     fn test01_lpop_one_value_from_an_existing_list() {
         let mut data = Database::new();
-        let mut new_list: LinkedList<String> = LinkedList::new();
+        let mut new_list: VecDeque<String> = VecDeque::new();
         new_list.push_back("this".to_string());
         new_list.push_back("is".to_string());
         new_list.push_back("a".to_string());
@@ -47,7 +47,7 @@ pub mod test_lop {
     #[test]
     fn test02_lpop_many_values_from_an_existing_list() {
         let mut data = Database::new();
-        let mut new_list: LinkedList<String> = LinkedList::new();
+        let mut new_list: VecDeque<String> = VecDeque::new();
         new_list.push_back("this".to_string());
         new_list.push_back("is".to_string());
         new_list.push_back("a".to_string());

@@ -16,7 +16,7 @@ impl Runnable for LPushx {
 #[cfg(test)]
 pub mod test_lpushx {
 
-    use std::collections::LinkedList;
+    use std::collections::VecDeque;
 
     use crate::database::TypeSaved;
 
@@ -25,7 +25,7 @@ pub mod test_lpushx {
     #[test]
     fn test01_lpushx_values_on_an_existing_list() {
         let mut data = Database::new();
-        let mut new_list = LinkedList::new();
+        let mut new_list = VecDeque::new();
         new_list.push_back("with".to_string());
         new_list.push_back("new".to_string());
         new_list.push_back("values".to_string());
