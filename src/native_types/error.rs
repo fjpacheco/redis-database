@@ -1,6 +1,8 @@
-use super::redis_type::{remove_first_cr_lf, RedisType};
+use std::io::BufRead;
 
-#[derive(Debug)]
+use super::redis_type::RedisType;
+
+#[derive(Debug, Clone)]
 pub struct ErrorStruct {
     prefix: String,
     message: String,
@@ -17,6 +19,11 @@ impl ErrorStruct {
         printed.push_str(&self.message.to_string());
         printed
     }
+
+    // Para tests... investigar si existe una macro así: #[metodo_para_test]
+    pub fn get_encoded_message_complete(&self) -> String {
+        RError::encode(self.clone())
+    }
 }
 pub struct RError;
 
@@ -31,26 +38,30 @@ impl RedisType<ErrorStruct> for RError {
         encoded
     }
 
-    fn decode(error: &mut String) -> Result<ErrorStruct, ErrorStruct> {
-        if let Some(mut sliced_error) = remove_first_cr_lf(error) {
-            if let Some(middle_space) = sliced_error.find(' ') {
-                let err_message = sliced_error.split_off(middle_space + 1);
+    fn decode(error: &mut dyn BufRead) -> Result<ErrorStruct, ErrorStruct> {
+        let mut sliced_error = String::new();
+        match error.read_line(&mut sliced_error) {
+            Ok(_) => {
                 sliced_error.pop();
-                Ok(ErrorStruct {
-                    prefix: sliced_error,
-                    message: err_message,
-                })
-            } else {
-                Err(ErrorStruct::new(
-                    "ERR_PARSE".to_string(),
-                    "Failed to parse redis simple string".to_string(),
-                ))
+                sliced_error.pop();
+                if let Some(middle_space) = sliced_error.find(' ') {
+                    let err_message = sliced_error.split_off(middle_space + 1);
+                    sliced_error.pop();
+                    Ok(ErrorStruct {
+                        prefix: sliced_error,
+                        message: err_message,
+                    })
+                } else {
+                    Err(ErrorStruct::new(
+                        "ERR_PARSE".to_string(),
+                        "Failed to parse redis error".to_string(),
+                    ))
+                }
             }
-        } else {
-            Err(ErrorStruct::new(
+            Err(_) => Err(ErrorStruct::new(
                 "ERR_PARSE".to_string(),
-                "Failed to parse redis simple string".to_string(),
-            ))
+                "Failed to parse redis error".to_string(),
+            )),
         }
     }
 }
@@ -60,16 +71,15 @@ mod test_error {
 
     use super::*;
     #[test]
-    fn test01_encoding_and_decoding_of_an_error() {
+    fn test05_encoding_and_decoding_of_an_error() {
         let error = ErrorStruct::new("ERR".to_string(), "esto es un error generico".to_string());
         let mut encoded = RError::encode(error);
         assert_eq!(encoded, "-ERR esto es un error generico\r\n".to_string());
         encoded.remove(0);
-        let error_decoded = RError::decode(&mut encoded);
+        let error_decoded = RError::decode(&mut encoded.as_bytes());
         assert_eq!(
             error_decoded.unwrap().print_it(),
             "ERR esto es un error generico".to_string()
         );
-        assert_eq!(encoded, "".to_string());
     }
 }

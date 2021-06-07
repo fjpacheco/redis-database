@@ -1,7 +1,6 @@
-use super::{
-    error::ErrorStruct,
-    redis_type::{remove_first_cr_lf, RedisType},
-};
+use std::io::BufRead;
+
+use super::{error::ErrorStruct, redis_type::RedisType};
 
 pub struct RSimpleString;
 
@@ -14,14 +13,18 @@ impl RedisType<String> for RSimpleString {
         encoded
     }
 
-    fn decode(string: &mut String) -> Result<String, ErrorStruct> {
-        if let Some(sliced_s_string) = remove_first_cr_lf(string) {
-            Ok(sliced_s_string)
-        } else {
-            Err(ErrorStruct::new(
+    fn decode(string: &mut dyn BufRead) -> Result<String, ErrorStruct> {
+        let mut sliced_string = String::new();
+        match string.read_line(&mut sliced_string) {
+            Ok(_) => {
+                sliced_string.pop();
+                sliced_string.pop();
+                Ok(sliced_string)
+            }
+            Err(_) => Err(ErrorStruct::new(
                 "ERR_PARSE".to_string(),
                 "Failed to parse redis simple string".to_string(),
-            ))
+            )),
         }
     }
 }
@@ -41,15 +44,14 @@ pub mod test_simple_string {
     fn test02_simple_string_decoding() {
         let mut encoded = "+word\r\n".to_string();
         encoded.remove(0);
-        let simple_string = RSimpleString::decode(&mut encoded);
+        let simple_string = RSimpleString::decode(&mut encoded.as_bytes());
         assert_eq!(simple_string.unwrap(), "word".to_string());
-        assert_eq!(encoded, "".to_string());
     }
 
     #[test]
-    fn test03_decoding_of_bad_simple_string_throws_parsing_error() {
-        let mut encoded = "Good Morning\r\r".to_string();
-        let should_be_error = RSimpleString::decode(&mut encoded);
+    fn test03_bad_decoding_of_simple_string_throws_a_parsing_error() {
+        let encoded = "Good Morning".to_string();
+        let should_be_error = RSimpleString::decode(&mut encoded.as_bytes());
         match should_be_error {
             Ok(_string) => {}
             Err(error) => {
