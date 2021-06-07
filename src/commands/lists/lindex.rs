@@ -1,8 +1,8 @@
 use std::collections::VecDeque;
 
-use crate::native_types::error::ErrorStruct;
-use crate::native_types::redis_type::RedisType;
+use crate::native_types::{error::ErrorStruct, redis_type::RedisType};
 use crate::{
+    commands::lists::{check_empty, check_not_empty},
     database::{Database, TypeSaved},
     native_types::bulk_string::RBulkString,
 };
@@ -11,15 +11,11 @@ pub struct LIndex;
 
 impl LIndex {
     pub fn run(mut buffer: Vec<&str>, database: &mut Database) -> Result<String, ErrorStruct> {
+        check_not_empty(&buffer)?;
         let key = String::from(buffer.remove(0));
+        check_not_empty(&buffer)?;
         let index = parse_index(&mut buffer)?;
-
-        if !buffer.is_empty() {
-            return Err(ErrorStruct::new(
-                String::from("ERR"),
-                String::from("wrong number of arguments for 'lindex' command"),
-            ));
-        }
+        check_empty(&buffer)?;
 
         if let Some(typesaved) = database.get(&key) {
             match typesaved {
@@ -48,7 +44,7 @@ fn parse_index(buffer: &mut Vec<&str>) -> Result<isize, ErrorStruct> {
     } else {
         Err(ErrorStruct::new(
             String::from("ERR"),
-            String::from("wrong number of arguments for 'lindex' command"),
+            String::from("wrong number of arguments"),
         ))
     }
 }

@@ -1,11 +1,13 @@
 use std::collections::VecDeque;
 
-use crate::native_types::redis_type::RedisType;
-use crate::native_types::{error::ErrorStruct, simple_string::RSimpleString};
 use crate::{
     commands::get_as_integer,
     database::{Database, TypeSaved},
     native_types::RInteger,
+};
+use crate::{
+    commands::lists::{check_empty, check_not_empty},
+    native_types::{error::ErrorStruct, redis_type::RedisType, simple_string::RSimpleString},
 };
 
 pub struct Lrem;
@@ -18,9 +20,13 @@ pub struct Lrem;
 
 impl Lrem {
     pub fn run(mut buffer: Vec<&str>, database: &mut Database) -> Result<String, ErrorStruct> {
+        check_not_empty(&buffer)?;
         let key = String::from(buffer.remove(0));
+        check_not_empty(&buffer)?;
         let value = String::from(buffer.pop().unwrap());
+        check_not_empty(&buffer)?;
         let count = get_as_integer(buffer.pop().unwrap()).unwrap();
+        check_empty(&buffer)?;
         if let Some(typesaved) = database.get_mut(&key) {
             match typesaved {
                 TypeSaved::List(values_list) => remove_value(count, value, values_list),

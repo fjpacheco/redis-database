@@ -1,6 +1,7 @@
 use std::collections::VecDeque;
 
 use crate::commands::get_as_integer;
+use crate::commands::lists::{check_empty, check_not_empty};
 use crate::commands::Runnable;
 use crate::database::Database;
 use crate::database::TypeSaved;
@@ -15,9 +16,14 @@ pub struct Lset;
 
 impl Runnable for Lset {
     fn run(&self, mut buffer: Vec<&str>, database: &mut Database) -> Result<String, ErrorStruct> {
+        check_not_empty(&buffer)?;
         let key = String::from(buffer.remove(0));
+        check_not_empty(&buffer)?;
+        let index = get_as_integer(buffer.remove(0)).unwrap();
+        check_not_empty(&buffer)?;
         let replacement = String::from(buffer.remove(0));
-        let index = get_as_integer(buffer.pop().unwrap()).unwrap();
+        check_empty(&buffer)?;
+
         if let Some(typesaved) = database.get_mut(&key) {
             match typesaved {
                 TypeSaved::List(values_list) => replace_element_at(index, replacement, values_list),
@@ -64,9 +70,8 @@ pub fn replace_element_at(
 #[cfg(test)]
 pub mod test_lset {
 
-    use std::collections::{vec_deque::Iter, VecDeque};
-
     use super::*;
+    use std::collections::{vec_deque::Iter, VecDeque};
 
     #[test]
     fn test01_lset_list_with_one_element_positive_indexing() {
@@ -79,7 +84,7 @@ pub mod test_lset {
         let key_cpy = key.clone();
         data.insert(key, TypeSaved::List(new_list));
 
-        let buffer = vec!["key", "new_value", "0"];
+        let buffer = vec!["key", "0", "new_value"];
         let encoded = Lset.run(buffer, &mut data);
 
         // Check return value is simple string OK
@@ -106,7 +111,7 @@ pub mod test_lset {
         let key_cpy = key.clone();
         data.insert(key, TypeSaved::List(new_list));
 
-        let buffer = vec!["key", "new_value", "-1"];
+        let buffer = vec!["key", "-1", "new_value"];
         let encoded = Lset.run(buffer, &mut data);
 
         // Check return value is simple string OK
@@ -131,7 +136,7 @@ pub mod test_lset {
         let key = "key".to_string();
         data.insert(key, TypeSaved::List(new_list));
 
-        let buffer = vec!["key", "new_value", "1"];
+        let buffer = vec!["key", "1", "new_value"];
         let error = Lset.run(buffer, &mut data);
         assert_eq!(
             error.unwrap_err().print_it(),
@@ -149,7 +154,7 @@ pub mod test_lset {
         let key = "key".to_string();
         data.insert(key, TypeSaved::List(new_list));
 
-        let buffer = vec!["key", "new_value", "-2"];
+        let buffer = vec!["key", "-2", "new_value"];
         let error = Lset.run(buffer, &mut data);
         assert_eq!(
             error.unwrap_err().print_it(),
@@ -168,7 +173,7 @@ pub mod test_lset {
         data.insert(key, TypeSaved::List(new_list));
 
         // key2 was not inserted (key1 was)
-        let buffer = vec!["key2", "new_value", "-2"];
+        let buffer = vec!["key2", "-2", "new_value"];
         let error = Lset.run(buffer, &mut data);
         assert_eq!(error.unwrap_err().print_it(), "ERR no such key".to_string());
     }
@@ -179,7 +184,7 @@ pub mod test_lset {
         // redis> SET mykey 10
         data.insert("key".to_string(), TypeSaved::String("value".to_string()));
 
-        let buffer = vec!["key", "new_value", "1"];
+        let buffer = vec!["key", "1", "new_value"];
         let error = Lset.run(buffer, &mut data);
         assert_eq!(
             error.unwrap_err().print_it(),
@@ -200,7 +205,7 @@ pub mod test_lset {
         let key_cpy = key.clone();
         data.insert(key, TypeSaved::List(new_list));
 
-        let buffer = vec!["key", "new_value", "0"];
+        let buffer = vec!["key", "0", "new_value"];
         let encoded = Lset.run(buffer, &mut data);
 
         // Check return value is simple string OK
@@ -229,7 +234,7 @@ pub mod test_lset {
         let key_cpy = key.clone();
         data.insert(key, TypeSaved::List(new_list));
 
-        let buffer = vec!["key", "new_value", "1"];
+        let buffer = vec!["key", "1", "new_value"];
         let encoded = Lset.run(buffer, &mut data);
 
         // Check return value is simple string OK
@@ -255,7 +260,7 @@ pub mod test_lset {
         let key_cpy = key.clone();
         data.insert(key, TypeSaved::List(new_list));
 
-        let buffer = vec!["key", "new_value", "2"];
+        let buffer = vec!["key", "2", "new_value"];
         let encoded = Lset.run(buffer, &mut data);
 
         // Check return value is simple string OK
@@ -267,5 +272,73 @@ pub mod test_lset {
             iter.next();
             assert_eq!(iter.next().unwrap().to_string(), "new_value".to_string());
         }
+    }
+
+    #[test]
+    fn test11_lset_with_zero_arguments() {
+        let mut data = Database::new();
+
+        let new_list = VecDeque::new();
+
+        let key = "key".to_string();
+        data.insert(key, TypeSaved::List(new_list));
+
+        let buffer = vec![];
+        let error = Lset.run(buffer, &mut data);
+        assert_eq!(
+            error.unwrap_err().print_it(),
+            "ERR wrong number of arguments".to_string()
+        );
+    }
+
+    #[test]
+    fn test12_lset_with_wrong_number_of_arguments() {
+        let mut data = Database::new();
+
+        let new_list = VecDeque::new();
+
+        let key = "key".to_string();
+        data.insert(key, TypeSaved::List(new_list));
+
+        let buffer = vec!["key", "2", "new_value_1", "new_value_2"];
+        let error = Lset.run(buffer, &mut data);
+        assert_eq!(
+            error.unwrap_err().print_it(),
+            "ERR wrong number of arguments".to_string()
+        );
+    }
+
+    #[test]
+    fn test13_lset_with_wrong_number_of_arguments() {
+        let mut data = Database::new();
+
+        let new_list = VecDeque::new();
+
+        let key = "key".to_string();
+        data.insert(key, TypeSaved::List(new_list));
+
+        let buffer = vec!["key", "2"];
+        let error = Lset.run(buffer, &mut data);
+        assert_eq!(
+            error.unwrap_err().print_it(),
+            "ERR wrong number of arguments".to_string()
+        );
+    }
+
+    #[test]
+    fn test14_lset_with_wrong_number_of_arguments() {
+        let mut data = Database::new();
+
+        let new_list = VecDeque::new();
+
+        let key = "key".to_string();
+        data.insert(key, TypeSaved::List(new_list));
+
+        let buffer = vec!["key"];
+        let error = Lset.run(buffer, &mut data);
+        assert_eq!(
+            error.unwrap_err().print_it(),
+            "ERR wrong number of arguments".to_string()
+        );
     }
 }

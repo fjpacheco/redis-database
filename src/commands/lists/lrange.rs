@@ -1,10 +1,10 @@
-use std::collections::VecDeque;
-
 use crate::commands::get_as_integer;
+use crate::commands::lists::{check_empty, check_not_empty};
 use crate::database::Database;
 use crate::database::TypeSaved;
 use crate::native_types::RedisType;
 use crate::native_types::{array::RArray, error::ErrorStruct, simple_string::RSimpleString};
+use std::collections::VecDeque;
 
 pub struct Lrange;
 
@@ -18,6 +18,7 @@ pub struct Lrange;
 
 impl Lrange {
     pub fn run(mut buffer: Vec<&str>, database: &mut Database) -> Result<String, ErrorStruct> {
+        check_not_empty(&buffer)?;
         let key = String::from(buffer.remove(0));
         if let Some(typesaved) = database.get_mut(&key) {
             match typesaved {
@@ -38,8 +39,11 @@ pub fn find_elements_in_range(
     values_list: &mut VecDeque<String>,
     mut buffer: Vec<&str>,
 ) -> Result<String, ErrorStruct> {
+    check_not_empty(&buffer)?;
     let mut stop = get_as_integer(buffer.pop().unwrap()).unwrap();
+    check_not_empty(&buffer)?;
     let mut start = get_as_integer(buffer.pop().unwrap()).unwrap();
+    check_empty(&buffer)?;
     let len = values_list.len() as isize;
 
     if start < 0 {

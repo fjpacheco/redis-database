@@ -86,7 +86,7 @@ pub mod test_rpop {
             Ok(_encode) => {}
             Err(error) => assert_eq!(
                 error.print_it(),
-                "ERR wrong number of arguments for command".to_string()
+                "ERR wrong number of arguments".to_string()
             ),
         }
     }

@@ -38,7 +38,9 @@ pub fn push_at(
     database: &mut Database,
     fill_list: fn(buffer: Vec<&str>, list: &mut VecDeque<String>),
 ) -> Result<String, ErrorStruct> {
+    check_not_empty(&buffer)?;
     let key = String::from(buffer.remove(0));
+    check_not_empty(&buffer)?;
     let size;
     if let Some(typesaved) = database.get_mut(&key) {
         match typesaved {
@@ -68,7 +70,9 @@ pub fn pushx_at(
     database: &mut Database,
     fill_list: fn(buffer: Vec<&str>, list: &mut VecDeque<String>),
 ) -> Result<String, ErrorStruct> {
+    check_not_empty(&buffer)?;
     let key = String::from(buffer.remove(0));
+    check_not_empty(&buffer)?;
     let size;
     if let Some(typesaved) = database.get_mut(&key) {
         match typesaved {
@@ -95,10 +99,10 @@ pub fn pop_at(
     database: &mut Database,
     fill_list: fn(list: &mut VecDeque<String>, counter: usize) -> String,
 ) -> Result<String, ErrorStruct> {
-    are_there_more_values(&buffer)?;
+    check_not_empty(&buffer)?;
     let key = String::from(buffer.remove(0));
     let count = parse_count(&mut buffer)?;
-    no_more_values(&buffer)?;
+    check_empty(&buffer)?;
     if let Some(typesaved) = database.get_mut(&key) {
         match typesaved {
             TypeSaved::List(list_of_values) => {
@@ -121,27 +125,6 @@ pub fn pop_at(
     }
 }
 
-fn no_more_values(buffer: &[&str]) -> Result<(), ErrorStruct> {
-    if buffer.is_empty() {
-        Ok(())
-    } else {
-        Err(ErrorStruct::new(
-            String::from("ERR"),
-            String::from("wrong number of arguments for command"),
-        ))
-    }
-}
-
-fn are_there_more_values(buffer: &[&str]) -> Result<(), ErrorStruct> {
-    if !buffer.is_empty() {
-        Ok(())
-    } else {
-        Err(ErrorStruct::new(
-            String::from("ERR"),
-            String::from("wrong number of arguments for command"),
-        ))
-    }
-}
 fn parse_count(buffer: &mut Vec<&str>) -> Result<usize, ErrorStruct> {
     if let Some(value) = buffer.pop() {
         if let Ok(counter) = value.parse::<usize>() {
@@ -185,5 +168,27 @@ pub fn remove_values_from_bottom(list: &mut VecDeque<String>, counter: usize) ->
         RArray::encode(popped)
     } else {
         RBulkString::encode(list.pop_back().unwrap())
+    }
+}
+
+fn check_not_empty(buffer: &[&str]) -> Result<(), ErrorStruct> {
+    if buffer.is_empty() {
+        Err(ErrorStruct::new(
+            String::from("ERR"),
+            String::from("wrong number of arguments"),
+        ))
+    } else {
+        Ok(())
+    }
+}
+
+fn check_empty(buffer: &[&str]) -> Result<(), ErrorStruct> {
+    if !buffer.is_empty() {
+        Err(ErrorStruct::new(
+            String::from("ERR"),
+            String::from("wrong number of arguments"),
+        ))
+    } else {
+        Ok(())
     }
 }
