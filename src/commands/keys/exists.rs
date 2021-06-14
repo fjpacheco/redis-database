@@ -6,7 +6,7 @@ use crate::{
 
 pub struct Exists;
 
-impl Runnable for Exists {
+impl Runnable<Database> for Exists {
     fn run(
         &self,
         mut _buffer_vec: Vec<&str>,
