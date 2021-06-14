@@ -8,13 +8,8 @@ mod testings_redis {
 
     #[test]
     fn test01_crate() {
-        let _server_handler = thread::spawn(move || {
-            let _server = ServerRedis::start(vec![]);
-        });
+        let _server_handler = thread::spawn(|| ServerRedis::start(vec![]));
 
-        // Ejecutar en consola antes del test => cargo run --bin server -- 6379
-        // TODO: invstigar como poder levantar el server desde un test... es un doloooooooor tener que levantarlo manualmente
-        // TODO: investigar la organizacion de modulos! creo q ahi esta la clave => deberiamos re-ajustar all modulos
         let client = redis::Client::open(
             "redis://".to_owned()
                 + &RedisConfig::default().ip()
@@ -46,28 +41,5 @@ mod testings_redis {
             .arg("Agustín")
             .query(&mut conection_client);
         println!("get Agustín => {:?}", received_4);
-        /*
-        for _ in 0..1000{
-            for i in 0..9{
-                let received_3: Result<String, RedisError> = redis::cmd("config")
-                                        .arg("set")
-                                        .arg("port")
-                                        .arg(format!("700{}", i))
-                                        .query(&mut conection_client);
-                                        if received_3.is_err(){
-                                            panic!("GG")
-                                        }
-
-            }
-        }
-        */
-
-        println!("Fin test of stess");
-        println!("Fin test of stess");
-        println!("Fin test of stess");
-        println!("Fin test of stess");
-        println!("Fin test of stess");
-        println!("Fin test of stess");
-        println!("Fin test of stess");
     }
 }

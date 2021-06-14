@@ -1,4 +1,8 @@
 /target
-target/.rustc_info.json
-.DS_Store
+.target
+/vscode
 .vscode
+/idea
+.idea
+.DS_Store
+/**/DS_Store

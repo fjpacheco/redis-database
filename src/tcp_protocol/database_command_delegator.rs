@@ -11,15 +11,15 @@ pub struct DatabaseCommandDelegator;
 /// Interprets commands and delegates tasks
 
 impl DatabaseCommandDelegator {
-    pub fn new(
+    pub fn start(
         rcv_cmd_dat: Receiver<(Vec<String>, Sender<String>)>,
-        runnables_map: RunnablesMap<Database>,
+        runnables_database: RunnablesMap<Database>,
         mut database: Database,
-    ) -> Self {
+    ) -> Result<(), ErrorStruct> {
         let _database_command_handler = thread::spawn(move || {
             for (mut command_input_user, sender_to_client) in rcv_cmd_dat.iter() {
                 let command_type = command_input_user.remove(0); // ["set", "key", "value"]
-                if let Some(runnable_command) = runnables_map.get(&command_type) {
+                if let Some(runnable_command) = runnables_database.get(&command_type) {
                     // REMEMBER TO CHANGE THE TRAIT (MUST WORK WITH VEC<STRING>)
                     let command_str: Vec<&str> =
                         command_input_user.iter().map(|s| s.as_ref()).collect();
@@ -34,7 +34,7 @@ impl DatabaseCommandDelegator {
                 }
             }
         });
-        DatabaseCommandDelegator {}
+        Ok(())
     }
 }
 
@@ -72,7 +72,7 @@ pub mod test_database_command_delegator {
         ) = mpsc::channel();
 
         let _database_command_delegator_recv =
-            DatabaseCommandDelegator::new(rx1, runnables_map, database);
+            DatabaseCommandDelegator::start(rx1, runnables_map, database);
 
         let (tx2, rx2): (Sender<String>, Receiver<String>) = mpsc::channel();
         let buffer_vec_mock = vec!["set".to_string(), "key".to_string(), "value".to_string()];
@@ -110,7 +110,7 @@ pub mod test_database_command_delegator {
         ) = mpsc::channel();
 
         let _database_command_delegator_recv =
-            DatabaseCommandDelegator::new(rx1, runnables_map, database);
+            DatabaseCommandDelegator::start(rx1, runnables_map, database);
 
         let (tx2, rx2): (Sender<String>, Receiver<String>) = mpsc::channel();
         let buffer_vec_mock = vec!["set".to_string(), "key".to_string(), "value".to_string()];
@@ -143,7 +143,7 @@ pub mod test_database_command_delegator {
         ) = mpsc::channel();
 
         let _database_command_delegator_recv =
-            DatabaseCommandDelegator::new(rx1, runnables_map, database);
+            DatabaseCommandDelegator::start(rx1, runnables_map, database);
 
         let (tx2, rx2): (Sender<String>, Receiver<String>) = mpsc::channel();
         let buffer_vec_mock = vec![

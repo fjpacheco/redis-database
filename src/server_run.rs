@@ -2,20 +2,27 @@ use std::env;
 
 use redis_rust::{native_types::ErrorStruct, tcp_protocol::server::ServerRedis};
 
-/// ## Start a server
+/// ## Commands to Start Server, in console:
 ///
-/// Commands to start server:
-///
-/// With configs default:
+/// With configs default in cargo:
 ///
 /// * *cargo run*
 ///
-/// With configs personalized
+/// With configs personalized in cargo
 ///
 /// * *cargo run /path/to/redis.conf*
 ///
+/// With the executable generated with *cargo build*
+///
+/// * With config default
+///     * *target/debug/server*
+/// * With config personalized:
+///     * *target/debug/server /path/to/redis.conf*
+/// * To execute server visualizing the Life of Threads with *gdb*
+///     * *rust-gdb target/debug/server*
+///
 fn main() -> Result<(), ErrorStruct> {
     let argv: Vec<String> = env::args().collect();
-    let _server = ServerRedis::start(argv)?;
+    ServerRedis::start(argv)?;
     Ok(())
 }

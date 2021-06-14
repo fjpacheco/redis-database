@@ -31,9 +31,13 @@ impl<T> RunnablesMap<T> {
 
     pub fn server() -> RunnablesMap<ServerRedis> {
         // En Runnable<T> T es la estructura que se va a modificar
-        let map: HashMap<String, Box<dyn Runnable<ServerRedis> + Send + Sync>> = HashMap::new();
-        // map.insert(String::from("config set"), Box::new(server::config_set::ConfigSet));
+        let mut map: HashMap<String, Box<dyn Runnable<ServerRedis> + Send + Sync>> = HashMap::new();
+        map.insert(
+            String::from("config set"),
+            Box::new(server::config_set::ConfigSet),
+        );
         // TODO: RECORDAR DESCOMENTAR CUANDO SE DEFINA T
+        // TODO: @fjpacheco: hermoso ésto <3
         RunnablesMap { elements: map }
     }
 }

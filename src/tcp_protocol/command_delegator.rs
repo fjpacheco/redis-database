@@ -69,10 +69,10 @@ pub struct CommandDelegator;
 /// Interprets commands and delegates tasks
 
 impl CommandDelegator {
-    pub fn new(
+    pub fn start(
         command_delegator_recv: Receiver<(Vec<String>, Sender<String>)>,
         commands_map: CommandsMap,
-    ) -> Self {
+    ) -> Result<(), ErrorStruct> {
         let _command_handler = thread::spawn(move || {
             for (command_input_user, sender_to_client) in command_delegator_recv.iter() {
                 let command_type = &command_input_user[0];
@@ -89,7 +89,7 @@ impl CommandDelegator {
                 }
             }
         });
-        CommandDelegator {}
+        Ok(())
     }
 
     /*
@@ -156,7 +156,7 @@ pub mod test_command_delegator {
         ) = mpsc::channel();
 
         let _database_command_delegator =
-            DatabaseCommandDelegator::new(rcv_cmd_dat, runnables_map, database);
+            DatabaseCommandDelegator::start(rcv_cmd_dat, runnables_map, database);
 
         let mut channel_map: HashMap<String, Sender<(Vec<String>, Sender<String>)>> =
             HashMap::new();
@@ -171,7 +171,7 @@ pub mod test_command_delegator {
             Receiver<(Vec<String>, Sender<String>)>,
         ) = mpsc::channel();
 
-        let _command_delegator = CommandDelegator::new(rcv_test_cmd, commands_map);
+        let _command_delegator = CommandDelegator::start(rcv_test_cmd, commands_map);
 
         // ACT
 
@@ -240,7 +240,7 @@ pub mod test_command_delegator {
         ) = mpsc::channel();
 
         let _database_command_delegator =
-            DatabaseCommandDelegator::new(rcv_cmd_dat, runnables_map, database);
+            DatabaseCommandDelegator::start(rcv_cmd_dat, runnables_map, database);
 
         let mut channel_map: HashMap<String, Sender<(Vec<String>, Sender<String>)>> =
             HashMap::new();
@@ -254,7 +254,7 @@ pub mod test_command_delegator {
             Receiver<(Vec<String>, Sender<String>)>,
         ) = mpsc::channel();
 
-        let _command_delegator = CommandDelegator::new(rcv_test_cmd, commands_map);
+        let _command_delegator = CommandDelegator::start(rcv_test_cmd, commands_map);
 
         // ACT
 

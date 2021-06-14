@@ -13,6 +13,14 @@ pub struct RedisConfig {
 }
 
 impl RedisConfig {
+    pub fn parse_config(argv: Vec<String>) -> Result<RedisConfig, ErrorStruct> {
+        let config = match argv.len().eq(&2) {
+            true => RedisConfig::get_with_new_config(&argv[1])?,
+            false => RedisConfig::default(),
+        };
+        Ok(config)
+    }
+
     /// Received name path of new file .config to generate a new configuration for server Redis
     ///
     /// If the .config file comes incomplete, the default configurations will be taken.
@@ -20,7 +28,7 @@ impl RedisConfig {
     /// ## Error
     ///
     /// Return Err if ...
-    pub fn get_with_new_config(path: &str) -> Result<RedisConfig, ErrorStruct> {
+    fn get_with_new_config(path: &str) -> Result<RedisConfig, ErrorStruct> {
         let file = match File::open(Path::new(path)) {
             Err(err) => Err(ErrorStruct::new(
                 "ERR_CONFIG".into(),

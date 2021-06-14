@@ -19,14 +19,10 @@ impl ExpireInfo {
     }
 
     pub fn is_expired(&mut self) -> bool {
-        if let Some(_) = self.timeout {
+        if self.timeout.is_some() {
             self.update();
 
-            if let Some(_) = self.timeout {
-                false
-            } else {
-                true
-            }
+            !matches!(self.timeout, Some(_))
         } else {
             self.update();
             false
@@ -45,11 +41,7 @@ impl ExpireInfo {
     pub fn ttl(&self) -> Option<u64> {
         //No es necesario hacer update()
         //self.update();
-        if let Some(ttl) = self.timeout {
-            Some(ttl.as_secs())
-        } else {
-            None
-        }
+        self.timeout.map(|ttl| ttl.as_secs())
     }
 
     pub fn set_timeout(&mut self, duration: u64) -> Result<(), ErrorStruct> {

@@ -35,10 +35,10 @@ pub trait Runnable<T> {
     /// Basic usage:
     ///
     /// ```
-    /// use proyecto_taller_1::database::Database;
-    /// use proyecto_taller_1::commands::strings::set::Set;
-    /// use proyecto_taller_1::native_types::ErrorStruct;
-    /// use proyecto_taller_1::commands::Runnable;
+    /// use redis_rust::database::Database;
+    /// use redis_rust::commands::strings::set::Set;
+    /// use redis_rust::native_types::ErrorStruct;
+    /// use redis_rust::commands::Runnable;
     ///
     /// fn execute<Database>(command: &dyn Runnable<Database>,
     ///            buffer: Vec<&str>,
@@ -56,7 +56,7 @@ pub trait Runnable<T> {
     /// let expected_result = "+OK\r\n".to_string();
     /// assert_eq!(expected_result, result_received.unwrap());
     /// ```
-    fn run(&self, buffer_vec: Vec<&str>, database: &mut T) -> Result<String, ErrorStruct>;
+    fn run(&self, buffer_vec: Vec<&str>, item: &mut T) -> Result<String, ErrorStruct>;
 }
 
 // Fun aux
