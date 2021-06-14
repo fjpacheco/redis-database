@@ -7,7 +7,7 @@ use super::push_at;
 
 pub struct LPush;
 
-impl Runnable for LPush {
+impl Runnable<Database> for LPush {
     fn run(&self, buffer: Vec<&str>, database: &mut Database) -> Result<String, ErrorStruct> {
         push_at(buffer, database, fill_list_from_top)
     }

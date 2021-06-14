@@ -8,7 +8,7 @@ use crate::{
 
 pub struct Smembers;
 
-impl Runnable for Smembers {
+impl Runnable<Database> for Smembers {
     fn run(
         &self,
         mut buffer_vec: Vec<&str>,

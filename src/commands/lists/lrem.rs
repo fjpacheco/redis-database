@@ -6,7 +6,7 @@ use crate::{
     native_types::RInteger,
 };
 use crate::{
-    commands::lists::{check_empty, check_not_empty},
+    commands::lists::{check_empty_2, check_not_empty},
     native_types::{error::ErrorStruct, redis_type::RedisType, simple_string::RSimpleString},
 };
 
@@ -26,7 +26,7 @@ impl Lrem {
         let value = String::from(buffer.pop().unwrap());
         check_not_empty(&buffer)?;
         let count = get_as_integer(buffer.pop().unwrap()).unwrap();
-        check_empty(&buffer)?;
+        check_empty_2(&buffer)?;
         if let Some(typesaved) = database.get_mut(&key) {
             match typesaved {
                 TypeSaved::List(values_list) => remove_value(count, value, values_list),

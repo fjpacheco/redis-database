@@ -6,7 +6,7 @@ use super::pop_at;
 use super::remove_values_from_top;
 pub struct LPop;
 
-impl Runnable for LPop {
+impl Runnable<Database> for LPop {
     fn run(&self, buffer: Vec<&str>, database: &mut Database) -> Result<String, ErrorStruct> {
         pop_at(buffer, database, remove_values_from_top)
     }

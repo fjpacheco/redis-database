@@ -1,4 +1,4 @@
-use std::io::BufRead;
+use std::io::{BufRead, Lines};
 
 use super::redis_type::RedisType;
 
@@ -38,30 +38,25 @@ impl RedisType<ErrorStruct> for RError {
         encoded
     }
 
-    fn decode(error: &mut dyn BufRead) -> Result<ErrorStruct, ErrorStruct> {
-        let mut sliced_error = String::new();
-        match error.read_line(&mut sliced_error) {
-            Ok(_) => {
-                sliced_error.pop();
-                sliced_error.pop();
-                if let Some(middle_space) = sliced_error.find(' ') {
-                    let err_message = sliced_error.split_off(middle_space + 1);
-                    sliced_error.pop();
-                    Ok(ErrorStruct {
-                        prefix: sliced_error,
-                        message: err_message,
-                    })
-                } else {
-                    Err(ErrorStruct::new(
-                        "ERR_PARSE".to_string(),
-                        "Failed to parse redis error".to_string(),
-                    ))
-                }
-            }
-            Err(_) => Err(ErrorStruct::new(
+    fn decode<G>(
+        mut first_lecture: String,
+        _redis_encoded_line: &mut Lines<G>,
+    ) -> Result<ErrorStruct, ErrorStruct>
+    where
+        G: BufRead,
+    {
+        if let Some(middle_space) = first_lecture.find(' ') {
+            let err_message = first_lecture.split_off(middle_space + 1);
+            first_lecture.pop();
+            Ok(ErrorStruct {
+                prefix: first_lecture,
+                message: err_message,
+            })
+        } else {
+            Err(ErrorStruct::new(
                 "ERR_PARSE".to_string(),
                 "Failed to parse redis error".to_string(),
-            )),
+            ))
         }
     }
 }
@@ -70,13 +65,19 @@ impl RedisType<ErrorStruct> for RError {
 mod test_error {
 
     use super::*;
+    use std::io::BufReader;
     #[test]
     fn test05_encoding_and_decoding_of_an_error() {
         let error = ErrorStruct::new("ERR".to_string(), "esto es un error generico".to_string());
-        let mut encoded = RError::encode(error);
+        let encoded = RError::encode(error);
         assert_eq!(encoded, "-ERR esto es un error generico\r\n".to_string());
-        encoded.remove(0);
-        let error_decoded = RError::decode(&mut encoded.as_bytes());
+        let mut buffer = BufReader::new(encoded.as_bytes());
+        let mut first_lecture = String::new();
+        buffer.read_line(&mut first_lecture).unwrap();
+        first_lecture.remove(0); // Redis Type inference
+        first_lecture.pop().unwrap(); // popping \n
+        first_lecture.pop().unwrap(); // popping \r
+        let error_decoded = RError::decode(first_lecture, &mut buffer.lines());
         assert_eq!(
             error_decoded.unwrap().print_it(),
             "ERR esto es un error generico".to_string()

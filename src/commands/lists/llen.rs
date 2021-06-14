@@ -1,5 +1,5 @@
 use crate::{
-    commands::lists::{check_empty, check_not_empty},
+    commands::lists::{check_empty_2, check_not_empty},
     commands::Runnable,
     database::{Database, TypeSaved},
     native_types::{ErrorStruct, RInteger, RedisType},
@@ -11,11 +11,11 @@ pub struct Llen;
 // interpreted as an empty list and 0 is returned. An error is returned when
 // the value stored at key is not a list.
 
-impl Runnable for Llen {
+impl Runnable<Database> for Llen {
     fn run(&self, mut buffer: Vec<&str>, database: &mut Database) -> Result<String, ErrorStruct> {
         check_not_empty(&buffer)?;
         let key = String::from(buffer.remove(0));
-        check_empty(&buffer)?;
+        check_empty_2(&buffer)?;
         if let Some(typesaved) = database.get_mut(&key) {
             match typesaved {
                 TypeSaved::List(list_of_values) => {

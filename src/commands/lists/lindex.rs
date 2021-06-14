@@ -1,21 +1,24 @@
 use std::collections::VecDeque;
 
-use crate::native_types::{error::ErrorStruct, redis_type::RedisType};
 use crate::{
-    commands::lists::{check_empty, check_not_empty},
+    commands::lists::{check_empty_2, check_not_empty},
     database::{Database, TypeSaved},
     native_types::bulk_string::RBulkString,
+};
+use crate::{
+    commands::Runnable,
+    native_types::{error::ErrorStruct, redis_type::RedisType},
 };
 
 pub struct LIndex;
 
-impl LIndex {
-    pub fn run(mut buffer: Vec<&str>, database: &mut Database) -> Result<String, ErrorStruct> {
+impl Runnable<Database> for LIndex {
+    fn run(&self, mut buffer: Vec<&str>, database: &mut Database) -> Result<String, ErrorStruct> {
         check_not_empty(&buffer)?;
         let key = String::from(buffer.remove(0));
         check_not_empty(&buffer)?;
         let index = parse_index(&mut buffer)?;
-        check_empty(&buffer)?;
+        check_empty_2(&buffer)?;
 
         if let Some(typesaved) = database.get(&key) {
             match typesaved {
@@ -78,7 +81,7 @@ pub mod test_lpush {
         data.insert("key".to_string(), TypeSaved::List(new_list));
 
         let buffer = vec!["key", "2"];
-        let encode = LIndex::run(buffer, &mut data);
+        let encode = LIndex.run(buffer, &mut data);
         assert_eq!(encode.unwrap(), "$1\r\na\r\n".to_string());
     }
 
@@ -93,7 +96,7 @@ pub mod test_lpush {
         data.insert("key".to_string(), TypeSaved::List(new_list));
 
         let buffer = vec!["key", "-1"];
-        let encode = LIndex::run(buffer, &mut data);
+        let encode = LIndex.run(buffer, &mut data);
         assert_eq!(encode.unwrap(), "$4\r\nlist\r\n".to_string());
     }
 
@@ -101,7 +104,7 @@ pub mod test_lpush {
     fn test03_lindex_from_a_non_existing_list() {
         let mut data = Database::new();
         let buffer = vec!["key", "4"];
-        let encode = LIndex::run(buffer, &mut data);
+        let encode = LIndex.run(buffer, &mut data);
         assert_eq!(encode.unwrap(), "$-1\r\n".to_string());
         assert_eq!(data.get("key"), None);
     }
@@ -116,7 +119,7 @@ pub mod test_lpush {
         new_list.push_back("list".to_string());
         data.insert("key".to_string(), TypeSaved::List(new_list));
         let buffer = vec!["key", "6"];
-        let encode = LIndex::run(buffer, &mut data);
+        let encode = LIndex.run(buffer, &mut data);
         assert_eq!(encode.unwrap(), "$-1\r\n".to_string());
     }
 }

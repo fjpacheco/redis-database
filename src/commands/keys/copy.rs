@@ -7,7 +7,7 @@ use crate::{
 
 pub struct Copy;
 
-impl Runnable for Copy {
+impl Runnable<Database> for Copy {
     fn run(
         &self,
         mut buffer_vec: Vec<&str>,

@@ -7,7 +7,7 @@ use crate::{
 
 pub struct Mget;
 
-impl Runnable for Mget {
+impl Runnable<Database> for Mget {
     fn run(
         &self,
         mut buffer_vec: Vec<&str>,

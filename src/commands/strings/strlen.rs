@@ -11,7 +11,7 @@ pub struct Strlen;
 ///
 /// Return value: Integer reply: the length of the string at key, or 0 when key does not exist.
 
-impl Runnable for Strlen {
+impl Runnable<Database> for Strlen {
     fn run(
         &self,
         mut buffer_vec: Vec<&str>,

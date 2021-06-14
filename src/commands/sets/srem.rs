@@ -8,7 +8,7 @@ use crate::{
 
 pub struct Srem;
 
-impl Runnable for Srem {
+impl Runnable<Database> for Srem {
     fn run(
         &self,
         mut buffer_vec: Vec<&str>,

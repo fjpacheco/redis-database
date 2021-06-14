@@ -5,6 +5,8 @@ use crate::{
     native_types::{ErrorStruct, RArray, RBulkString, RInteger, RedisType},
 };
 
+use super::{check_empty_2, check_not_empty};
+
 pub mod lindex;
 pub mod llen;
 pub mod lpop;
@@ -102,7 +104,7 @@ pub fn pop_at(
     check_not_empty(&buffer)?;
     let key = String::from(buffer.remove(0));
     let count = parse_count(&mut buffer)?;
-    check_empty(&buffer)?;
+    check_empty_2(&buffer)?;
     if let Some(typesaved) = database.get_mut(&key) {
         match typesaved {
             TypeSaved::List(list_of_values) => {
@@ -168,27 +170,5 @@ pub fn remove_values_from_bottom(list: &mut VecDeque<String>, counter: usize) ->
         RArray::encode(popped)
     } else {
         RBulkString::encode(list.pop_back().unwrap())
-    }
-}
-
-fn check_not_empty(buffer: &[&str]) -> Result<(), ErrorStruct> {
-    if buffer.is_empty() {
-        Err(ErrorStruct::new(
-            String::from("ERR"),
-            String::from("wrong number of arguments"),
-        ))
-    } else {
-        Ok(())
-    }
-}
-
-fn check_empty(buffer: &[&str]) -> Result<(), ErrorStruct> {
-    if !buffer.is_empty() {
-        Err(ErrorStruct::new(
-            String::from("ERR"),
-            String::from("wrong number of arguments"),
-        ))
-    } else {
-        Ok(())
     }
 }

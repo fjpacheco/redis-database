@@ -4,7 +4,7 @@ use super::{fill_list_from_bottom, pushx_at};
 
 pub struct RPushx;
 
-impl Runnable for RPushx {
+impl Runnable<Database> for RPushx {
     fn run(&self, buffer: Vec<&str>, database: &mut Database) -> Result<String, ErrorStruct> {
         pushx_at(buffer, database, fill_list_from_bottom)
     }

@@ -1,7 +1,7 @@
 use std::collections::VecDeque;
 
 use crate::commands::get_as_integer;
-use crate::commands::lists::{check_empty, check_not_empty};
+use crate::commands::lists::{check_empty_2, check_not_empty};
 use crate::commands::Runnable;
 use crate::database::Database;
 use crate::database::TypeSaved;
@@ -14,7 +14,7 @@ pub struct Lset;
 //
 // An error is returned for out of range indexes.
 
-impl Runnable for Lset {
+impl Runnable<Database> for Lset {
     fn run(&self, mut buffer: Vec<&str>, database: &mut Database) -> Result<String, ErrorStruct> {
         check_not_empty(&buffer)?;
         let key = String::from(buffer.remove(0));
@@ -22,7 +22,7 @@ impl Runnable for Lset {
         let index = get_as_integer(buffer.remove(0)).unwrap();
         check_not_empty(&buffer)?;
         let replacement = String::from(buffer.remove(0));
-        check_empty(&buffer)?;
+        check_empty_2(&buffer)?;
 
         if let Some(typesaved) = database.get_mut(&key) {
             match typesaved {

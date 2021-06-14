@@ -7,7 +7,7 @@ use crate::{
 
 pub struct Mset;
 
-impl Runnable for Mset {
+impl Runnable<Database> for Mset {
     fn run(
         &self,
         mut buffer_vec: Vec<&str>,
