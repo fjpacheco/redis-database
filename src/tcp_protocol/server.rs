@@ -42,7 +42,7 @@ impl ServerRedis {
 
         // ################## Start listening clients with First Thread ##################
         let listener_processor =
-            ListenerProcessor::start(&config, c_command_delegator_sender.clone(), clients.clone())?;
+            ListenerProcessor::start(&config, c_command_delegator_sender, clients)?;
 
         // ################## 3° Initialization structures ##################
         let server_redis = Self::new(config, listener_processor);
@@ -73,10 +73,11 @@ fn join_start_server_command_delegator(
     let mut server_command_delegator =
         ServerCommandDelegator::start(rcv_cmd_sv, runnables_server, server_redis)?;
     let join = server_command_delegator.join();
-    Ok(if let Err(item) = join {
+    if let Err(item) = join {
         return Err(ErrorStruct::new(
             "ERR_JOIN_THREAD_SERVER_COMMAND_DELEGATOR".into(),
             format!("{:?}", item),
         ));
-    })
+    };
+    Ok(())
 }

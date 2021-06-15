@@ -4,11 +4,12 @@ mod testings_redis {
     use std::thread::{self, JoinHandle};
 
     use redis::RedisError;
-    use redis_rust::{native_types::ErrorStruct, redis_config::RedisConfig, tcp_protocol::server::ServerRedis};
-
+    use redis_rust::{
+        native_types::ErrorStruct, redis_config::RedisConfig, tcp_protocol::server::ServerRedis,
+    };
 
     #[test]
-    fn test01_set_and_get() -> Result<(), ErrorStruct>{
+    fn test01_set_and_get() -> Result<(), ErrorStruct> {
         let _server_thread: JoinHandle<Result<(), ErrorStruct>> = thread::spawn(|| {
             ServerRedis::start(vec![])?;
             Ok(())
@@ -32,27 +33,25 @@ mod testings_redis {
 
         assert_eq!(received.unwrap(), "OK");
 
+        let received: Result<String, RedisError> =
+            redis::cmd("get").arg("key").query(&mut conection_client);
 
-        let received: Result<String, RedisError> = redis::cmd("get")
-            .arg("key")
-            .query(&mut conection_client);
-        
         assert_eq!(received.unwrap(), "value");
 
         Ok(())
     }
 
-    
     #[test]
     #[ignore]
     fn test_random() {
-        let server_thread = thread::spawn(|| {
-            ServerRedis::start(vec![]);
+        let _server_thread: JoinHandle<Result<(), ErrorStruct>> = thread::spawn(|| {
+            ServerRedis::start(vec![])?;
+            Ok(())
         });
 
         let client = redis::Client::open(
             "redis://".to_owned()
-            + &RedisConfig::default().ip()
+                + &RedisConfig::default().ip()
                 + ":"
                 + &RedisConfig::default().port()
                 + "/",
@@ -81,7 +80,5 @@ mod testings_redis {
             .arg("Agustín")
             .query(&mut conection_client);
         println!("get Agustín => {:?}", received_4);
-
-
     }
 }

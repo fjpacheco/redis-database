@@ -74,11 +74,7 @@ impl Database {
     pub fn ttl(&mut self, key: &str) -> Option<u64> {
         self.touch(key);
         if let Some((info, _)) = self.elements.get(key) {
-            if let Some(timeout) = info.ttl() {
-                Some(timeout)
-            } else {
-                None
-            }
+            info.ttl()
         } else {
             None
         }
@@ -115,11 +111,7 @@ impl Database {
     pub fn persist(&mut self, key: &str) -> Option<u64> {
         self.touch(key);
         if let Some((info, _)) = self.elements.get_mut(key) {
-            if let Some(timeout) = info.persist() {
-                Some(timeout)
-            } else {
-                None
-            }
+            info.persist()
         } else {
             None
         }

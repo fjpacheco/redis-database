@@ -2,6 +2,8 @@ use std::sync::mpsc::{self, Receiver, Sender};
 use std::{collections::HashMap, thread};
 
 use crate::native_types::{ErrorStruct, RError, RedisType};
+
+use super::SendersRedis;
 pub struct CommandsMap {
     channel_map: HashMap<String, Sender<(Vec<String>, Sender<String>)>>,
     channel_map_server: HashMap<String, Sender<(Vec<String>, Sender<String>)>>,
@@ -15,16 +17,13 @@ impl CommandsMap {
         }
     }
 
-    pub fn get(&self, string: &String) -> Option<&Sender<(Vec<String>, Sender<String>)>> {
+    pub fn get(&self, string: &str) -> Option<&Sender<(Vec<String>, Sender<String>)>> {
         self.channel_map.get(string)
     }
 
-    pub fn get_for_server(
-        &self,
-        vec: &Vec<String>,
-    ) -> Option<&Sender<(Vec<String>, Sender<String>)>> {
+    pub fn get_for_server(&self, vec: &[String]) -> Option<&Sender<(Vec<String>, Sender<String>)>> {
         let mut cmd = vec.get(0).unwrap_or(&" ".to_string()).to_string();
-        cmd.push_str(" ");
+        cmd.push(' ');
         cmd.push_str(&vec.get(1).unwrap_or(&" ".to_string()).to_string());
         self.channel_map_server.get(&cmd)
     }
@@ -50,8 +49,8 @@ impl CommandsMap {
             HashMap::new();
         channel_map.insert(String::from("set"), snd_cmd_dat.clone());
         channel_map.insert(String::from("get"), snd_cmd_dat.clone());
-        channel_map.insert(String::from("strlen"), snd_cmd_dat.clone());
-        channel_map_server.insert(String::from("config set"), snd_cmd_server.clone());
+        channel_map.insert(String::from("strlen"), snd_cmd_dat);
+        channel_map_server.insert(String::from("config set"), snd_cmd_server);
 
         (
             CommandsMap {
