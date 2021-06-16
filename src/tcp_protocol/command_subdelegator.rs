@@ -1,26 +1,29 @@
+use std::any::Any;
 use crate::native_types::RError;
 use crate::native_types::RedisType;
-use std::sync::mpsc::{Receiver, Sender};
-use std::thread;
+use std::sync::mpsc::{Receiver};
+use std::thread::{self, JoinHandle};
 
 use crate::native_types::ErrorStruct;
 use crate::tcp_protocol::runnables_map::RunnablesMap;
 
-pub struct CommandSubDelegator;
+use super::RawCommand;
+pub struct CommandSubDelegator {
+    delegator: Option<JoinHandle<()>>,
+}
 
 /// Interprets commands and delegates tasks
 
 impl CommandSubDelegator {
     pub fn start<T: 'static>(
-        rcv_cmd_dat: Receiver<(Vec<String>, Sender<String>)>,
+        rcv_cmd_dat: Receiver<RawCommand>,
         runnables_mut_data: RunnablesMap<T>,
         mut mut_data: T,
-    ) -> Result<(), ErrorStruct>
+    ) -> Result<CommandSubDelegator, ErrorStruct>
     where
         T: Send + Sync,
     {
-        //let mut mut_data = mut_data;
-        let _database_command_handler = thread::spawn(move || {
+        let delegator_handle = thread::spawn(move || {
             for (mut command_input_user, sender_to_client) in rcv_cmd_dat.iter() {
                 let command_type = command_input_user.remove(0); // ["set", "key", "value"]
                 if let Some(runnable_command) = runnables_mut_data.get(&command_type) {
@@ -38,7 +41,11 @@ impl CommandSubDelegator {
                 }
             }
         });
-        Ok(())
+        Ok(CommandSubDelegator {delegator: Some(delegator_handle),})
+    }
+
+    pub fn join(&mut self) -> Result<(), Box<dyn Any + Send>> {
+        self.delegator.take().unwrap().join()
     }
 }
 
@@ -71,8 +78,8 @@ pub mod test_database_command_delegator {
         let database = Database::new();
 
         let (tx1, rx1): (
-            Sender<(Vec<String>, Sender<String>)>,
-            Receiver<(Vec<String>, Sender<String>)>,
+            Sender<RawCommand>,
+            Receiver<RawCommand>,
         ) = mpsc::channel();
 
         let _database_command_delegator_recv =
@@ -109,8 +116,8 @@ pub mod test_database_command_delegator {
         let database = Database::new();
 
         let (tx1, rx1): (
-            Sender<(Vec<String>, Sender<String>)>,
-            Receiver<(Vec<String>, Sender<String>)>,
+            Sender<RawCommand>,
+            Receiver<RawCommand>,
         ) = mpsc::channel();
 
         let _database_command_delegator_recv =
@@ -142,8 +149,8 @@ pub mod test_database_command_delegator {
         let database = Database::new();
 
         let (tx1, rx1): (
-            Sender<(Vec<String>, Sender<String>)>,
-            Receiver<(Vec<String>, Sender<String>)>,
+            Sender<RawCommand>,
+            Receiver<RawCommand>,
         ) = mpsc::channel();
 
         let _database_command_delegator_recv =

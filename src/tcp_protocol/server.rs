@@ -1,7 +1,7 @@
 use std::{
     collections::HashMap,
     sync::{
-        mpsc::{channel, Receiver, Sender},
+        mpsc::{channel, Receiver},
         Arc, Mutex,
     },
 };
@@ -12,12 +12,13 @@ use crate::{
     tcp_protocol::{
         command_delegator::CommandDelegator, /*database_command_delegator::DatabaseCommandDelegator,*/
         listener_processor::ListenerProcessor, runnables_map::RunnablesMap,
-        server_command_delegator::ServerCommandDelegator,
+        /*server_command_delegator::ServerCommandDelegator,*/
     },
     Database,
 };
 
 use super::{command_delegator::CommandsMap, command_subdelegator::CommandSubDelegator};
+use super::RawCommand;
 pub struct ServerRedis {
     // TODO: Change to private and discuss responsibility of methods with Rust-Eze team!
     config: RedisConfig,
@@ -67,12 +68,13 @@ impl ServerRedis {
 }
 
 fn join_start_server_command_delegator(
-    rcv_cmd_sv: Receiver<(Vec<String>, Sender<String>)>,
+    rcv_cmd_sv: Receiver<RawCommand>,
     runnables_server: RunnablesMap<ServerRedis>,
     server_redis: ServerRedis,
 ) -> Result<(), ErrorStruct> {
     let mut server_command_delegator =
-        ServerCommandDelegator::start(rcv_cmd_sv, runnables_server, server_redis)?;
+        //ServerCommandDelegator::start(rcv_cmd_sv, runnables_server, server_redis)?;
+        CommandSubDelegator::start::<ServerRedis>(rcv_cmd_sv, runnables_server, server_redis)?;
     let join = server_command_delegator.join();
     Ok(if let Err(item) = join {
         return Err(ErrorStruct::new(
