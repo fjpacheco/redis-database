@@ -1,5 +1,6 @@
 pub mod client_handler;
 pub mod command_delegator;
+pub mod command_subdelegator;
 pub mod database_command_delegator;
 pub mod listener_processor;
 pub mod runnables_map;

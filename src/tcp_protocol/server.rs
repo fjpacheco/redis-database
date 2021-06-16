@@ -10,14 +10,14 @@ use crate::{
     native_types::ErrorStruct,
     redis_config::RedisConfig,
     tcp_protocol::{
-        command_delegator::CommandDelegator, database_command_delegator::DatabaseCommandDelegator,
+        command_delegator::CommandDelegator, /*database_command_delegator::DatabaseCommandDelegator,*/
         listener_processor::ListenerProcessor, runnables_map::RunnablesMap,
         server_command_delegator::ServerCommandDelegator,
     },
     Database,
 };
 
-use super::command_delegator::CommandsMap;
+use super::{command_delegator::CommandsMap, command_subdelegator::CommandSubDelegator};
 pub struct ServerRedis {
     // TODO: Change to private and discuss responsibility of methods with Rust-Eze team!
     config: RedisConfig,
@@ -51,7 +51,8 @@ impl ServerRedis {
 
         // ################## Start the Three Threads with the important delegators ##################
         CommandDelegator::start(command_delegator_recv, commands_map)?;
-        DatabaseCommandDelegator::start(rcv_cmd_dat, runnables_database, database)?;
+        //DatabaseCommandDelegator::start(rcv_cmd_dat, runnables_database, database)?;
+        CommandSubDelegator::start::<Database>(rcv_cmd_dat, runnables_database, database)?;
         join_start_server_command_delegator(rcv_cmd_sv, runnables_server, server_redis)?;
 
         Ok(())
