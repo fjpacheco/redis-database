@@ -9,5 +9,4 @@ pub mod runnables_map;
 pub mod server;
 //pub mod server_command_delegator;
 
-
 type RawCommand = (Vec<String>, Sender<String>);

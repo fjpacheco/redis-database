@@ -21,35 +21,22 @@ impl CommandsMap {
         self.channel_map.get(string)
     }
 
-    pub fn get_for_server(
-        &self,
-        vec: &Vec<String>,
-    ) -> Option<&Sender<RawCommand>> {
+    pub fn get_for_server(&self, vec: &Vec<String>) -> Option<&Sender<RawCommand>> {
         let mut cmd = vec.get(0).unwrap_or(&" ".to_string()).to_string();
         cmd.push_str(" ");
         cmd.push_str(&vec.get(1).unwrap_or(&" ".to_string()).to_string());
         self.channel_map_server.get(&cmd)
     }
 
-    pub fn default() -> (
-        CommandsMap,
-        Receiver<RawCommand>,
-        Receiver<RawCommand>,
-    ) {
-        let (snd_cmd_dat, rcv_cmd_dat): (
-            Sender<RawCommand>,
-            Receiver<RawCommand>,
-        ) = mpsc::channel();
+    pub fn default() -> (CommandsMap, Receiver<RawCommand>, Receiver<RawCommand>) {
+        let (snd_cmd_dat, rcv_cmd_dat): (Sender<RawCommand>, Receiver<RawCommand>) =
+            mpsc::channel();
 
-        let (snd_cmd_server, rcv_cmd_server): (
-            Sender<RawCommand>,
-            Receiver<RawCommand>,
-        ) = mpsc::channel();
+        let (snd_cmd_server, rcv_cmd_server): (Sender<RawCommand>, Receiver<RawCommand>) =
+            mpsc::channel();
 
-        let mut channel_map: HashMap<String, Sender<RawCommand>> =
-            HashMap::new();
-        let mut channel_map_server: HashMap<String, Sender<RawCommand>> =
-            HashMap::new();
+        let mut channel_map: HashMap<String, Sender<RawCommand>> = HashMap::new();
+        let mut channel_map_server: HashMap<String, Sender<RawCommand>> = HashMap::new();
         channel_map.insert(String::from("set"), snd_cmd_dat.clone());
         channel_map.insert(String::from("get"), snd_cmd_dat.clone());
         channel_map.insert(String::from("strlen"), snd_cmd_dat.clone());
@@ -152,26 +139,21 @@ pub mod test_command_delegator {
 
         let database = Database::new();
 
-        let (snd_cmd_dat, rcv_cmd_dat): (
-            Sender<RawCommand>,
-            Receiver<RawCommand>,
-        ) = mpsc::channel();
+        let (snd_cmd_dat, rcv_cmd_dat): (Sender<RawCommand>, Receiver<RawCommand>) =
+            mpsc::channel();
 
         let _database_command_delegator =
             CommandSubDelegator::start::<Database>(rcv_cmd_dat, runnables_map, database);
 
-        let mut channel_map: HashMap<String, Sender<RawCommand>> =
-            HashMap::new();
+        let mut channel_map: HashMap<String, Sender<RawCommand>> = HashMap::new();
         channel_map.insert(String::from("lpush"), snd_cmd_dat.clone());
         channel_map.insert(String::from("lpop"), snd_cmd_dat.clone());
         channel_map.insert(String::from("lset"), snd_cmd_dat.clone());
 
         let commands_map = CommandsMap::new(channel_map);
 
-        let (snd_test_cmd, rcv_test_cmd): (
-            Sender<RawCommand>,
-            Receiver<RawCommand>,
-        ) = mpsc::channel();
+        let (snd_test_cmd, rcv_test_cmd): (Sender<RawCommand>, Receiver<RawCommand>) =
+            mpsc::channel();
 
         let _command_delegator = CommandDelegator::start(rcv_test_cmd, commands_map);
 
@@ -236,25 +218,20 @@ pub mod test_command_delegator {
 
         let database = Database::new();
 
-        let (snd_cmd_dat, rcv_cmd_dat): (
-            Sender<RawCommand>,
-            Receiver<RawCommand>,
-        ) = mpsc::channel();
+        let (snd_cmd_dat, rcv_cmd_dat): (Sender<RawCommand>, Receiver<RawCommand>) =
+            mpsc::channel();
 
         let _database_command_delegator =
-        CommandSubDelegator::start::<Database>(rcv_cmd_dat, runnables_map, database);
+            CommandSubDelegator::start::<Database>(rcv_cmd_dat, runnables_map, database);
 
-        let mut channel_map: HashMap<String, Sender<RawCommand>> =
-            HashMap::new();
+        let mut channel_map: HashMap<String, Sender<RawCommand>> = HashMap::new();
         channel_map.insert(String::from("lpop"), snd_cmd_dat.clone());
         channel_map.insert(String::from("lset"), snd_cmd_dat.clone());
 
         let commands_map = CommandsMap::new(channel_map);
 
-        let (snd_test_cmd, rcv_test_cmd): (
-            Sender<RawCommand>,
-            Receiver<RawCommand>,
-        ) = mpsc::channel();
+        let (snd_test_cmd, rcv_test_cmd): (Sender<RawCommand>, Receiver<RawCommand>) =
+            mpsc::channel();
 
         let _command_delegator = CommandDelegator::start(rcv_test_cmd, commands_map);
 

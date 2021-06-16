@@ -1,7 +1,7 @@
-use std::any::Any;
 use crate::native_types::RError;
 use crate::native_types::RedisType;
-use std::sync::mpsc::{Receiver};
+use std::any::Any;
+use std::sync::mpsc::Receiver;
 use std::thread::{self, JoinHandle};
 
 use crate::native_types::ErrorStruct;
@@ -41,7 +41,9 @@ impl CommandSubDelegator {
                 }
             }
         });
-        Ok(CommandSubDelegator {delegator: Some(delegator_handle),})
+        Ok(CommandSubDelegator {
+            delegator: Some(delegator_handle),
+        })
     }
 
     pub fn join(&mut self) -> Result<(), Box<dyn Any + Send>> {
@@ -77,10 +79,7 @@ pub mod test_database_command_delegator {
 
         let database = Database::new();
 
-        let (tx1, rx1): (
-            Sender<RawCommand>,
-            Receiver<RawCommand>,
-        ) = mpsc::channel();
+        let (tx1, rx1): (Sender<RawCommand>, Receiver<RawCommand>) = mpsc::channel();
 
         let _database_command_delegator_recv =
             CommandSubDelegator::start::<Database>(rx1, runnables_map, database);
@@ -115,10 +114,7 @@ pub mod test_database_command_delegator {
 
         let database = Database::new();
 
-        let (tx1, rx1): (
-            Sender<RawCommand>,
-            Receiver<RawCommand>,
-        ) = mpsc::channel();
+        let (tx1, rx1): (Sender<RawCommand>, Receiver<RawCommand>) = mpsc::channel();
 
         let _database_command_delegator_recv =
             CommandSubDelegator::start::<Database>(rx1, runnables_map, database);
@@ -148,10 +144,7 @@ pub mod test_database_command_delegator {
 
         let database = Database::new();
 
-        let (tx1, rx1): (
-            Sender<RawCommand>,
-            Receiver<RawCommand>,
-        ) = mpsc::channel();
+        let (tx1, rx1): (Sender<RawCommand>, Receiver<RawCommand>) = mpsc::channel();
 
         let _database_command_delegator_recv =
             CommandSubDelegator::start::<Database>(rx1, runnables_map, database);

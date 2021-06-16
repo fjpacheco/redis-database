@@ -11,14 +11,15 @@ use crate::{
     redis_config::RedisConfig,
     tcp_protocol::{
         command_delegator::CommandDelegator, /*database_command_delegator::DatabaseCommandDelegator,*/
-        listener_processor::ListenerProcessor, runnables_map::RunnablesMap,
+        listener_processor::ListenerProcessor,
+        runnables_map::RunnablesMap,
         /*server_command_delegator::ServerCommandDelegator,*/
     },
     Database,
 };
 
-use super::{command_delegator::CommandsMap, command_subdelegator::CommandSubDelegator};
 use super::RawCommand;
+use super::{command_delegator::CommandsMap, command_subdelegator::CommandSubDelegator};
 pub struct ServerRedis {
     // TODO: Change to private and discuss responsibility of methods with Rust-Eze team!
     config: RedisConfig,
