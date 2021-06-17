@@ -7,6 +7,10 @@ pub struct Database {
     elements: HashMap<String, (ExpireInfo, TypeSaved)>,
 }
 
+extern crate rand;
+
+use rand::seq::IteratorRandom;
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum TypeSaved {
     String(String),
@@ -64,18 +68,24 @@ impl Database {
         self.elements.clear();
     }
 
-    pub fn touch(&mut self, key: &str) {
+    pub fn touch(&mut self, key: &str) -> bool {
         if let Some((info, _)) = self.elements.get_mut(key) {
             if info.is_expired() {
                 self.elements.remove(key);
+                return true;
             }
         }
+        false
     }
 
     pub fn ttl(&mut self, key: &str) -> Option<u64> {
         self.touch(key);
         if let Some((info, _)) = self.elements.get(key) {
-            info.ttl()
+            if let Some(timeout) = info.ttl() {
+                Some(timeout)
+            } else {
+                None
+            }
         } else {
             None
         }
@@ -112,7 +122,20 @@ impl Database {
     pub fn persist(&mut self, key: &str) -> Option<u64> {
         self.touch(key);
         if let Some((info, _)) = self.elements.get_mut(key) {
-            info.persist()
+            if let Some(timeout) = info.persist() {
+                Some(timeout)
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    }
+
+    pub fn random_key(&mut self) -> Option<String> {
+        let mut rng = rand::thread_rng();
+        if let Some(key) = self.elements.keys().choose(&mut rng) {
+            Some(String::from(key))
         } else {
             None
         }
