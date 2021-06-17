@@ -37,15 +37,13 @@ impl ExpireInfo {
     pub fn update(&mut self) {
         let previous_touch = self.last_touch;
         self.last_touch = SystemTime::now();
-        let difference = self.last_touch.duration_since(previous_touch).unwrap();
         if let Some(ttl) = self.timeout {
+            let difference = self.last_touch.duration_since(previous_touch).unwrap();
             self.timeout = ttl.checked_sub(difference);
         }
     }
 
     pub fn ttl(&self) -> Option<u64> {
-        //No es necesario hacer update()
-        //self.update();
         self.timeout.map(|ttl| ttl.as_secs())
     }
 

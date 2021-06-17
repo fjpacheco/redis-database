@@ -81,11 +81,7 @@ impl Database {
     pub fn ttl(&mut self, key: &str) -> Option<u64> {
         self.touch(key);
         if let Some((info, _)) = self.elements.get(key) {
-            if let Some(timeout) = info.ttl() {
-                Some(timeout)
-            } else {
-                None
-            }
+            info.ttl()
         } else {
             None
         }
@@ -122,11 +118,7 @@ impl Database {
     pub fn persist(&mut self, key: &str) -> Option<u64> {
         self.touch(key);
         if let Some((info, _)) = self.elements.get_mut(key) {
-            if let Some(timeout) = info.persist() {
-                Some(timeout)
-            } else {
-                None
-            }
+            info.persist()
         } else {
             None
         }
@@ -134,11 +126,7 @@ impl Database {
 
     pub fn random_key(&mut self) -> Option<String> {
         let mut rng = rand::thread_rng();
-        if let Some(key) = self.elements.keys().choose(&mut rng) {
-            Some(String::from(key))
-        } else {
-            None
-        }
+        self.elements.keys().choose(&mut rng).map(String::from)
     }
 }
 

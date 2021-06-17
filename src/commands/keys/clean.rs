@@ -14,7 +14,7 @@ impl Runnable<Database> for Clean {
         mut database: &mut Database,
     ) -> Result<String, ErrorStruct> {
         let argument = pop_value(&mut buffer_vec, "clean")?;
-        no_more_values(&mut buffer_vec, "clean")?;
+        no_more_values(&buffer_vec, "clean")?;
         let iterations = parse_integer(argument)?;
 
         let mut continue_cleaning = true;
@@ -37,10 +37,7 @@ impl Runnable<Database> for Clean {
 fn touch_n_random_keys(n: &isize, database: &mut &mut Database) -> isize {
     let mut expired_keys: isize = 0;
     for _ in 0..*n {
-        let key = database.random_key();
-        if key.is_some() {
-            let key = key.unwrap();
-            println!("{}", key);
+        if let Some(key) = database.random_key() {
             if database.touch(&key) {
                 expired_keys += 1;
             }
