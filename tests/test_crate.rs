@@ -1,14 +1,54 @@
 #[cfg(test)]
 mod testings_redis {
     extern crate redis;
-    use std::thread;
+    use std::thread::{self, JoinHandle};
 
     use redis::RedisError;
-    use redis_rust::{redis_config::RedisConfig, tcp_protocol::server::ServerRedis};
+    use redis_rust::{
+        native_types::ErrorStruct, redis_config::RedisConfig, tcp_protocol::server::ServerRedis,
+    };
 
     #[test]
-    fn test01_crate() {
-        let _server_handler = thread::spawn(|| ServerRedis::start(vec![]));
+    #[ignore] // TODO: Recordar hablar con Pablo al respecto de los Sleeps en Tests.
+    fn test01_set_and_get() -> Result<(), ErrorStruct> {
+        let _server_thread: JoinHandle<Result<(), ErrorStruct>> = thread::spawn(|| {
+            ServerRedis::start(vec![])?;
+            Ok(())
+        });
+
+        let client = redis::Client::open(
+            "redis://".to_owned()
+                + &RedisConfig::default().ip()
+                + ":"
+                + &RedisConfig::default().port()
+                + "/",
+        )
+        .unwrap();
+
+        let mut conection_client = client.get_connection().unwrap();
+
+        let received: Result<String, RedisError> = redis::cmd("set")
+            .arg("key")
+            .arg("value")
+            .query(&mut conection_client);
+
+        assert_eq!(received.unwrap(), "OK");
+
+        let received: Result<String, RedisError> =
+            redis::cmd("get").arg("key").query(&mut conection_client);
+
+        assert_eq!(received.unwrap(), "value");
+
+        Ok(())
+    }
+
+    #[test]
+    #[ignore]
+    fn test_random() {
+        let _server_thread: JoinHandle<Result<(), ErrorStruct>> = thread::spawn(|| {
+            ServerRedis::start(vec![])?;
+            Ok(())
+        });
 
         let client = redis::Client::open(
             "redis://".to_owned()

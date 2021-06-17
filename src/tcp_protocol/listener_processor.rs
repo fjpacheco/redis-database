@@ -13,9 +13,11 @@ use std::{
     thread::{self, JoinHandle},
 };
 
+use super::RawCommand;
+
 pub struct ListenerProcessor {
     thread_processor: JoinHandle<()>,
-    command_delegator_sender: Arc<Mutex<Sender<(Vec<String>, Sender<String>)>>>,
+    command_delegator_sender: Arc<Mutex<Sender<RawCommand>>>,
     clients: Arc<Mutex<HashMap<SocketAddr, ClientHandler>>>,
     status: Arc<AtomicBool>,
 }
@@ -26,8 +28,8 @@ impl ListenerProcessor {
         config: &mut RedisConfig,
         new_port: String,
     ) -> Result<String, ErrorStruct> {
-        let ip_old = config.ip().to_string();
-        let port_old = config.port().to_string();
+        let ip_old = config.ip();
+        let port_old = config.port();
 
         config.update_port(&new_port);
         let listener_new = match Self::new_tcp_listener(&config) {
@@ -46,7 +48,7 @@ impl ListenerProcessor {
 
         // Y al instante de updatear a true => hago una conexion fantasma con un cliente!
         //  con esto te aprovechas el break dentro del for in listener.incoming().iter() del listener viejo!!!! Con eso CORTÁS ESE BUCLE!!
-        match TcpStream::connect(ip_old.to_owned() + ":" + &port_old) {
+        match TcpStream::connect(ip_old + ":" + &port_old) {
             Ok(_) => Ok(self.updated(listener_new)),
             Err(err) => {
                 // Vuelvo a la normalidad el status, no se logró conectar ese cliente fantasma
@@ -76,7 +78,7 @@ impl ListenerProcessor {
 
     pub fn start(
         config: &RedisConfig,
-        command_delegator_sender: Arc<Mutex<Sender<(Vec<String>, Sender<String>)>>>,
+        command_delegator_sender: Arc<Mutex<Sender<RawCommand>>>,
         clients: Arc<Mutex<HashMap<SocketAddr, ClientHandler>>>,
     ) -> Result<Self, ErrorStruct> {
         let cc_command_delegator_sender = command_delegator_sender.clone();
@@ -90,18 +92,19 @@ impl ListenerProcessor {
             Self::incoming(listener, cc_status, cc_command_delegator_sender, cc_clients);
         });
 
-        Ok(ListenerProcessor {
+        let listener = ListenerProcessor {
             thread_processor,
-            clients,
             command_delegator_sender,
+            clients,
             status,
-        })
+        };
+        Ok(listener)
     }
 
     fn incoming(
         listener: TcpListener,
         status: Arc<AtomicBool>,
-        cc_command_delegator_sender: Arc<Mutex<Sender<(Vec<String>, Sender<String>)>>>,
+        cc_command_delegator_sender: Arc<Mutex<Sender<RawCommand>>>,
         cc_clients: Arc<Mutex<HashMap<SocketAddr, ClientHandler>>>,
     ) {
         for stream in listener.incoming() {
@@ -144,10 +147,7 @@ impl ListenerProcessor {
         let port = config.port();
         let listener = bind(&ip, &port)?;
         //print!("{}", redis_logo(&port));
-        println!(
-            "<Server>: Server ON. Bind in: {}",
-            ip.to_owned() + ":" + &port
-        );
+        println!("<Server>: Server ON. Bind in: {}", ip + ":" + &port);
         Ok(listener)
     }
 }

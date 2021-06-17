@@ -46,7 +46,7 @@ fn forma_nueva(
                     let mut input_encoded = encode_netcat_input(input);
                     input_encoded.remove(0);
                     let mut lines = BufReader::new(input_encoded.as_bytes()).lines();
-                    let first_lecture = lines.next().unwrap().unwrap_or("-1".into());
+                    let first_lecture = lines.next().unwrap().unwrap_or_else(|_| "-1".into());
                     _response = process(first_lecture, &mut lines, &command_delegator_sender);
                 }
             } else {
@@ -56,7 +56,7 @@ fn forma_nueva(
                 );
                 _response = RError::encode(error);
             }
-            stream_write.write(_response.as_bytes()).unwrap();
+            stream_write.write_all(_response.as_bytes()).unwrap();
         }
         println!("<Server>: Loop finish. Client disconnected");
     });

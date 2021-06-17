@@ -85,8 +85,8 @@ fn get_configs(file: File) -> HashMap<String, String> {
     BufReader::new(file)
         .lines()
         .into_iter()
-        .map(|x| x.unwrap_or(" ".to_string()))
-        .filter(|x| !x.starts_with("#"))
+        .map(|x| x.unwrap_or_else(|_| " ".to_string()))
+        .filter(|x| !x.starts_with('#'))
         .filter(|x| !x.is_empty())
         .map(|x| {
             x.split_whitespace()

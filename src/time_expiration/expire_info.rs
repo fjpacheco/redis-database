@@ -9,6 +9,11 @@ pub struct ExpireInfo {
     last_touch: SystemTime,
     timeout: Option<Duration>,
 }
+impl Default for ExpireInfo {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl ExpireInfo {
     pub fn new() -> ExpireInfo {
