@@ -34,10 +34,14 @@ mod testings_redis {
 
         assert_eq!(received.unwrap(), "OK");
 
-        let received: Result<String, RedisError> =
-            redis::cmd("get").arg("key").query(&mut conection_client);
-
-        assert_eq!(received.unwrap(), "value");
+        let received: Result<String, RedisError> = redis::cmd("config set")
+            .arg("port")
+            .arg("2222")
+            .query(&mut conection_client);
+        println!("LINE 39: {:?}", received);
+        if received.is_ok() {
+            assert_eq!(received.unwrap(), "value");
+        }
 
         Ok(())
     }
@@ -59,6 +63,7 @@ mod testings_redis {
         )
         .unwrap();
         let mut conection_client = client.get_connection().unwrap();
+        println!("Conectado!");
 
         let received_3: Result<String, RedisError> = redis::cmd("set")
             .arg("Agustín")
@@ -70,8 +75,6 @@ mod testings_redis {
             .arg("Panetta")
             .query(&mut conection_client);
         println!("set Martina Panetta => {:?}", received_3);
-        let received_54: Result<String, RedisError> = redis::cmd(" ").query(&mut conection_client);
-        println!("5 => {:?}", received_54);
 
         let received_4: Result<String, RedisError> = redis::cmd("get")
             .arg("Martina")

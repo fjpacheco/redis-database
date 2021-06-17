@@ -1,9 +1,7 @@
 use std::{
     collections::HashMap,
-    sync::{
-        mpsc::{channel, Receiver},
-        Arc, Mutex,
-    },
+    fmt,
+    sync::{mpsc::channel, Arc, Mutex},
 };
 
 use crate::{
@@ -18,70 +16,58 @@ use crate::{
     Database,
 };
 
-use super::RawCommand;
 use super::{command_delegator::CommandsMap, command_subdelegator::CommandSubDelegator};
 pub struct ServerRedis {
-    // TODO: Change to private and discuss responsibility of methods with Rust-Eze team!
-    config: RedisConfig,
-    listener_processor: ListenerProcessor,
+    _config: RedisConfig,
 }
 
 impl ServerRedis {
-    pub fn new_port(&mut self, new_port: String) -> Result<String, ErrorStruct> {
+    //config set port will not be necessary in the project
+    /*pub fn new_port(&mut self, new_port: String) -> Result<String, ErrorStruct> {
         self.listener_processor.new_port(&mut self.config, new_port)
-    }
+    }*/
 
     pub fn start(argv: Vec<String>) -> Result<(), ErrorStruct> {
         // ################## 1° Initialization structures ##################
         let config = RedisConfig::parse_config(argv)?;
         let clients = Arc::new(Mutex::new(HashMap::new()));
         let database = Database::new();
+        let listener = ListenerProcessor::new_tcp_listener(&config)?;
 
         // ################## 2° Initialization structures ##################
         let (command_delegator_sender, command_delegator_recv) = channel();
-        let c_command_delegator_sender = Arc::new(Mutex::new(command_delegator_sender));
         let (commands_map, rcv_cmd_dat, rcv_cmd_sv) = CommandsMap::default();
 
-        // ################## Start listening clients with First Thread ##################
-        let listener_processor =
-            ListenerProcessor::start(&config, c_command_delegator_sender, clients)?;
-
         // ################## 3° Initialization structures ##################
-        let server_redis = Self::new(config, listener_processor);
+        let server_redis = Self::new(config);
         let runnables_database = RunnablesMap::<Database>::database();
         let runnables_server = RunnablesMap::<Self>::server();
 
-        // ################## Start the Three Threads with the important delegators ##################
+        // ################## Start the Four Threads with the important delegators and listener ##################
         CommandDelegator::start(command_delegator_recv, commands_map)?;
-        //DatabaseCommandDelegator::start(rcv_cmd_dat, runnables_database, database)?;
         CommandSubDelegator::start::<Database>(rcv_cmd_dat, runnables_database, database)?;
-        join_start_server_command_delegator(rcv_cmd_sv, runnables_server, server_redis)?;
+        CommandSubDelegator::start::<ServerRedis>(rcv_cmd_sv, runnables_server, server_redis)?;
 
+        let mut listener_processor =
+            ListenerProcessor::start(listener, command_delegator_sender, clients)?;
+
+        let join = listener_processor.join();
+        if let Err(item) = join {
+            return Err(ErrorStruct::new(
+                "ERR_JOIN_LISTENER_PROCESSOR".into(),
+                format!("{:?}", item),
+            ));
+        };
         Ok(())
     }
 
-    fn new(config: RedisConfig, listener_processor: ListenerProcessor) -> Self {
-        Self {
-            config,
-            listener_processor,
-        }
+    fn new(config: RedisConfig) -> Self {
+        Self { _config: config }
     }
 }
 
-fn join_start_server_command_delegator(
-    rcv_cmd_sv: Receiver<RawCommand>,
-    runnables_server: RunnablesMap<ServerRedis>,
-    server_redis: ServerRedis,
-) -> Result<(), ErrorStruct> {
-    let mut server_command_delegator =
-        //ServerCommandDelegator::start(rcv_cmd_sv, runnables_server, server_redis)?;
-        CommandSubDelegator::start::<ServerRedis>(rcv_cmd_sv, runnables_server, server_redis)?;
-    let join = server_command_delegator.join();
-    if let Err(item) = join {
-        return Err(ErrorStruct::new(
-            "ERR_JOIN_THREAD_SERVER_COMMAND_DELEGATOR".into(),
-            format!("{:?}", item),
-        ));
-    };
-    Ok(())
+impl fmt::Display for ServerRedis {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "ServerRedis")
+    }
 }

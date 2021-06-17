@@ -1,56 +1,56 @@
+use crate::messages::redis_messages::command_not_found;
 use crate::native_types::RError;
 use crate::native_types::RedisType;
-use std::any::Any;
+use std::fmt::Display;
 use std::sync::mpsc::Receiver;
-use std::thread::{self, JoinHandle};
+use std::thread;
 
 use crate::native_types::ErrorStruct;
 use crate::tcp_protocol::runnables_map::RunnablesMap;
 
-use super::RawCommand;
-pub struct CommandSubDelegator {
-    delegator: Option<JoinHandle<()>>,
-}
-
+use super::{get_command_type, RawCommand};
+pub struct CommandSubDelegator;
 /// Interprets commands and delegates tasks
 
 impl CommandSubDelegator {
     pub fn start<T: 'static>(
-        rcv_cmd_dat: Receiver<RawCommand>,
-        runnables_mut_data: RunnablesMap<T>,
-        mut mut_data: T,
-    ) -> Result<CommandSubDelegator, ErrorStruct>
+        rcv_cmd: Receiver<RawCommand>,
+        runnables_map: RunnablesMap<T>,
+        mut data: T,
+    ) -> Result<(), ErrorStruct>
     where
-        T: Send + Sync,
+        T: Send + Sync + Display,
     {
-        let delegator_handle = thread::spawn(move || {
-            for (mut command_input_user, sender_to_client) in rcv_cmd_dat.iter() {
-                let command_type = command_input_user.remove(0); // ["set", "key", "value"]
-                if let Some(runnable_command) = runnables_mut_data.get(&command_type) {
+        let builder = thread::Builder::new().name(format!("Command Sub-Delegator for {}", data));
+
+        let command_sub_delegator_handler = builder.spawn(move || {
+            for (mut command_input_user, sender_to_client) in rcv_cmd.iter() {
+                let command_type = get_command_type(&mut command_input_user);
+
+                if let Some(runnable_command) = runnables_map.get(&command_type) {
                     // REMEMBER TO CHANGE THE TRAIT (MUST WORK WITH VEC<STRING>)
                     let command_str: Vec<&str> =
                         command_input_user.iter().map(|s| s.as_ref()).collect();
-                    match runnable_command.run(command_str, &mut mut_data) {
+                    match runnable_command.run(command_str, &mut data) {
                         Ok(encoded_resp) => sender_to_client.send(encoded_resp).unwrap(),
                         Err(err) => sender_to_client.send(RError::encode(err)).unwrap(),
                     };
                 } else {
-                    let error =
-                        ErrorStruct::new("ERR".to_string(), "command does not exist".to_string());
+                    let error = command_not_found(command_type, command_input_user);
                     sender_to_client.send(RError::encode(error)).unwrap();
                 }
             }
         });
-        Ok(CommandSubDelegator {
-            delegator: Some(delegator_handle),
-        })
-    }
 
-    pub fn join(&mut self) -> Result<(), Box<dyn Any + Send>> {
-        self.delegator.take().unwrap().join()
+        match command_sub_delegator_handler {
+            Ok(_) => Ok(()),
+            Err(item) => Err(ErrorStruct::new(
+                "ERR_THREAD_BUILDER".into(),
+                format!("{}", item),
+            )),
+        }
     }
 }
-
 #[cfg(test)]
 pub mod test_database_command_delegator {
     use crate::commands::lists::llen::Llen;
@@ -131,7 +131,10 @@ pub mod test_database_command_delegator {
         tx1.send((buffer_vec_mock_get, tx3)).unwrap();
 
         let response2 = rx3.recv().unwrap();
-        assert_eq!(response2, "-ERR command does not exist\r\n".to_string());
+        assert_eq!(
+            response2,
+            "-ERR unknown command \'get\', with args beginning with: \'key\', \r\n".to_string()
+        );
     }
 
     #[test]

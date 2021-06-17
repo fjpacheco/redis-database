@@ -3,18 +3,19 @@ use std::{collections::HashMap, thread};
 
 use super::RawCommand;
 
+use crate::messages::redis_messages::command_not_found;
 use crate::native_types::{ErrorStruct, RError, RedisType};
 
 pub struct CommandsMap {
     channel_map: HashMap<String, Sender<RawCommand>>,
-    channel_map_server: HashMap<String, Sender<RawCommand>>,
+    _channel_map_server: HashMap<String, Sender<RawCommand>>,
 }
 
 impl CommandsMap {
     pub fn new(channel_map: HashMap<String, Sender<RawCommand>>) -> CommandsMap {
         CommandsMap {
             channel_map,
-            channel_map_server: HashMap::new(),
+            _channel_map_server: HashMap::new(),
         }
     }
 
@@ -22,11 +23,8 @@ impl CommandsMap {
         self.channel_map.get(string)
     }
 
-    pub fn get_for_server(&self, vec: &[String]) -> Option<&Sender<RawCommand>> {
-        let mut cmd = vec.get(0).unwrap_or(&" ".to_string()).to_string();
-        cmd.push(' ');
-        cmd.push_str(&vec.get(1).unwrap_or(&" ".to_string()).to_string());
-        self.channel_map_server.get(&cmd)
+    pub fn get_for_server(&self, string: &str) -> Option<&Sender<RawCommand>> {
+        self.channel_map.get(string)
     }
 
     pub fn default() -> (CommandsMap, Receiver<RawCommand>, Receiver<RawCommand>) {
@@ -46,7 +44,7 @@ impl CommandsMap {
         (
             CommandsMap {
                 channel_map,
-                channel_map_server,
+                _channel_map_server: channel_map_server,
             },
             rcv_cmd_dat,
             rcv_cmd_server,
@@ -63,23 +61,34 @@ impl CommandDelegator {
         command_delegator_recv: Receiver<RawCommand>,
         commands_map: CommandsMap,
     ) -> Result<(), ErrorStruct> {
-        let _command_handler = thread::spawn(move || {
-            for (command_input_user, sender_to_client) in command_delegator_recv.iter() {
-                let command_type = &command_input_user[0];
+        let builder = thread::Builder::new().name("Command Delegator".into());
 
-                if let Some(command_dest) = commands_map.get(command_type) {
+        let command_delegator_handler = builder.spawn(move || {
+            for (command_input_user, sender_to_client) in command_delegator_recv.iter() {
+                let command_type = &command_input_user[0].to_string();
+                let command_type_for_config =
+                    command_type.to_owned() + &command_input_user[1].to_string();
+
+                if let Some(command_dest) = commands_map.get(&command_type) {
                     let _ = command_dest.send((command_input_user, sender_to_client));
-                } else if let Some(command_dest) = commands_map.get_for_server(&command_input_user)
+                } else if let Some(command_dest) =
+                    commands_map.get_for_server(&command_type_for_config)
                 {
                     let _ = command_dest.send((command_input_user, sender_to_client));
                 } else {
-                    let error =
-                        ErrorStruct::new("ERR".to_string(), "command does not exist".to_string());
-                    sender_to_client.send(RError::encode(error)).unwrap(); // CHECK UNWRAP L8R
+                    let error = command_not_found(command_type.to_string(), command_input_user);
+                    sender_to_client.send(RError::encode(error)).unwrap();
                 }
             }
         });
-        Ok(())
+
+        match command_delegator_handler {
+            Ok(_) => Ok(()),
+            Err(item) => Err(ErrorStruct::new(
+                "ERR_THREAD_BUILDER".into(),
+                format!("{}", item),
+            )),
+        }
     }
 
     /*
@@ -252,6 +261,6 @@ pub mod test_command_delegator {
         // ASSERT
 
         let response1 = rcv_dat_test.recv().unwrap();
-        assert_eq!(response1, "-ERR command does not exist\r\n".to_string());
+        assert_eq!(response1, "-ERR unknown command \'lpush\', with args beginning with: \'lpush\', \'key\', \'delegator\', \'new\', \'my\', \'testing\', \r\n".to_string());
     }
 }

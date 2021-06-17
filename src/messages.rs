@@ -18,6 +18,8 @@ impl MessageRedis {
 }
 
 pub mod redis_messages {
+    use crate::native_types::ErrorStruct;
+
     use super::MessageRedis;
 
     pub fn ok() -> String {
@@ -77,21 +79,19 @@ pub mod redis_messages {
         }
     }
 
-    pub fn command_not_found_in(buffer: String) -> MessageRedis {
-        let mut buffer_vec: Vec<&str> = buffer.split_whitespace().collect();
-        let command = buffer_vec[0];
-        buffer_vec.remove(0);
+    pub fn command_not_found(command_type: String, buffer_vec: Vec<String>) -> ErrorStruct {
         let mut args_received = String::new();
         buffer_vec
             .into_iter()
-            .for_each(|one_arg| args_received.push_str(&("\'".to_owned() + one_arg + "\', ")));
-        MessageRedis {
-            prefix: "ERR".to_string(),
-            message: format!(
+            .for_each(|one_arg| args_received.push_str(&("\'".to_owned() + &one_arg + "\', ")));
+
+        ErrorStruct::new(
+            "ERR".to_string(),
+            format!(
                 "unknown command \'{}\', with args beginning with: {}",
-                command, args_received
+                command_type, args_received
             ),
-        }
+        )
     }
 
     pub fn redis_logo(port: &str) -> String {

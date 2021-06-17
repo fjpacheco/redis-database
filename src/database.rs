@@ -2,6 +2,7 @@ use crate::messages::redis_messages;
 use crate::native_types::error::ErrorStruct;
 use crate::time_expiration::expire_info::ExpireInfo;
 use std::collections::{HashMap, HashSet, VecDeque};
+use std::fmt;
 pub struct Database {
     elements: HashMap<String, (ExpireInfo, TypeSaved)>,
 }
@@ -121,6 +122,12 @@ impl Database {
 impl Default for Database {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+impl fmt::Display for Database {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Database")
     }
 }
 
