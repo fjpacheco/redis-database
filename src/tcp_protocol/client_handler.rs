@@ -1,5 +1,6 @@
 use std::io::BufRead;
 use std::io::Lines;
+use std::net::Shutdown;
 use std::sync::mpsc;
 use std::{
     io::{BufReader, Write},
@@ -12,47 +13,61 @@ use crate::native_types::redis_type::encode_netcat_input;
 use crate::native_types::{ErrorStruct, RArray, RError, RedisType};
 
 #[derive(Debug)]
-pub struct ClientHandler;
+pub struct ClientHandler {
+    stream: TcpStream,
+}
 
 impl ClientHandler {
     pub fn new(
-        stream: TcpStream,
+        stream_received: TcpStream,
         command_delegator_sender: Sender<(Vec<String>, Sender<String>)>,
     ) -> ClientHandler {
+        /*stream_received // FOR TIMEOUT OF REDIS.CONF
+        .set_read_timeout(Some(Duration::new(5, 0)))
+        .expect("set_read_timeout call failed");*/
+        let mut stream = stream_received.try_clone().unwrap();
+
         let _client_thread = thread::spawn(move || {
-            let mut _response = String::new();
-
             let buf_reader_stream = BufReader::new(stream.try_clone().unwrap());
-            let mut stream_write = stream.try_clone().unwrap();
-
             let mut lines_buffer_reader = buf_reader_stream.lines();
+            let mut response;
+
             while let Some(received) = lines_buffer_reader.next() {
-                if let Ok(mut input) = received {
-                    if input.starts_with('*') {
-                        // example *3
-                        input.remove(0); // i want -> 3
-                        _response =
-                            process(input, &mut lines_buffer_reader, &command_delegator_sender);
-                    } else {
-                        let mut input_encoded = encode_netcat_input(input);
-                        input_encoded.remove(0);
-                        let mut lines = BufReader::new(input_encoded.as_bytes()).lines();
-                        let first_lecture = lines.next().unwrap().unwrap_or_else(|_| "-1".into());
-                        _response = process(first_lecture, &mut lines, &command_delegator_sender);
+                match received {
+                    Ok(mut input) => {
+                        if input.starts_with('*') {
+                            // example *3
+                            input.remove(0); // i want -> 3
+                            response =
+                                process(input, &mut lines_buffer_reader, &command_delegator_sender);
+                        } else {
+                            let mut input_encoded = encode_netcat_input(input);
+                            input_encoded.remove(0);
+                            let mut lines = BufReader::new(input_encoded.as_bytes()).lines();
+                            let first_lecture =
+                                lines.next().unwrap().unwrap_or_else(|_| "-1".into());
+                            response =
+                                process(first_lecture, &mut lines, &command_delegator_sender);
+                        }
                     }
-                } else {
-                    let error = ErrorStruct::new(
-                        "ERR".to_string(),
-                        "command received was not an array".to_string(),
-                    );
-                    _response = RError::encode(error);
+                    Err(err) => match err.kind() {
+                        std::io::ErrorKind::WouldBlock => break, // FOR TIMEOUT OF REDIS.CONF
+                        _ => {
+                            response = RError::encode(ErrorStruct::new(
+                                "ERR".to_string(),
+                                format!("Error received in next line.\nDetail: {:?}", err),
+                            ));
+                        }
+                    },
                 }
-                stream_write.write_all(_response.as_bytes()).unwrap();
+                stream.write_all(response.as_bytes()).unwrap();
             }
-            println!("<Server>: Loop finish. Client disconnected");
+            println!("<Server>: Loop finish. Client disconnected 💩 ");
         });
 
-        ClientHandler
+        ClientHandler {
+            stream: stream_received,
+        }
     }
 }
 
@@ -91,5 +106,14 @@ where
             print!("Error decode in client handler");
             RError::encode(error)
         }
+    }
+}
+
+impl Drop for ClientHandler {
+    fn drop(&mut self) {
+        println!("Dropping ClienHandler 😜");
+        self.stream
+            .shutdown(Shutdown::Both)
+            .expect("Error to close TcpStream");
     }
 }

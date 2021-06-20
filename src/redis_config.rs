@@ -54,6 +54,10 @@ impl RedisConfig {
         self.port.to_string()
     }
 
+    pub fn get_addr(&self) -> String {
+        self.ip.to_string() + ":" + &self.port
+    }
+
     pub fn update_port(&mut self, port: &str) {
         self.port = port.to_string();
     }

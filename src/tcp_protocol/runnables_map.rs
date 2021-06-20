@@ -32,6 +32,10 @@ impl<T> RunnablesMap<T> {
     pub fn server() -> RunnablesMap<ServerRedis> {
         let mut map: HashMap<String, Box<dyn Runnable<ServerRedis> + Send + Sync>> = HashMap::new();
         map.insert(
+            String::from("shutdown"),
+            Box::new(server::shutdown::Shutdown),
+        );
+        map.insert(
             String::from("config set"),
             Box::new(server::config_set::ConfigSet),
         );

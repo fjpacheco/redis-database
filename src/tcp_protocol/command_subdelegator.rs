@@ -51,6 +51,7 @@ impl CommandSubDelegator {
         }
     }
 }
+
 #[cfg(test)]
 pub mod test_database_command_delegator {
     use crate::commands::lists::llen::Llen;

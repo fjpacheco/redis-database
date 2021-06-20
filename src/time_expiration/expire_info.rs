@@ -24,12 +24,10 @@ impl ExpireInfo {
     }
 
     pub fn is_expired(&mut self) -> bool {
+        self.update();
         if self.timeout.is_some() {
-            self.update();
-
             !matches!(self.timeout, Some(_))
         } else {
-            self.update();
             false
         }
     }

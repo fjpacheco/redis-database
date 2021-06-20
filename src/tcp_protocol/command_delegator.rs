@@ -8,14 +8,14 @@ use crate::native_types::{ErrorStruct, RError, RedisType};
 
 pub struct CommandsMap {
     channel_map: HashMap<String, Sender<RawCommand>>,
-    _channel_map_server: HashMap<String, Sender<RawCommand>>,
+    channel_map_server: HashMap<String, Sender<RawCommand>>,
 }
 
 impl CommandsMap {
     pub fn new(channel_map: HashMap<String, Sender<RawCommand>>) -> CommandsMap {
         CommandsMap {
             channel_map,
-            _channel_map_server: HashMap::new(),
+            channel_map_server: HashMap::new(),
         }
     }
 
@@ -24,7 +24,7 @@ impl CommandsMap {
     }
 
     pub fn get_for_server(&self, string: &str) -> Option<&Sender<RawCommand>> {
-        self.channel_map.get(string)
+        self.channel_map_server.get(string)
     }
 
     pub fn default() -> (CommandsMap, Receiver<RawCommand>, Receiver<RawCommand>) {
@@ -39,12 +39,13 @@ impl CommandsMap {
         channel_map.insert(String::from("set"), snd_cmd_dat.clone());
         channel_map.insert(String::from("get"), snd_cmd_dat.clone());
         channel_map.insert(String::from("strlen"), snd_cmd_dat);
+        channel_map_server.insert(String::from("shutdown"), snd_cmd_server.clone());
         channel_map_server.insert(String::from("config set"), snd_cmd_server);
 
         (
             CommandsMap {
                 channel_map,
-                _channel_map_server: channel_map_server,
+                channel_map_server,
             },
             rcv_cmd_dat,
             rcv_cmd_server,
@@ -65,15 +66,15 @@ impl CommandDelegator {
 
         let command_delegator_handler = builder.spawn(move || {
             for (command_input_user, sender_to_client) in command_delegator_recv.iter() {
-                let command_type = &command_input_user[0].to_string();
-                let command_type_for_config =
-                    command_type.to_owned() + &command_input_user[1].to_string();
+                let mut command_type = command_input_user[0].to_string();
+                if command_type.contains("config") {
+                    command_type =
+                        command_type.to_owned() + " " + &command_input_user[1].to_string();
+                }
 
                 if let Some(command_dest) = commands_map.get(&command_type) {
                     let _ = command_dest.send((command_input_user, sender_to_client));
-                } else if let Some(command_dest) =
-                    commands_map.get_for_server(&command_type_for_config)
-                {
+                } else if let Some(command_dest) = commands_map.get_for_server(&command_type) {
                     let _ = command_dest.send((command_input_user, sender_to_client));
                 } else {
                     let error = command_not_found(command_type.to_string(), command_input_user);
@@ -90,36 +91,6 @@ impl CommandDelegator {
             )),
         }
     }
-
-    /*
-    pub fn new_update(
-        command_delegator_recv: Receiver<RawCommand>,
-        runnables: RunnablesMap,
-        database: Arc<Mutex<Database>>
-    ) -> Self {
-        let _ = thread::Builder::new().name("Command Delegator".to_string()).spawn(move || {
-            println!("{:?}",thread::current());
-            for (mut command_input_user, sender_to_client) in command_delegator_recv.iter() {
-
-                if let Some(runnable_command) = runnables.get(&command_input_user[0]) { // TODO: => "set" vs "config set"
-                    command_input_user.remove(0); // ["set", "key", "value"]
-                    let command_str: Vec<&str> = command_input_user.iter().map(|s| s.as_ref()).collect(); // TODO: => cambiar a Vec<String>
-                    match runnable_command.run(command_str, &mut database.lock().unwrap()) {
-                        Ok(encoded_resp) => sender_to_client.send(encoded_resp).unwrap(),
-                        Err(err) => sender_to_client.send(RError::encode(err)).unwrap(),
-                    };
-                } else {
-                    let error =
-                        ErrorStruct::new("ERR_NEW".to_string(), "command does not exist".to_string());
-                    sender_to_client.send(RError::encode(error));
-                }
-
-
-            }
-        });
-        CommandDelegator {}
-    }
-    */
 }
 
 #[cfg(test)]

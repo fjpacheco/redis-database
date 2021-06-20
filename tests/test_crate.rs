@@ -34,14 +34,9 @@ mod testings_redis {
 
         assert_eq!(received.unwrap(), "OK");
 
-        let received: Result<String, RedisError> = redis::cmd("config set")
-            .arg("port")
-            .arg("2222")
-            .query(&mut conection_client);
-        println!("LINE 39: {:?}", received);
-        if received.is_ok() {
-            assert_eq!(received.unwrap(), "value");
-        }
+        let received: Result<String, RedisError> =
+            redis::cmd("shutdown").query(&mut conection_client);
+        assert_eq!(received.unwrap(), "SERVER OFF");
 
         Ok(())
     }

@@ -1,7 +1,11 @@
 use std::{
     collections::HashMap,
     fmt,
-    sync::{mpsc::channel, Arc, Mutex},
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        mpsc::channel,
+        Arc, Mutex,
+    },
 };
 
 use crate::{
@@ -18,14 +22,17 @@ use crate::{
 
 use super::{command_delegator::CommandsMap, command_subdelegator::CommandSubDelegator};
 pub struct ServerRedis {
-    _config: RedisConfig,
+    config: RedisConfig,
+    status: Arc<AtomicBool>,
 }
 
 impl ServerRedis {
-    //config set port will not be necessary in the project
-    /*pub fn new_port(&mut self, new_port: String) -> Result<String, ErrorStruct> {
-        self.listener_processor.new_port(&mut self.config, new_port)
-    }*/
+    pub fn store(&self, val: bool) {
+        self.status.store(val, Ordering::SeqCst);
+    }
+    pub fn get_addr(&self) -> String {
+        self.config.get_addr()
+    }
 
     pub fn start(argv: Vec<String>) -> Result<(), ErrorStruct> {
         // ################## 1° Initialization structures ##################
@@ -39,7 +46,11 @@ impl ServerRedis {
         let (commands_map, rcv_cmd_dat, rcv_cmd_sv) = CommandsMap::default();
 
         // ################## 3° Initialization structures ##################
-        let server_redis = Self::new(config);
+        let status = Arc::new(AtomicBool::new(false));
+        let server_redis = Self {
+            config,
+            status: status.clone(),
+        };
         let runnables_database = RunnablesMap::<Database>::database();
         let runnables_server = RunnablesMap::<Self>::server();
 
@@ -48,26 +59,46 @@ impl ServerRedis {
         CommandSubDelegator::start::<Database>(rcv_cmd_dat, runnables_database, database)?;
         CommandSubDelegator::start::<ServerRedis>(rcv_cmd_sv, runnables_server, server_redis)?;
 
-        let mut listener_processor =
-            ListenerProcessor::start(listener, command_delegator_sender, clients)?;
+        /*
+        ¡CRATE EXTERNO!
+        CONTROLAS EL SIGINT CRTL+C
 
-        let join = listener_processor.join();
-        if let Err(item) = join {
-            return Err(ErrorStruct::new(
-                "ERR_JOIN_LISTENER_PROCESSOR".into(),
-                format!("{:?}", item),
-            ));
-        };
+
+        [dependencies]
+        ctrlc = { version = "3.0", features = ["termination"] }
+
+
+        ctrlc::set_handler(move ||  {
+            let client = redis::Client::open(
+                "redis://".to_owned()
+                    + &c_config.ip()
+                    + ":"
+                    + &c_config.port()
+                    + "/",
+            )
+            .unwrap();
+            let mut conection_client = client.get_connection().unwrap();
+
+            let _received_3: Result<String, RedisError> = redis::cmd("shutdown")
+                .query(&mut conection_client);
+
+        })
+        .expect("Error setting Ctrl-C handler");
+        */
+
+        ListenerProcessor::incoming(listener, status, command_delegator_sender, clients);
         Ok(())
-    }
-
-    fn new(config: RedisConfig) -> Self {
-        Self { _config: config }
     }
 }
 
 impl fmt::Display for ServerRedis {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "ServerRedis")
+    }
+}
+
+impl Drop for ServerRedis {
+    fn drop(&mut self) {
+        println!("Dropping ServerRedis 😜");
     }
 }
