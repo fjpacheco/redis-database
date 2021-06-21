@@ -10,7 +10,7 @@ pub struct Incrby;
 ///
 /// This operation is limited to 64 bit signed integers.
 
-impl Runnable for Incrby {
+impl Runnable<Database> for Incrby {
     fn run(&self, buffer_vec: Vec<&str>, database: &mut Database) -> Result<String, ErrorStruct> {
         execute_value_modification(database, buffer_vec, incr)
     }

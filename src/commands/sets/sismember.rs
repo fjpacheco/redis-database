@@ -8,7 +8,7 @@ use crate::{
 
 pub struct Sismember;
 
-impl Runnable for Sismember {
+impl Runnable<Database> for Sismember {
     fn run(
         &self,
         mut buffer_vec: Vec<&str>,

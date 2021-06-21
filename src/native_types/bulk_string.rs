@@ -1,4 +1,4 @@
-use std::io::BufRead;
+use std::io::{BufRead, Lines};
 
 use super::{
     error::ErrorStruct,
@@ -23,19 +23,11 @@ impl RedisType<String> for RBulkString {
         }
     }
 
-    fn decode(bulk: &mut dyn BufRead) -> Result<String, ErrorStruct> {
-        let mut sliced_size = String::new();
-        match bulk.read_line(&mut sliced_size) {
-            Ok(_) => {
-                sliced_size.pop();
-                sliced_size.pop();
-                verify_parsable_bulk_size(sliced_size, bulk)
-            }
-            Err(_) => Err(ErrorStruct::new(
-                "ERR_PARSE".to_string(),
-                "Failed to parse redis string".to_string(),
-            )),
-        }
+    fn decode<G>(first_lecture: String, buffer: &mut Lines<G>) -> Result<String, ErrorStruct>
+    where
+        G: BufRead,
+    {
+        verify_parsable_bulk_size(first_lecture, buffer)
     }
 }
 
@@ -43,8 +35,9 @@ impl RedisType<String> for RBulkString {
 mod test_bulk_string {
 
     use super::*;
+    use std::io::BufReader;
     #[test]
-    fn test04_encoding_and_decoding_of_a_bulk_string() {
+    fn test04_encoding_of_a_bulk_string() {
         let bulk = String::from("Hello world");
         let encoded = RBulkString::encode(bulk);
         assert_eq!(encoded, "$11\r\nHello world\r\n".to_string());
@@ -52,9 +45,14 @@ mod test_bulk_string {
 
     #[test]
     fn test02_bulk_string_decoding() {
-        let mut encoded = RBulkString::encode(String::from("Hello world"));
-        encoded.remove(0);
-        let decoded = RBulkString::decode(&mut encoded.as_bytes());
+        let encoded = RBulkString::encode(String::from("Hello world"));
+        let mut bufreader = BufReader::new(encoded.as_bytes());
+        let mut first_lecture = String::new();
+        let _decoded = bufreader.read_line(&mut first_lecture);
+        first_lecture.remove(0); // Redis Type inference
+        first_lecture.pop().unwrap(); // popping \n
+        first_lecture.pop().unwrap(); // popping \r
+        let decoded = RBulkString::decode(first_lecture, &mut bufreader.lines());
         assert_eq!(decoded.unwrap(), "Hello world".to_string());
     }
     /*
@@ -69,7 +67,13 @@ mod test_bulk_string {
     #[test]
     fn test08_bad_decoding_of_bulk_string_throws_a_parsing_error() {
         let encoded = "$Good Morning".to_string();
-        let should_be_error = RBulkString::decode(&mut encoded.as_bytes());
+        let mut bufreader = BufReader::new(encoded.as_bytes());
+        let mut first_lecture = String::new();
+        let _decoded = bufreader.read_line(&mut first_lecture);
+        first_lecture.remove(0); // Redis Type inference
+        first_lecture.pop().unwrap(); // popping \n
+        first_lecture.pop().unwrap(); // popping \r
+        let should_be_error = RBulkString::decode(first_lecture, &mut bufreader.lines());
         match should_be_error {
             Ok(_string) => {}
             Err(error) => {
@@ -80,7 +84,13 @@ mod test_bulk_string {
             }
         }
         let encoded = "$Good Morning\r\n".to_string();
-        let should_be_error = RBulkString::decode(&mut encoded.as_bytes());
+        let mut bufreader = BufReader::new(encoded.as_bytes());
+        let mut first_lecture = String::new();
+        let _decoded = bufreader.read_line(&mut first_lecture);
+        first_lecture.remove(0); // Redis Type inference
+        first_lecture.pop().unwrap(); // popping \n
+        first_lecture.pop().unwrap(); // popping \r
+        let should_be_error = RBulkString::decode(first_lecture, &mut bufreader.lines());
         match should_be_error {
             Ok(_string) => {}
             Err(error) => {
@@ -91,7 +101,13 @@ mod test_bulk_string {
             }
         }
         let encoded = "$5\r\nGood Morning\r\n".to_string();
-        let should_be_error = RBulkString::decode(&mut encoded.as_bytes());
+        let mut bufreader = BufReader::new(encoded.as_bytes());
+        let mut first_lecture = String::new();
+        let _decoded = bufreader.read_line(&mut first_lecture);
+        first_lecture.remove(0); // Redis Type inference
+        first_lecture.pop().unwrap(); // popping \n
+        first_lecture.pop().unwrap(); // popping \r
+        let should_be_error = RBulkString::decode(first_lecture, &mut bufreader.lines());
         match should_be_error {
             Ok(_string) => {}
             Err(error) => {

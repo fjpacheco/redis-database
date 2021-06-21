@@ -9,7 +9,7 @@ use super::no_more_values;
 
 pub struct Set;
 
-impl Runnable for Set {
+impl Runnable<Database> for Set {
     fn run(
         &self,
         mut buffer_vec: Vec<&str>,

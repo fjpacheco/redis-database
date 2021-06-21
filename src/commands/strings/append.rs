@@ -7,7 +7,7 @@ use crate::native_types::redis_type::RedisType;
 use super::{no_more_values, pop_value};
 
 pub struct Append;
-impl Runnable for Append {
+impl Runnable<Database> for Append {
     fn run(
         &self,
         mut buffer_vec: Vec<&str>,

@@ -1,4 +1,4 @@
-use std::io::BufRead;
+use std::io::{BufRead, Lines};
 
 use super::{
     bulk_string::RBulkString,
@@ -26,39 +26,12 @@ impl RedisType<Vec<String>> for RArray {
         }
     }
 
-    /*
-
-    pub fn remove_first_cr_lf(slice: &mut String) -> Option<String> {
-    if let Some(first_cr) = slice.find('\r') {
-        if slice.remove(first_cr + 1) == '\n' {
-            slice.remove(first_cr);
-            let rest = slice.split_off(first_cr);
-            let swap = slice.to_string();
-            *slice = rest;
-            Some(swap)
-        } else {
-            None
-        }
-    } else {
-        None
-    }
-    }
-     */
-
-    fn decode(bulk_array: &mut dyn BufRead) -> Result<Vec<String>, ErrorStruct> {
+    fn decode<G>(first_lecture: String, buffer: &mut Lines<G>) -> Result<Vec<String>, ErrorStruct>
+    where
+        G: BufRead,
+    {
         // 2 \r\n$ 3\r\nfoo\r\n $ 3\r\nbar\r\n
-        let mut sliced_size = String::new();
-        match bulk_array.read_line(&mut sliced_size) {
-            Ok(_) => {
-                sliced_size.pop();
-                sliced_size.pop();
-                verify_parsable_array_size(sliced_size, bulk_array)
-            }
-            Err(_) => Err(ErrorStruct::new(
-                "ERR_PARSE".to_string(),
-                "Failed to parse redis array".to_string(),
-            )),
-        }
+        verify_parsable_array_size(first_lecture, buffer)
     }
 }
 
@@ -66,6 +39,7 @@ impl RedisType<Vec<String>> for RArray {
 mod test_array {
 
     use super::*;
+    use std::io::BufReader;
     #[test]
     fn test01_array_encoding() {
         let vec: Vec<String> = vec!["foo".to_string(), "bar".to_string()];
@@ -77,9 +51,14 @@ mod test_array {
     fn test02_array_decoding() {
         let vec1: Vec<String> = vec!["fooo".to_string(), "bar".to_string()];
         let vec2 = vec1.clone();
-        let mut encoded: String = RArray::encode(vec1);
-        encoded.remove(0); // Saco el '*'
-        let decoded = RArray::decode(&mut encoded.as_bytes()).unwrap();
+        let encoded: String = RArray::encode(vec1);
+        let mut bufreader = BufReader::new(encoded.as_bytes());
+        let mut first_lecture = String::new();
+        let _decoded = bufreader.read_line(&mut first_lecture);
+        first_lecture.remove(0); // Redis Type inference
+        first_lecture.pop().unwrap(); // popping \n
+        first_lecture.pop().unwrap(); // popping \r
+        let decoded = RArray::decode(first_lecture, &mut bufreader.lines()).unwrap();
         for i in 0..(vec2.len()) {
             assert_eq!(decoded[i], vec2[i]); // OJO
         }
@@ -95,9 +74,14 @@ mod test_array {
     #[test]
     fn test04_empty_array_decoding() {
         let vec1: Vec<String> = vec![];
-        let mut encoded: String = RArray::encode(vec1);
-        encoded.remove(0); // Saco el '*'
-        let decoded = RArray::decode(&mut encoded.as_bytes());
+        let encoded: String = RArray::encode(vec1);
+        let mut bufreader = BufReader::new(encoded.as_bytes());
+        let mut first_lecture = String::new();
+        let _decoded = bufreader.read_line(&mut first_lecture);
+        first_lecture.remove(0); // Redis Type inference
+        first_lecture.pop().unwrap(); // popping \n
+        first_lecture.pop().unwrap(); // popping \r
+        let decoded = RArray::decode(first_lecture, &mut bufreader.lines());
         assert_eq!(
             decoded.unwrap_err().print_it(),
             "ERR_EMPTY (empty array)".to_string()
@@ -108,15 +92,20 @@ mod test_array {
     fn test05_set_key_value_simulation() {
         let input: String = "SET ping pong".to_string();
         let v: Vec<String> = input.split(' ').map(str::to_string).collect();
-        let mut encoded: String = RArray::encode(v);
+        let encoded: String = RArray::encode(v);
 
         assert_eq!(
             encoded,
             "*3\r\n$3\r\nSET\r\n$4\r\nping\r\n$4\r\npong\r\n".to_string()
         );
 
-        encoded.remove(0);
-        let mut decoded = RArray::decode(&mut encoded.as_bytes()).unwrap();
+        let mut bufreader = BufReader::new(encoded.as_bytes());
+        let mut first_lecture = String::new();
+        let _decoded = bufreader.read_line(&mut first_lecture);
+        first_lecture.remove(0); // Redis Type inference
+        first_lecture.pop().unwrap(); // popping \n
+        first_lecture.pop().unwrap(); // popping \r
+        let mut decoded = RArray::decode(first_lecture, &mut bufreader.lines()).unwrap();
 
         assert_eq!(decoded.remove(0), "SET".to_string());
         assert_eq!(decoded.remove(0), "ping".to_string());

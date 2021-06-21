@@ -1,10 +1,16 @@
-use std::io::BufRead;
+use std::io::{BufRead, Lines};
 
-use super::{bulk_string::RBulkString, error::ErrorStruct};
+use super::{error::ErrorStruct, RArray};
+use crate::native_types::bulk_string::RBulkString;
 
 pub trait RedisType<T> {
     fn encode(t: T) -> String;
-    fn decode(redis_encoded_line: &mut dyn BufRead) -> Result<T, ErrorStruct>;
+    fn decode<G>(
+        first_lecture: String,
+        redis_encoded_line: &mut Lines<G>,
+    ) -> Result<T, ErrorStruct>
+    where
+        G: BufRead;
 }
 
 pub fn remove_first_cr_lf(slice: &mut String) -> Option<String> {
@@ -23,11 +29,15 @@ pub fn remove_first_cr_lf(slice: &mut String) -> Option<String> {
     }
 }
 
-#[allow(dead_code)]
-pub fn verify_parsable_array_size(
+#[allow(dead_code)] //
+
+pub fn verify_parsable_array_size<G>(
     sliced_size: String,
-    rest: &mut dyn BufRead,
-) -> Result<Vec<String>, ErrorStruct> {
+    rest: &mut Lines<G>,
+) -> Result<Vec<String>, ErrorStruct>
+where
+    G: BufRead,
+{
     if let Ok(size) = sliced_size.parse::<isize>() {
         // *0\r\n
         if size == 0 {
@@ -38,60 +48,72 @@ pub fn verify_parsable_array_size(
         } else if size < 1 {
             Err(ErrorStruct::new(
                 "ERR_PARSE".to_string(),
-                "Failed to parse Redis array".to_string(),
+                "Failed to parse Redis array (1)".to_string(),
             ))
         } else {
-            // Analizar qué sucede si size = 0
             get_bulk_string_vector(size, rest)
         }
     } else {
         Err(ErrorStruct::new(
             "ERR_PARSE".to_string(),
-            "Failed to parse Redis array".to_string(),
+            "Failed to parse Redis array (2)".to_string(),
         ))
     }
 }
 
 #[allow(dead_code)]
-fn get_bulk_string_vector(size: isize, rest: &mut dyn BufRead) -> Result<Vec<String>, ErrorStruct> {
+pub fn get_bulk_string_vector<G>(
+    size: isize,
+    rest: &mut Lines<G>,
+) -> Result<Vec<String>, ErrorStruct>
+where
+    G: BufRead,
+{
     let mut decoded_vec: Vec<String> = Vec::new();
-    for __ in 0..size {
+    for _ in 0..size {
         fill_bulk_string_vector(rest, &mut decoded_vec)?;
     }
     Ok(decoded_vec)
 }
 
 #[allow(dead_code)]
-fn fill_bulk_string_vector(
-    rest: &mut dyn BufRead,
+pub fn fill_bulk_string_vector<G>(
+    rest: &mut Lines<G>,
     decoded_vec: &mut Vec<String>,
-) -> Result<(), ErrorStruct> {
-    let mut buf = vec![0; 1];
-    match rest.read_exact(&mut buf) {
-        Ok(_) => {
-            let array_elem = RBulkString::decode(rest)?;
+) -> Result<(), ErrorStruct>
+where
+    G: BufRead,
+{
+    let mut first_lecture = rest.next().unwrap().unwrap();
+    match first_lecture.remove(0) {
+        // Redis Type inference
+        '$' => {
+            let array_elem = RBulkString::decode(first_lecture, rest)?;
             decoded_vec.push(array_elem);
             Ok(())
         }
-        Err(_) => Err(ErrorStruct::new(
+        _ => Err(ErrorStruct::new(
             "ERR_PARSE".to_string(),
-            "Failed to parse array".to_string(),
+            "Failed to parse Redis array (3)".to_string(),
         )),
     }
 }
 
 #[allow(dead_code)]
-pub fn verify_parsable_bulk_size(
+pub fn verify_parsable_bulk_size<G>(
     sliced_size: String,
-    rest_of: &mut dyn BufRead,
-) -> Result<String, ErrorStruct> {
+    rest_of: &mut Lines<G>,
+) -> Result<String, ErrorStruct>
+where
+    G: BufRead,
+{
     if let Ok(size) = sliced_size.parse::<isize>() {
         if size == -1 {
             Ok("(nil)".to_string())
         } else if size < 0 {
             Err(ErrorStruct::new(
                 "ERR_PARSE".to_string(),
-                "Failed to parse Redis bulk string".to_string(),
+                "Failed to parse redis bulk string".to_string(),
             ))
         } else {
             // ¿Puede haber size = 0?
@@ -106,17 +128,15 @@ pub fn verify_parsable_bulk_size(
 }
 
 #[allow(dead_code)]
-fn split_b_string(size: isize, rest_of: &mut dyn BufRead) -> Result<String, ErrorStruct> {
-    let mut sliced_b_string = String::new();
-    match rest_of.read_line(&mut sliced_b_string) {
-        Ok(_) => {
-            sliced_b_string.pop();
-            sliced_b_string.pop();
-            verify_b_string_size(size, sliced_b_string)
-        }
-        Err(_) => Err(ErrorStruct::new(
+fn split_b_string<G>(size: isize, rest_of: &mut Lines<G>) -> Result<String, ErrorStruct>
+where
+    G: BufRead,
+{
+    match rest_of.next() {
+        Some(item) => verify_b_string_size(size, item.unwrap()),
+        None => Err(ErrorStruct::new(
             "ERR_PARSE".to_string(),
-            "Failed to parse redis string".to_string(),
+            "Failed to parse redis bulk string".to_string(),
         )),
     }
 }
@@ -128,7 +148,26 @@ fn verify_b_string_size(size: isize, sliced_b_string: String) -> Result<String, 
     } else {
         Err(ErrorStruct::new(
             "ERR_PARSE".to_string(),
-            "Failed to parse redis simple string".to_string(),
+            "Failed to parse redis bulk string".to_string(),
         ))
     }
+}
+
+/// With **Netcat** you can received, for example a input: "set key value\r\n"
+///
+/// This function convert (by Redis Protocol),
+///
+/// "set key value\r\n"
+///
+/// in
+///
+/// "*3\r\n$3\r\nset\r\n$3\r\nkey\r\n$5\r\nvalue\r\n"
+pub fn encode_netcat_input(line: String) -> String {
+    RArray::encode(
+        line.split(' ')
+            .collect::<Vec<&str>>()
+            .iter()
+            .map(|s| s.to_string())
+            .collect::<Vec<String>>(),
+    )
 }

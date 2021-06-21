@@ -1,5 +1,5 @@
 use crate::commands::get_as_integer;
-use crate::commands::lists::{check_empty, check_not_empty};
+use crate::commands::lists::{check_empty_2, check_not_empty};
 use crate::database::Database;
 use crate::database::TypeSaved;
 use crate::native_types::RedisType;
@@ -43,7 +43,7 @@ pub fn find_elements_in_range(
     let mut stop = get_as_integer(buffer.pop().unwrap()).unwrap();
     check_not_empty(&buffer)?;
     let mut start = get_as_integer(buffer.pop().unwrap()).unwrap();
-    check_empty(&buffer)?;
+    check_empty_2(&buffer)?;
     let len = values_list.len() as isize;
 
     if start < 0 {

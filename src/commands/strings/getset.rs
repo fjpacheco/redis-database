@@ -8,7 +8,7 @@ use crate::database::{Database, TypeSaved};
 
 pub struct Getset;
 
-impl Runnable for Getset {
+impl Runnable<Database> for Getset {
     fn run(
         &self,
         mut buffer_vec: Vec<&str>,

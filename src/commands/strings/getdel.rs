@@ -8,7 +8,7 @@ use super::{no_more_values, pop_value};
 
 pub struct Getdel;
 
-impl Runnable for Getdel {
+impl Runnable<Database> for Getdel {
     fn run(
         &self,
         mut buffer_vec: Vec<&str>,

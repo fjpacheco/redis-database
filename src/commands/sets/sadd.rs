@@ -9,7 +9,7 @@ use std::collections::HashSet;
 
 pub struct Sadd;
 
-impl Runnable for Sadd {
+impl Runnable<Database> for Sadd {
     fn run(
         &self,
         mut buffer_vec: Vec<&str>,
@@ -66,9 +66,8 @@ fn check_error_cases(buffer_vec: &mut Vec<&str>) -> Result<(), ErrorStruct> {
 #[cfg(test)]
 mod test_sadd_function {
 
-    use std::collections::VecDeque;
-
     use super::*;
+    use std::collections::VecDeque;
 
     #[test]
     fn test01_sadd_insert_and_return_amount_insertions() {

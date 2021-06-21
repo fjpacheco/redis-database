@@ -1,7 +1,8 @@
-use crate::{database::Database, messages::redis_messages, native_types::ErrorStruct};
+use crate::{messages::redis_messages, native_types::ErrorStruct};
 
 pub mod keys;
 pub mod lists;
+pub mod server;
 pub mod sets;
 pub mod strings;
 
@@ -28,18 +29,18 @@ macro_rules! err_wrongtype {
 }
 
 /// A trait for execute commands into Database.
-pub trait Runnable {
+pub trait Runnable<T> {
     /// # Example
     ///
     /// Basic usage:
     ///
     /// ```
-    /// use proyecto_taller_1::database::Database;
-    /// use proyecto_taller_1::commands::strings::set::Set;
-    /// use proyecto_taller_1::native_types::ErrorStruct;
-    /// use proyecto_taller_1::commands::Runnable;
+    /// use redis_rust::database::Database;
+    /// use redis_rust::commands::strings::set::Set;
+    /// use redis_rust::native_types::ErrorStruct;
+    /// use redis_rust::commands::Runnable;
     ///
-    /// fn execute(command: &dyn Runnable,
+    /// fn execute<Database>(command: &dyn Runnable<Database>,
     ///            buffer: Vec<&str>,
     ///            database: &mut Database)
     ///         -> Result<String, ErrorStruct>
@@ -55,7 +56,7 @@ pub trait Runnable {
     /// let expected_result = "+OK\r\n".to_string();
     /// assert_eq!(expected_result, result_received.unwrap());
     /// ```
-    fn run(&self, buffer_vec: Vec<&str>, database: &mut Database) -> Result<String, ErrorStruct>;
+    fn run(&self, buffer_vec: Vec<&str>, item: &mut T) -> Result<String, ErrorStruct>;
 }
 
 // Fun aux
@@ -68,5 +69,29 @@ pub fn get_as_integer(value: &str) -> Result<isize, ErrorStruct> {
             "ERR".to_string(),
             "value is not an integer or out of range".to_string(),
         )),
+    }
+}
+
+// Check number of arguments
+
+pub fn check_not_empty(buffer: &[&str]) -> Result<(), ErrorStruct> {
+    if buffer.is_empty() {
+        Err(ErrorStruct::new(
+            String::from("ERR"),
+            String::from("wrong number of arguments"),
+        ))
+    } else {
+        Ok(())
+    }
+}
+
+pub fn check_empty_2(buffer: &[&str]) -> Result<(), ErrorStruct> {
+    if !buffer.is_empty() {
+        Err(ErrorStruct::new(
+            String::from("ERR"),
+            String::from("wrong number of arguments"),
+        ))
+    } else {
+        Ok(())
     }
 }
