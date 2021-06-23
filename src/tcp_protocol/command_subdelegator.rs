@@ -28,10 +28,7 @@ impl CommandSubDelegator {
                 let command_type = get_command_type(&mut command_input_user);
 
                 if let Some(runnable_command) = runnables_map.get(&command_type) {
-                    // REMEMBER TO CHANGE THE TRAIT (MUST WORK WITH VEC<STRING>)
-                    let command_str: Vec<&str> =
-                        command_input_user.iter().map(|s| s.as_ref()).collect();
-                    match runnable_command.run(command_str, &mut data) {
+                    match runnable_command.run(command_input_user, &mut data) {
                         Ok(encoded_resp) => sender_to_client.send(encoded_resp).unwrap(),
                         Err(err) => sender_to_client.send(RError::encode(err)).unwrap(),
                     };
@@ -61,6 +58,7 @@ pub mod test_database_command_delegator {
     use crate::commands::strings::set::Set;
     use crate::commands::strings::strlen::Strlen;
 
+    use crate::vec_strings;
     use crate::{commands::Runnable, database::Database};
     use std::{
         collections::HashMap,
@@ -86,22 +84,22 @@ pub mod test_database_command_delegator {
             CommandSubDelegator::start::<Database>(rx1, runnables_map, database);
 
         let (tx2, rx2): (Sender<String>, Receiver<String>) = mpsc::channel();
-        let buffer_vec_mock = vec!["set".to_string(), "key".to_string(), "value".to_string()];
-        tx1.send((buffer_vec_mock, tx2)).unwrap();
+        let buffer_mock = vec_strings!["set", "key", "value"];
+        tx1.send((buffer_mock, tx2)).unwrap();
 
         let response1 = rx2.recv().unwrap();
         assert_eq!(response1, "+OK\r\n".to_string());
 
         let (tx3, rx3): (Sender<String>, Receiver<String>) = mpsc::channel();
-        let buffer_vec_mock_get = vec!["get".to_string(), "key".to_string()];
-        tx1.send((buffer_vec_mock_get, tx3)).unwrap();
+        let buffer_mock_get = vec!["get".to_string(), "key".to_string()];
+        tx1.send((buffer_mock_get, tx3)).unwrap();
 
         let response2 = rx3.recv().unwrap();
         assert_eq!(response2, "$5\r\nvalue\r\n".to_string());
 
-        let buffer_vec_mock_strlen = vec!["strlen".to_string(), "key".to_string()];
+        let buffer_mock_strlen = vec_strings!["strlen", "key"];
         let (tx4, rx4): (Sender<String>, Receiver<String>) = mpsc::channel();
-        tx1.send((buffer_vec_mock_strlen, tx4)).unwrap();
+        tx1.send((buffer_mock_strlen, tx4)).unwrap();
 
         let response3 = rx4.recv().unwrap();
         assert_eq!(response3, ":5\r\n".to_string());
@@ -121,15 +119,15 @@ pub mod test_database_command_delegator {
             CommandSubDelegator::start::<Database>(rx1, runnables_map, database);
 
         let (tx2, rx2): (Sender<String>, Receiver<String>) = mpsc::channel();
-        let buffer_vec_mock = vec!["set".to_string(), "key".to_string(), "value".to_string()];
-        tx1.send((buffer_vec_mock, tx2)).unwrap();
+        let buffer_mock = vec_strings!["set", "key", "value"];
+        tx1.send((buffer_mock, tx2)).unwrap();
 
         let response1 = rx2.recv().unwrap();
         assert_eq!(response1, "+OK\r\n".to_string());
 
         let (tx3, rx3): (Sender<String>, Receiver<String>) = mpsc::channel();
-        let buffer_vec_mock_get = vec!["get".to_string(), "key".to_string()];
-        tx1.send((buffer_vec_mock_get, tx3)).unwrap();
+        let buffer_mock_get = vec_strings!["get", "key"];
+        tx1.send((buffer_mock_get, tx3)).unwrap();
 
         let response2 = rx3.recv().unwrap();
         assert_eq!(
@@ -154,21 +152,21 @@ pub mod test_database_command_delegator {
             CommandSubDelegator::start::<Database>(rx1, runnables_map, database);
 
         let (tx2, rx2): (Sender<String>, Receiver<String>) = mpsc::channel();
-        let buffer_vec_mock = vec![
+        let buffer_mock = vec![
             "rpush".to_string(),
             "key".to_string(),
             "value1".to_string(),
             "value2".to_string(),
             "value3".to_string(),
         ];
-        tx1.send((buffer_vec_mock, tx2)).unwrap();
+        tx1.send((buffer_mock, tx2)).unwrap();
 
         let response1 = rx2.recv().unwrap();
         assert_eq!(response1, ":3\r\n".to_string());
 
         let (tx3, rx3): (Sender<String>, Receiver<String>) = mpsc::channel();
-        let buffer_vec_mock = vec!["rpop".to_string(), "key".to_string(), "2".to_string()];
-        tx1.send((buffer_vec_mock, tx3)).unwrap();
+        let buffer_mock = vec_strings!["rpop", "key", "2"];
+        tx1.send((buffer_mock, tx3)).unwrap();
 
         let response1 = rx3.recv().unwrap();
         assert_eq!(
@@ -177,8 +175,8 @@ pub mod test_database_command_delegator {
         );
 
         let (tx4, rx4): (Sender<String>, Receiver<String>) = mpsc::channel();
-        let buffer_vec_mock = vec!["llen".to_string(), "value".to_string()];
-        tx1.send((buffer_vec_mock, tx4)).unwrap();
+        let buffer_mock = vec_strings!["llen", "value"];
+        tx1.send((buffer_mock, tx4)).unwrap();
 
         let response1 = rx4.recv().unwrap();
         assert_eq!(response1, ":0\r\n".to_string());

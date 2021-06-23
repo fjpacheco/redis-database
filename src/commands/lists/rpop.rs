@@ -7,7 +7,7 @@ use super::remove_values_from_bottom;
 pub struct RPop;
 
 impl Runnable<Database> for RPop {
-    fn run(&self, buffer: Vec<&str>, database: &mut Database) -> Result<String, ErrorStruct> {
+    fn run(&self, buffer: Vec<String>, database: &mut Database) -> Result<String, ErrorStruct> {
         pop_at(buffer, database, remove_values_from_bottom)
     }
 }
@@ -15,7 +15,7 @@ impl Runnable<Database> for RPop {
 #[cfg(test)]
 pub mod test_rpop {
 
-    use crate::database::TypeSaved;
+    use crate::{database::TypeSaved, vec_strings};
 
     use super::*;
     use std::collections::VecDeque;
@@ -29,7 +29,7 @@ pub mod test_rpop {
         new_list.push_back("list".to_string());
         data.insert("key".to_string(), TypeSaved::List(new_list));
 
-        let buffer = vec!["key"];
+        let buffer = vec_strings!["key"];
         let encode = RPop.run(buffer, &mut data);
         assert_eq!(encode.unwrap(), "$4\r\nlist\r\n".to_string());
         match data.get("key").unwrap() {
@@ -53,7 +53,7 @@ pub mod test_rpop {
         new_list.push_back("a".to_string());
         new_list.push_back("list".to_string());
         data.insert("key".to_string(), TypeSaved::List(new_list));
-        let buffer = vec!["key", "3"];
+        let buffer = vec_strings!["key", "3"];
         let encode = RPop.run(buffer, &mut data);
         assert_eq!(
             encode.unwrap(),
@@ -72,7 +72,7 @@ pub mod test_rpop {
     #[test]
     fn test03_lpop_value_from_a_non_existing_list() {
         let mut data = Database::new();
-        let buffer = vec!["key"];
+        let buffer = vec_strings!["key"];
         let encode = RPop.run(buffer, &mut data);
         assert_eq!(encode.unwrap(), "$-1\r\n".to_string());
         assert_eq!(data.get("key"), None);
@@ -81,7 +81,7 @@ pub mod test_rpop {
     #[test]
     fn test04_lpop_with_no_key() {
         let mut data = Database::new();
-        let buffer = vec![];
+        let buffer = vec_strings![];
         match RPop.run(buffer, &mut data) {
             Ok(_encode) => {}
             Err(error) => assert_eq!(

@@ -12,9 +12,9 @@ pub struct Llen;
 // the value stored at key is not a list.
 
 impl Runnable<Database> for Llen {
-    fn run(&self, mut buffer: Vec<&str>, database: &mut Database) -> Result<String, ErrorStruct> {
+    fn run(&self, mut buffer: Vec<String>, database: &mut Database) -> Result<String, ErrorStruct> {
         check_not_empty(&buffer)?;
-        let key = String::from(buffer.remove(0));
+        let key = buffer.remove(0);
         check_empty_2(&buffer)?;
         if let Some(typesaved) = database.get_mut(&key) {
             match typesaved {
@@ -36,6 +36,8 @@ impl Runnable<Database> for Llen {
 #[cfg(test)]
 pub mod test_llen {
 
+    use crate::vec_strings;
+
     use super::*;
     use std::collections::VecDeque;
 
@@ -48,7 +50,7 @@ pub mod test_llen {
 
         data.insert("key".to_string(), TypeSaved::List(new_list));
 
-        let buffer = vec!["key"];
+        let buffer = vec_strings!["key"];
         let encode = Llen.run(buffer, &mut data);
         assert_eq!(encode.unwrap(), ":1\r\n".to_string());
     }
@@ -65,7 +67,7 @@ pub mod test_llen {
 
         data.insert("key".to_string(), TypeSaved::List(new_list));
 
-        let buffer = vec!["key"];
+        let buffer = vec_strings!["key"];
         let encode = Llen.run(buffer, &mut data);
         assert_eq!(encode.unwrap(), ":4\r\n".to_string());
     }
@@ -76,7 +78,7 @@ pub mod test_llen {
         // redis> SET mykey 10
         data.insert("key".to_string(), TypeSaved::String("value".to_string()));
 
-        let buffer = vec!["key"];
+        let buffer = vec_strings!["key"];
         let error = Llen.run(buffer, &mut data);
         assert_eq!(
             error.unwrap_err().print_it(),

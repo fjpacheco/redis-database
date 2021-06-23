@@ -98,6 +98,7 @@ pub mod test_command_delegator {
 
     use crate::database::Database;
     use crate::tcp_protocol::command_subdelegator::CommandSubDelegator;
+    use crate::vec_strings;
     use std::sync::mpsc;
 
     use super::*;
@@ -141,15 +142,8 @@ pub mod test_command_delegator {
         // ACT
 
         let (snd_dat_test, rcv_dat_test): (Sender<String>, Receiver<String>) = mpsc::channel();
-        let buffer_vec_mock = vec![
-            "lpush".to_string(),
-            "key".to_string(),
-            "delegator".to_string(),
-            "new".to_string(),
-            "my".to_string(),
-            "testing".to_string(),
-        ];
-        snd_test_cmd.send((buffer_vec_mock, snd_dat_test)).unwrap();
+        let buffer_mock = vec_strings!["lpush", "key", "delegator", "new", "my", "testing"];
+        snd_test_cmd.send((buffer_mock, snd_dat_test)).unwrap();
 
         // ASSERT
 
@@ -159,13 +153,13 @@ pub mod test_command_delegator {
         // ACT
 
         let (snd_dat_test, rcv_dat_test): (Sender<String>, Receiver<String>) = mpsc::channel();
-        let buffer_vec_mock = vec![
+        let buffer_mock = vec![
             "lset".to_string(),
             "key".to_string(),
             "0".to_string(),
             "breaking".to_string(),
         ];
-        snd_test_cmd.send((buffer_vec_mock, snd_dat_test)).unwrap();
+        snd_test_cmd.send((buffer_mock, snd_dat_test)).unwrap();
 
         // ASSERT
 
@@ -175,8 +169,8 @@ pub mod test_command_delegator {
         // ACT
 
         let (snd_dat_test, rcv_dat_test): (Sender<String>, Receiver<String>) = mpsc::channel();
-        let buffer_vec_mock = vec!["lpop".to_string(), "key".to_string(), "4".to_string()];
-        snd_test_cmd.send((buffer_vec_mock, snd_dat_test)).unwrap();
+        let buffer_mock = vec_strings!["lpop", "key", "4"];
+        snd_test_cmd.send((buffer_mock, snd_dat_test)).unwrap();
 
         // ASSERT
 
@@ -219,15 +213,8 @@ pub mod test_command_delegator {
         // ACT
 
         let (snd_dat_test, rcv_dat_test): (Sender<String>, Receiver<String>) = mpsc::channel();
-        let buffer_vec_mock = vec![
-            "lpush".to_string(),
-            "key".to_string(),
-            "delegator".to_string(),
-            "new".to_string(),
-            "my".to_string(),
-            "testing".to_string(),
-        ];
-        snd_test_cmd.send((buffer_vec_mock, snd_dat_test)).unwrap();
+        let buffer_mock = vec_strings!["lpush", "key", "delegator", "new", "my", "testing"];
+        snd_test_cmd.send((buffer_mock, snd_dat_test)).unwrap();
 
         // ASSERT
 

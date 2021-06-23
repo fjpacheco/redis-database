@@ -6,18 +6,13 @@ use crate::{
     native_types::{ErrorStruct, RBulkString, RedisType},
 };
 
-
 pub struct Get;
 
 impl Runnable<Database> for Get {
-    fn run(
-        &self,
-        mut buffer_vec: Vec<&str>,
-        database: &mut Database,
-    ) -> Result<String, ErrorStruct> {
-        check_error_cases(&mut buffer_vec)?;
+    fn run(&self, buffer: Vec<String>, database: &mut Database) -> Result<String, ErrorStruct> {
+        check_error_cases(&buffer)?;
 
-        let key = buffer_vec[0].to_string();
+        let key = buffer[0].to_string();
 
         match database.get(&key) {
             Some(item) => match item {
@@ -31,8 +26,8 @@ impl Runnable<Database> for Get {
     }
 }
 
-fn check_error_cases(buffer_vec: &mut Vec<&str>) -> Result<(), ErrorStruct> {
-    if buffer_vec.len() != 1 {
+fn check_error_cases(buffer: &[String]) -> Result<(), ErrorStruct> {
+    if buffer.len() != 1 {
         // only "get key"
         let error_message = redis_messages::wrong_number_args_for("get");
         return Err(ErrorStruct::new(
@@ -47,15 +42,17 @@ fn check_error_cases(buffer_vec: &mut Vec<&str>) -> Result<(), ErrorStruct> {
 #[cfg(test)]
 mod test_get {
 
+    use crate::vec_strings;
+
     use super::*;
 
     #[test]
     fn test01_get_value_of_key_correct_is_success() {
-        let buffer_vec_mock_get = vec!["key"];
+        let buffer_mock_get = vec_strings!["key"];
         let mut database_mock = Database::new();
 
         database_mock.insert("key".to_string(), TypeSaved::String("value".to_string()));
-        let result_received = Get.run(buffer_vec_mock_get, &mut database_mock);
+        let result_received = Get.run(buffer_mock_get, &mut database_mock);
 
         let expected_result = RBulkString::encode("value".to_string());
         assert_eq!(expected_result, result_received.unwrap());
@@ -63,11 +60,11 @@ mod test_get {
 
     #[test]
     fn test02_get_value_of_key_inorrect_return_result_ok_with_nil() {
-        let buffer_vec_mock_get = vec!["key_other"];
+        let buffer_mock_get = vec_strings!["key_other"];
         let mut database_mock = Database::new();
 
         database_mock.insert("key".to_string(), TypeSaved::String("value".to_string()));
-        let result_received = Get.run(buffer_vec_mock_get, &mut database_mock);
+        let result_received = Get.run(buffer_mock_get, &mut database_mock);
         let received = result_received.unwrap();
 
         let expected_result = "$-1\r\n".to_string();

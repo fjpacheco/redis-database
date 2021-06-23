@@ -29,17 +29,17 @@ impl ClientHandler {
 
         let _client_thread = thread::spawn(move || {
             let buf_reader_stream = BufReader::new(stream.try_clone().unwrap());
-            let mut lines_buffer_reader = buf_reader_stream.lines();
+            let mut linesbuffer_reader = buf_reader_stream.lines();
             let mut response;
 
-            while let Some(received) = lines_buffer_reader.next() {
+            while let Some(received) = linesbuffer_reader.next() {
                 match received {
                     Ok(mut input) => {
                         if input.starts_with('*') {
                             // example *3
                             input.remove(0); // i want -> 3
                             response =
-                                process(input, &mut lines_buffer_reader, &command_delegator_sender);
+                                process(input, &mut linesbuffer_reader, &command_delegator_sender);
                         } else {
                             let mut input_encoded = encode_netcat_input(input);
                             input_encoded.remove(0);
@@ -73,14 +73,14 @@ impl ClientHandler {
 
 fn process<G>(
     first_lecture: String,
-    lines_buffer_reader: &mut Lines<G>,
+    linesbuffer_reader: &mut Lines<G>,
     command_delegator_sender: &Sender<(Vec<String>, Sender<String>)>,
 ) -> String
 where
     G: BufRead,
 {
     let (sender, receiver): (mpsc::Sender<String>, mpsc::Receiver<String>) = mpsc::channel();
-    match RArray::decode(first_lecture, lines_buffer_reader) {
+    match RArray::decode(first_lecture, linesbuffer_reader) {
         Ok(command_vec) => {
             println!(
                 "<Server> Command: {:?}\n --- Encoded: {:?}\n",

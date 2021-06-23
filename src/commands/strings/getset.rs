@@ -9,14 +9,10 @@ use crate::database::{Database, TypeSaved};
 pub struct Getset;
 
 impl Runnable<Database> for Getset {
-    fn run(
-        &self,
-        mut buffer_vec: Vec<&str>,
-        database: &mut Database,
-    ) -> Result<String, ErrorStruct> {
-        let new_value = pop_value(&mut buffer_vec)?;
-        let key = pop_value(&mut buffer_vec)?;
-        no_more_values(&buffer_vec, "getset")?;
+    fn run(&self, mut buffer: Vec<String>, database: &mut Database) -> Result<String, ErrorStruct> {
+        let new_value = pop_value(&mut buffer)?;
+        let key = pop_value(&mut buffer)?;
+        no_more_values(&buffer, "getset")?;
 
         if let Some(typesaved) = database.get(&key) {
             match typesaved {
@@ -37,13 +33,16 @@ impl Runnable<Database> for Getset {
 pub mod test_getset {
 
     use super::*;
-    use crate::database::{Database, TypeSaved};
+    use crate::{
+        database::{Database, TypeSaved},
+        vec_strings,
+    };
     #[test]
     fn test01_getset_of_an_existing_key() {
         let mut data = Database::new();
         data.insert("key".to_string(), TypeSaved::String("value".to_string()));
 
-        let buffer: Vec<&str> = vec!["key", "other"];
+        let buffer = vec_strings!["key", "other"];
         let encoded = Getset.run(buffer, &mut data);
 
         assert_eq!(encoded.unwrap(), "$5\r\nvalue\r\n".to_string());
@@ -56,7 +55,7 @@ pub mod test_getset {
     #[test]
     fn test02_getset_of_a_non_existing_key() {
         let mut data = Database::new();
-        let buffer: Vec<&str> = vec!["key", "newValue"];
+        let buffer = vec_strings!["key", "newValue"];
         let encoded = Getset.run(buffer, &mut data);
 
         assert_eq!(encoded.unwrap(), "$-1\r\n".to_string());
@@ -72,7 +71,7 @@ pub mod test_getset {
 
         data.insert("key".to_string(), TypeSaved::String("value".to_string()));
 
-        let buffer: Vec<&str> = vec![];
+        let buffer = vec_strings![];
         let encoded = Getset.run(buffer, &mut data);
         match encoded {
             Ok(_value) => {}

@@ -10,19 +10,15 @@ use std::collections::HashSet;
 pub struct Sadd;
 
 impl Runnable<Database> for Sadd {
-    fn run(
-        &self,
-        mut buffer_vec: Vec<&str>,
-        database: &mut Database,
-    ) -> Result<String, ErrorStruct> {
-        check_error_cases(&mut buffer_vec)?;
+    fn run(&self, buffer: Vec<String>, database: &mut Database) -> Result<String, ErrorStruct> {
+        check_error_cases(&buffer)?;
 
-        let key = buffer_vec[0];
+        let key = &buffer[0];
 
         match database.get_mut(key) {
             Some(item) => match item {
                 TypeSaved::Set(item) => {
-                    let count_insert = insert_in_set(&buffer_vec, item);
+                    let count_insert = insert_in_set(&buffer, item);
                     Ok(RInteger::encode(count_insert as isize))
                 }
                 _ => {
@@ -31,7 +27,7 @@ impl Runnable<Database> for Sadd {
             },
             None => {
                 let mut set: HashSet<String> = HashSet::new();
-                let count_insert = insert_in_set(&buffer_vec, &mut set);
+                let count_insert = insert_in_set(&buffer, &mut set);
                 database.insert(key.to_string(), TypeSaved::Set(set));
                 Ok(RInteger::encode(count_insert as isize))
             }
@@ -40,8 +36,8 @@ impl Runnable<Database> for Sadd {
 }
 // Insert the "members" into the received set, according to what is indicated by the vector buffer (for example: "sadd key member1 member2 ..")
 // Returns the number of insertions new in the set (repeated ones is ignored)
-fn insert_in_set(buffer_vec: &[&str], item: &mut HashSet<String>) -> usize {
-    buffer_vec
+fn insert_in_set(buffer: &[String], item: &mut HashSet<String>) -> usize {
+    buffer
         .iter()
         .skip(1)
         .map(|member| item.insert(member.to_string()))
@@ -49,10 +45,10 @@ fn insert_in_set(buffer_vec: &[&str], item: &mut HashSet<String>) -> usize {
         .count()
 }
 
-fn check_error_cases(buffer_vec: &mut Vec<&str>) -> Result<(), ErrorStruct> {
-    check_empty(&buffer_vec, "sadd")?;
+fn check_error_cases(buffer: &[String]) -> Result<(), ErrorStruct> {
+    check_empty(&buffer, "sadd")?;
 
-    if buffer_vec.len() < 2 {
+    if buffer.len() < 2 {
         let error_message = redis_messages::arguments_invalid_to("sadd");
         return Err(ErrorStruct::new(
             error_message.get_prefix(),
@@ -66,15 +62,17 @@ fn check_error_cases(buffer_vec: &mut Vec<&str>) -> Result<(), ErrorStruct> {
 #[cfg(test)]
 mod test_sadd_function {
 
+    use crate::vec_strings;
+
     use super::*;
     use std::collections::VecDeque;
 
     #[test]
     fn test01_sadd_insert_and_return_amount_insertions() {
-        let buffer_vec_mock = vec!["key", "member1", "member2"];
+        let buffer_mock = vec_strings!["key", "member1", "member2"];
         let mut database_mock = Database::new();
 
-        let result_received = Sadd.run(buffer_vec_mock, &mut database_mock);
+        let result_received = Sadd.run(buffer_mock, &mut database_mock);
         let amount_received = result_received.unwrap();
 
         let expected = RInteger::encode(2);
@@ -83,13 +81,13 @@ mod test_sadd_function {
 
     #[test]
     fn test02_sadd_does_not_insert_repeated_elements() {
-        let buffer_vec_mock = vec![
+        let buffer_mock = vec_strings![
             "key", "member2", "member1", "member1", "member3", "member2", "member1", "member1",
-            "member3",
+            "member3"
         ];
         let mut database_mock = Database::new();
 
-        let result_received = Sadd.run(buffer_vec_mock, &mut database_mock);
+        let result_received = Sadd.run(buffer_mock, &mut database_mock);
         let amount_received = result_received.unwrap();
 
         let expected = RInteger::encode(3);
@@ -100,12 +98,12 @@ mod test_sadd_function {
     fn test03_sadd_does_not_insert_elements_over_an_existing_key_string() {
         let mut database_mock = Database::new();
         database_mock.insert("key".to_string(), TypeSaved::String("value".to_string()));
-        let buffer_vec_mock = vec![
+        let buffer_mock = vec_strings![
             "key", "member2", "member1", "member1", "member3", "member2", "member1", "member1",
-            "member3",
+            "member3"
         ];
 
-        let result_received = Sadd.run(buffer_vec_mock, &mut database_mock);
+        let result_received = Sadd.run(buffer_mock, &mut database_mock);
 
         assert!(result_received.is_err())
     }
@@ -117,12 +115,12 @@ mod test_sadd_function {
         new_list.push_back("valueOfList".to_string());
         database_mock.insert("key".to_string(), TypeSaved::List(new_list));
 
-        let buffer_vec_mock = vec![
+        let buffer_mock = vec_strings![
             "key", "member2", "member1", "member1", "member3", "member2", "member1", "member1",
-            "member3",
+            "member3"
         ];
 
-        let result_received = Sadd.run(buffer_vec_mock, &mut database_mock);
+        let result_received = Sadd.run(buffer_mock, &mut database_mock);
 
         assert!(result_received.is_err())
     }

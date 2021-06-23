@@ -12,13 +12,9 @@ pub struct Strlen;
 /// Return value: Integer reply: the length of the string at key, or 0 when key does not exist.
 
 impl Runnable<Database> for Strlen {
-    fn run(
-        &self,
-        mut buffer_vec: Vec<&str>,
-        database: &mut Database,
-    ) -> Result<String, ErrorStruct> {
-        let key = String::from(buffer_vec.pop().unwrap());
-        no_more_values(&buffer_vec, "strlen")?;
+    fn run(&self, mut buffer: Vec<String>, database: &mut Database) -> Result<String, ErrorStruct> {
+        let key = buffer.pop().unwrap();
+        no_more_values(&buffer, "strlen")?;
         if let Some(typesaved) = database.get_mut(&key) {
             match typesaved {
                 TypeSaved::String(old_value) => Ok(RInteger::encode(old_value.len() as isize)),
@@ -33,6 +29,8 @@ impl Runnable<Database> for Strlen {
 #[cfg(test)]
 pub mod test_strlen {
 
+    use crate::vec_strings;
+
     use super::*;
 
     #[test]
@@ -44,7 +42,7 @@ pub mod test_strlen {
             TypeSaved::String("somevalue".to_string()),
         );
         // redis> STRLEN mykey ---> (integer) 9
-        let buffer: Vec<&str> = vec!["mykey"];
+        let buffer = vec_strings!["mykey"];
         let encoded = Strlen.run(buffer, &mut data);
 
         assert_eq!(encoded.unwrap(), ":9\r\n".to_string());
@@ -54,7 +52,7 @@ pub mod test_strlen {
     fn test02_srlen_non_existing_key() {
         let mut data = Database::new();
         // redis> STRLEN nonexisting ---> (integer) 0
-        let buffer: Vec<&str> = vec!["mykey"];
+        let buffer = vec_strings!["mykey"];
         let encoded = Strlen.run(buffer, &mut data);
 
         assert_eq!(encoded.unwrap(), ":0\r\n".to_string());

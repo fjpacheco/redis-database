@@ -79,9 +79,9 @@ pub mod redis_messages {
         }
     }
 
-    pub fn command_not_found(command_type: String, buffer_vec: Vec<String>) -> ErrorStruct {
+    pub fn command_not_found(command_type: String, buffer: Vec<String>) -> ErrorStruct {
         let mut args_received = String::new();
-        buffer_vec
+        buffer
             .into_iter()
             .for_each(|one_arg| args_received.push_str(&("\'".to_owned() + &one_arg + "\', ")));
 

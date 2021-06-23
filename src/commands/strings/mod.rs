@@ -7,22 +7,23 @@ use super::get_as_integer;
 
 pub mod append;
 pub mod decrby;
-pub mod get;
 pub mod getdel;
 pub mod getset;
 pub mod incrby;
 pub mod mget;
 pub mod mset;
+
+pub mod get;
 pub mod set;
 pub mod strlen;
 
 pub fn execute_value_modification(
     database: &mut Database,
-    mut buffer_vec: Vec<&str>,
+    mut buffer: Vec<String>,
     op: fn(isize, isize) -> isize,
 ) -> Result<String, ErrorStruct> {
-    let decr = String::from(buffer_vec.pop().unwrap()); // extract key and decrement from: Vec<&str> = ["mykey", "10"]
-    let key = String::from(buffer_vec.pop().unwrap());
+    let decr = buffer.pop().unwrap(); // extract key and decrement from: Vec<&str> = ["mykey", "10"]
+    let key = buffer.pop().unwrap();
 
     let decr_int = get_as_integer(&decr)?; // check if decr is parsable as int
 
@@ -50,9 +51,9 @@ pub fn string_key_check(database: &mut Database, key: String) -> Result<isize, E
     }
 }
 
-fn pop_value(buffer: &mut Vec<&str>) -> Result<String, ErrorStruct> {
+fn pop_value(buffer: &mut Vec<String>) -> Result<String, ErrorStruct> {
     if let Some(value) = buffer.pop() {
-        Ok(String::from(value))
+        Ok(value)
     } else {
         Err(ErrorStruct::new(
             String::from("ERR"),
@@ -61,7 +62,7 @@ fn pop_value(buffer: &mut Vec<&str>) -> Result<String, ErrorStruct> {
     }
 }
 
-fn no_more_values(buffer: &[&str], name: &str) -> Result<(), ErrorStruct> {
+fn no_more_values(buffer: &[String], name: &str) -> Result<(), ErrorStruct> {
     if buffer.is_empty() {
         Ok(())
     } else {

@@ -5,7 +5,7 @@ use crate::{commands::Runnable, native_types::ErrorStruct, tcp_protocol::server:
 pub struct Shutdown;
 
 impl Runnable<ServerRedis> for Shutdown {
-    fn run(&self, _buffer_vec: Vec<&str>, server: &mut ServerRedis) -> Result<String, ErrorStruct> {
+    fn run(&self, _buffer: Vec<String>, server: &mut ServerRedis) -> Result<String, ErrorStruct> {
         server.store(true);
         match TcpStream::connect(server.get_addr()) {
             Ok(_) => Ok("+SERVER OFF\r\n".to_string()),

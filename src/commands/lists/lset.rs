@@ -15,13 +15,13 @@ pub struct Lset;
 // An error is returned for out of range indexes.
 
 impl Runnable<Database> for Lset {
-    fn run(&self, mut buffer: Vec<&str>, database: &mut Database) -> Result<String, ErrorStruct> {
+    fn run(&self, mut buffer: Vec<String>, database: &mut Database) -> Result<String, ErrorStruct> {
         check_not_empty(&buffer)?;
-        let key = String::from(buffer.remove(0));
+        let key = buffer.remove(0);
         check_not_empty(&buffer)?;
-        let index = get_as_integer(buffer.remove(0)).unwrap();
+        let index = get_as_integer(&buffer.remove(0)).unwrap();
         check_not_empty(&buffer)?;
-        let replacement = String::from(buffer.remove(0));
+        let replacement = buffer.remove(0);
         check_empty_2(&buffer)?;
 
         if let Some(typesaved) = database.get_mut(&key) {
@@ -70,6 +70,8 @@ pub fn replace_element_at(
 #[cfg(test)]
 pub mod test_lset {
 
+    use crate::vec_strings;
+
     use super::*;
     use std::collections::{vec_deque::Iter, VecDeque};
 
@@ -84,7 +86,7 @@ pub mod test_lset {
         let key_cpy = key.clone();
         data.insert(key, TypeSaved::List(new_list));
 
-        let buffer = vec!["key", "0", "new_value"];
+        let buffer = vec_strings!["key", "0", "new_value"];
         let encoded = Lset.run(buffer, &mut data);
 
         // Check return value is simple string OK
@@ -111,7 +113,7 @@ pub mod test_lset {
         let key_cpy = key.clone();
         data.insert(key, TypeSaved::List(new_list));
 
-        let buffer = vec!["key", "-1", "new_value"];
+        let buffer = vec_strings!["key", "-1", "new_value"];
         let encoded = Lset.run(buffer, &mut data);
 
         // Check return value is simple string OK
@@ -136,7 +138,7 @@ pub mod test_lset {
         let key = "key".to_string();
         data.insert(key, TypeSaved::List(new_list));
 
-        let buffer = vec!["key", "1", "new_value"];
+        let buffer = vec_strings!["key", "1", "new_value"];
         let error = Lset.run(buffer, &mut data);
         assert_eq!(
             error.unwrap_err().print_it(),
@@ -154,7 +156,7 @@ pub mod test_lset {
         let key = "key".to_string();
         data.insert(key, TypeSaved::List(new_list));
 
-        let buffer = vec!["key", "-2", "new_value"];
+        let buffer = vec_strings!["key", "-2", "new_value"];
         let error = Lset.run(buffer, &mut data);
         assert_eq!(
             error.unwrap_err().print_it(),
@@ -173,7 +175,7 @@ pub mod test_lset {
         data.insert(key, TypeSaved::List(new_list));
 
         // key2 was not inserted (key1 was)
-        let buffer = vec!["key2", "-2", "new_value"];
+        let buffer = vec_strings!["key2", "-2", "new_value"];
         let error = Lset.run(buffer, &mut data);
         assert_eq!(error.unwrap_err().print_it(), "ERR no such key".to_string());
     }
@@ -184,7 +186,7 @@ pub mod test_lset {
         // redis> SET mykey 10
         data.insert("key".to_string(), TypeSaved::String("value".to_string()));
 
-        let buffer = vec!["key", "1", "new_value"];
+        let buffer = vec_strings!["key", "1", "new_value"];
         let error = Lset.run(buffer, &mut data);
         assert_eq!(
             error.unwrap_err().print_it(),
@@ -205,7 +207,7 @@ pub mod test_lset {
         let key_cpy = key.clone();
         data.insert(key, TypeSaved::List(new_list));
 
-        let buffer = vec!["key", "0", "new_value"];
+        let buffer = vec_strings!["key", "0", "new_value"];
         let encoded = Lset.run(buffer, &mut data);
 
         // Check return value is simple string OK
@@ -234,7 +236,7 @@ pub mod test_lset {
         let key_cpy = key.clone();
         data.insert(key, TypeSaved::List(new_list));
 
-        let buffer = vec!["key", "1", "new_value"];
+        let buffer = vec_strings!["key", "1", "new_value"];
         let encoded = Lset.run(buffer, &mut data);
 
         // Check return value is simple string OK
@@ -260,7 +262,7 @@ pub mod test_lset {
         let key_cpy = key.clone();
         data.insert(key, TypeSaved::List(new_list));
 
-        let buffer = vec!["key", "2", "new_value"];
+        let buffer = vec_strings!["key", "2", "new_value"];
         let encoded = Lset.run(buffer, &mut data);
 
         // Check return value is simple string OK
@@ -283,7 +285,7 @@ pub mod test_lset {
         let key = "key".to_string();
         data.insert(key, TypeSaved::List(new_list));
 
-        let buffer = vec![];
+        let buffer = vec_strings![];
         let error = Lset.run(buffer, &mut data);
         assert_eq!(
             error.unwrap_err().print_it(),
@@ -300,7 +302,7 @@ pub mod test_lset {
         let key = "key".to_string();
         data.insert(key, TypeSaved::List(new_list));
 
-        let buffer = vec!["key", "2", "new_value_1", "new_value_2"];
+        let buffer = vec_strings!["key", "2", "new_value_1", "new_value_2"];
         let error = Lset.run(buffer, &mut data);
         assert_eq!(
             error.unwrap_err().print_it(),
@@ -317,7 +319,7 @@ pub mod test_lset {
         let key = "key".to_string();
         data.insert(key, TypeSaved::List(new_list));
 
-        let buffer = vec!["key", "2"];
+        let buffer = vec_strings!["key", "2"];
         let error = Lset.run(buffer, &mut data);
         assert_eq!(
             error.unwrap_err().print_it(),
@@ -334,7 +336,7 @@ pub mod test_lset {
         let key = "key".to_string();
         data.insert(key, TypeSaved::List(new_list));
 
-        let buffer = vec!["key"];
+        let buffer = vec_strings!["key"];
         let error = Lset.run(buffer, &mut data);
         assert_eq!(
             error.unwrap_err().print_it(),

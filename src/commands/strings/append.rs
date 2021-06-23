@@ -8,16 +8,12 @@ use super::{no_more_values, pop_value};
 
 pub struct Append;
 impl Runnable<Database> for Append {
-    fn run(
-        &self,
-        mut buffer_vec: Vec<&str>,
-        database: &mut Database,
-    ) -> Result<String, ErrorStruct> {
-        check_empty(&&mut buffer_vec, "append")?;
+    fn run(&self, mut buffer: Vec<String>, database: &mut Database) -> Result<String, ErrorStruct> {
+        check_empty(&buffer, "append")?;
 
-        let new_value = pop_value(&mut buffer_vec)?;
-        let key = pop_value(&mut buffer_vec)?;
-        no_more_values(&buffer_vec, "append")?;
+        let new_value = pop_value(&mut buffer)?;
+        let key = pop_value(&mut buffer)?;
+        no_more_values(&buffer, "append")?;
         let size: usize;
 
         if let Some(typesaved) = database.get_mut(&key) {
@@ -45,7 +41,10 @@ impl Runnable<Database> for Append {
 pub mod test_append {
 
     use super::*;
-    use crate::database::{Database, TypeSaved};
+    use crate::{
+        database::{Database, TypeSaved},
+        vec_strings,
+    };
 
     #[test]
     fn test01_append_to_an_existing_key() {
@@ -53,7 +52,7 @@ pub mod test_append {
 
         data.insert("key".to_string(), TypeSaved::String("value".to_string()));
 
-        let buffer: Vec<&str> = vec!["key", "Appended"];
+        let buffer = vec_strings!["key", "Appended"];
         let encoded = Append.run(buffer, &mut data);
 
         assert_eq!(encoded.unwrap(), ":13\r\n".to_string());
@@ -66,7 +65,7 @@ pub mod test_append {
     #[test]
     fn test02_append_to_a_non_existing_key() {
         let mut data = Database::new();
-        let buffer: Vec<&str> = vec!["key", "newValue"];
+        let buffer = vec_strings!["key", "newValue"];
         let encoded = Append.run(buffer, &mut data);
 
         assert_eq!(encoded.unwrap(), ":8\r\n".to_string());
@@ -82,7 +81,7 @@ pub mod test_append {
 
         data.insert("key".to_string(), TypeSaved::String("value".to_string()));
 
-        let buffer: Vec<&str> = vec!["key"];
+        let buffer = vec_strings!["key"];
         let encoded = Append.run(buffer, &mut data);
         match encoded {
             Ok(_value) => {}

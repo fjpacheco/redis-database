@@ -9,22 +9,18 @@ use crate::{
 pub struct Srem;
 
 impl Runnable<Database> for Srem {
-    fn run(
-        &self,
-        mut buffer_vec: Vec<&str>,
-        database: &mut Database,
-    ) -> Result<String, ErrorStruct> {
-        check_error_cases(&mut buffer_vec)?;
+    fn run(&self, buffer: Vec<String>, database: &mut Database) -> Result<String, ErrorStruct> {
+        check_error_cases(&buffer)?;
 
-        let key = buffer_vec[0];
+        let key = &buffer[0];
 
         match database.get_mut(key) {
             Some(item) => match item {
                 TypeSaved::Set(item) => {
-                    let count_deleted = buffer_vec
+                    let count_deleted = buffer
                         .iter()
                         .skip(1)
-                        .map(|member| item.remove(*member))
+                        .map(|member| item.remove(member))
                         .filter(|x| *x)
                         .count();
 
@@ -39,10 +35,10 @@ impl Runnable<Database> for Srem {
     }
 }
 
-fn check_error_cases(buffer_vec: &mut Vec<&str>) -> Result<(), ErrorStruct> {
-    check_empty(&buffer_vec, "srem")?;
+fn check_error_cases(buffer: &[String]) -> Result<(), ErrorStruct> {
+    check_empty(&buffer, "srem")?;
 
-    if buffer_vec.len() < 2 {
+    if buffer.len() < 2 {
         let error_message = redis_messages::arguments_invalid_to("srem");
         return Err(ErrorStruct::new(
             error_message.get_prefix(),
@@ -56,6 +52,8 @@ fn check_error_cases(buffer_vec: &mut Vec<&str>) -> Result<(), ErrorStruct> {
 #[cfg(test)]
 mod test_srem_function {
     use std::collections::{HashSet, VecDeque};
+
+    use crate::vec_strings;
 
     use super::*;
 
@@ -73,11 +71,11 @@ mod test_srem_function {
         set.insert(String::from("m1"));
         let mut database_mock = Database::new();
         database_mock.insert("key".to_string(), TypeSaved::Set(set));
-        let buffer_vec_mock_1 = vec!["key", "m1"];
-        let buffer_vec_mock_2 = vec!["key", "m2"];
+        let buffer_mock_1 = vec_strings!["key", "m1"];
+        let buffer_mock_2 = vec_strings!["key", "m2"];
 
-        let result_received_1 = Srem.run(buffer_vec_mock_1, &mut database_mock);
-        let result_received_2 = Srem.run(buffer_vec_mock_2, &mut database_mock);
+        let result_received_1 = Srem.run(buffer_mock_1, &mut database_mock);
+        let result_received_2 = Srem.run(buffer_mock_2, &mut database_mock);
 
         let excepted_1 = RInteger::encode(1);
         let excepted_2 = RInteger::encode(1);
@@ -99,9 +97,9 @@ mod test_srem_function {
         set.insert(String::from("m2")); // m2
         let mut database_mock = Database::new();
         database_mock.insert("key".to_string(), TypeSaved::Set(set));
-        let buffer_vec_mock = vec!["key", "m1901020", "m1", "m1", "m1", "m192192", "m1", "m1"];
+        let buffer_mock = vec_strings!["key", "m1901020", "m1", "m1", "m1", "m192192", "m1", "m1"];
 
-        let result_received = Srem.run(buffer_vec_mock, &mut database_mock);
+        let result_received = Srem.run(buffer_mock, &mut database_mock);
 
         let excepted = RInteger::encode(1);
         assert_eq!(excepted, result_received.unwrap());
@@ -119,9 +117,9 @@ mod test_srem_function {
         set.insert(String::from("m2")); // m2
         let mut database_mock = Database::new();
         database_mock.insert("key".to_string(), TypeSaved::Set(set));
-        let buffer_vec_mock = vec!["key", "m3", "m4"];
+        let buffer_mock = vec_strings!["key", "m3", "m4"];
 
-        let result_received = Srem.run(buffer_vec_mock, &mut database_mock);
+        let result_received = Srem.run(buffer_mock, &mut database_mock);
 
         let excepted = RInteger::encode(0);
         assert_eq!(excepted, result_received.unwrap());
@@ -137,9 +135,9 @@ mod test_srem_function {
         let set = HashSet::new();
         let mut database_mock = Database::new();
         database_mock.insert("key".to_string(), TypeSaved::Set(set));
-        let buffer_vec_mock = vec!["key_random", "m1"];
+        let buffer_mock = vec_strings!["key_random", "m1"];
 
-        let result_received = Srem.run(buffer_vec_mock, &mut database_mock);
+        let result_received = Srem.run(buffer_mock, &mut database_mock);
 
         let excepted = RInteger::encode(0);
         assert_eq!(excepted, result_received.unwrap());
@@ -152,9 +150,9 @@ mod test_srem_function {
             "keyOfString".to_string(),
             TypeSaved::String("value".to_string()),
         );
-        let buffer_vec_mock = vec!["keyOfString", "value"];
+        let buffer_mock = vec_strings!["keyOfString", "value"];
 
-        let result_received = Srem.run(buffer_vec_mock, &mut database_mock);
+        let result_received = Srem.run(buffer_mock, &mut database_mock);
         let result_received_encoded = result_received.unwrap_err().get_encoded_message_complete();
 
         let expected_message_redis = redis_messages::wrongtype();
@@ -171,9 +169,9 @@ mod test_srem_function {
         new_list.push_back("value2".to_string());
         database_mock.insert("keyOfList".to_string(), TypeSaved::List(new_list));
 
-        let buffer_vec_mock = vec!["keyOfList", "value1", "value2"];
+        let buffer_mock = vec_strings!["keyOfList", "value1", "value2"];
 
-        let result_received = Srem.run(buffer_vec_mock, &mut database_mock);
+        let result_received = Srem.run(buffer_mock, &mut database_mock);
         let result_received_encoded = result_received.unwrap_err().get_encoded_message_complete();
 
         let expected_message_redis = redis_messages::wrongtype();
@@ -187,9 +185,9 @@ mod test_srem_function {
         let set = HashSet::new();
         let mut database_mock = Database::new();
         database_mock.insert("key".to_string(), TypeSaved::Set(set));
-        let buffer_vec_mock = vec!["key", "value1", "value2"];
+        let buffer_mock = vec_strings!["key", "value1", "value2"];
 
-        let result_received = Srem.run(buffer_vec_mock, &mut database_mock);
+        let result_received = Srem.run(buffer_mock, &mut database_mock);
 
         let excepted = RInteger::encode(0);
         assert_eq!(excepted, result_received.unwrap());

@@ -7,9 +7,9 @@ pub mod rename;
 //pub mod exists;
 pub mod clean;
 
-fn pop_value(buffer: &mut Vec<&str>, name: &str) -> Result<String, ErrorStruct> {
+fn pop_value(buffer: &mut Vec<String>, name: &str) -> Result<String, ErrorStruct> {
     if let Some(value) = buffer.pop() {
-        Ok(String::from(value))
+        Ok(value)
     } else {
         Err(ErrorStruct::new(
             String::from("ERR"),
@@ -18,7 +18,7 @@ fn pop_value(buffer: &mut Vec<&str>, name: &str) -> Result<String, ErrorStruct> 
     }
 }
 
-fn no_more_values(buffer: &[&str], name: &str) -> Result<(), ErrorStruct> {
+fn no_more_values(buffer: &[String], name: &str) -> Result<(), ErrorStruct> {
     if buffer.is_empty() {
         Ok(())
     } else {

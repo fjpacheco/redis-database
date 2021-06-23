@@ -21,13 +21,13 @@ pub mod rpushx;
 
 // Lpush, rpush, lpushx and rpushx aux
 
-pub fn fill_list_from_top(mut buffer: Vec<&str>, list: &mut VecDeque<String>) {
+pub fn fill_list_from_top(mut buffer: Vec<String>, list: &mut VecDeque<String>) {
     while !buffer.is_empty() {
         list.push_front(buffer.remove(0).to_string());
     }
 }
 
-pub fn fill_list_from_bottom(mut buffer: Vec<&str>, list: &mut VecDeque<String>) {
+pub fn fill_list_from_bottom(mut buffer: Vec<String>, list: &mut VecDeque<String>) {
     while !buffer.is_empty() {
         list.push_back(buffer.remove(0).to_string());
     }
@@ -36,12 +36,12 @@ pub fn fill_list_from_bottom(mut buffer: Vec<&str>, list: &mut VecDeque<String>)
 // Lpush and rpush aux
 
 pub fn push_at(
-    mut buffer: Vec<&str>,
+    mut buffer: Vec<String>,
     database: &mut Database,
-    fill_list: fn(buffer: Vec<&str>, list: &mut VecDeque<String>),
+    fill_list: fn(buffer: Vec<String>, list: &mut VecDeque<String>),
 ) -> Result<String, ErrorStruct> {
     check_not_empty(&buffer)?;
-    let key = String::from(buffer.remove(0));
+    let key = buffer.remove(0);
     check_not_empty(&buffer)?;
     let size;
     if let Some(typesaved) = database.get_mut(&key) {
@@ -68,12 +68,12 @@ pub fn push_at(
 // Lpushx and rpushx aux
 
 pub fn pushx_at(
-    mut buffer: Vec<&str>,
+    mut buffer: Vec<String>,
     database: &mut Database,
-    fill_list: fn(buffer: Vec<&str>, list: &mut VecDeque<String>),
+    fill_list: fn(buffer: Vec<String>, list: &mut VecDeque<String>),
 ) -> Result<String, ErrorStruct> {
     check_not_empty(&buffer)?;
-    let key = String::from(buffer.remove(0));
+    let key = buffer.remove(0);
     check_not_empty(&buffer)?;
     let size;
     if let Some(typesaved) = database.get_mut(&key) {
@@ -97,12 +97,12 @@ pub fn pushx_at(
 }
 
 pub fn pop_at(
-    mut buffer: Vec<&str>,
+    mut buffer: Vec<String>,
     database: &mut Database,
     fill_list: fn(list: &mut VecDeque<String>, counter: usize) -> String,
 ) -> Result<String, ErrorStruct> {
     check_not_empty(&buffer)?;
-    let key = String::from(buffer.remove(0));
+    let key = buffer.remove(0);
     let count = parse_count(&mut buffer)?;
     check_empty_2(&buffer)?;
     if let Some(typesaved) = database.get_mut(&key) {
@@ -127,7 +127,7 @@ pub fn pop_at(
     }
 }
 
-fn parse_count(buffer: &mut Vec<&str>) -> Result<usize, ErrorStruct> {
+fn parse_count(buffer: &mut Vec<String>) -> Result<usize, ErrorStruct> {
     if let Some(value) = buffer.pop() {
         if let Ok(counter) = value.parse::<usize>() {
             if counter > 0 {
