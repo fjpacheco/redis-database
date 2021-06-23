@@ -1,12 +1,11 @@
 use crate::{
-    commands::{check_empty, Runnable},
+    commands::Runnable,
     database::{Database, TypeSaved},
     err_wrongtype,
     messages::redis_messages,
     native_types::{ErrorStruct, RBulkString, RedisType},
 };
 
-use super::no_more_values;
 
 pub struct Get;
 
@@ -16,11 +15,9 @@ impl Runnable<Database> for Get {
         mut buffer_vec: Vec<&str>,
         database: &mut Database,
     ) -> Result<String, ErrorStruct> {
-        check_empty(&&mut buffer_vec, "get")?;
+        check_error_cases(&mut buffer_vec)?;
 
-        let key = buffer_vec.pop().unwrap().to_string();
-
-        no_more_values(&buffer_vec, "get")?;
+        let key = buffer_vec[0].to_string();
 
         match database.get(&key) {
             Some(item) => match item {
@@ -32,6 +29,19 @@ impl Runnable<Database> for Get {
             None => Ok(RBulkString::encode(redis_messages::nil())),
         }
     }
+}
+
+fn check_error_cases(buffer_vec: &mut Vec<&str>) -> Result<(), ErrorStruct> {
+    if buffer_vec.len() != 1 {
+        // only "get key"
+        let error_message = redis_messages::wrong_number_args_for("get");
+        return Err(ErrorStruct::new(
+            error_message.get_prefix(),
+            error_message.get_message(),
+        ));
+    }
+
+    Ok(())
 }
 
 #[cfg(test)]

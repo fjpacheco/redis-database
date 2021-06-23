@@ -1,31 +1,50 @@
-use crate::{
-    commands::{check_empty, Runnable},
-    database::{Database, TypeSaved},
-    messages::redis_messages,
-    native_types::{ErrorStruct, RSimpleString, RedisType},
-};
+use crate::{commands::{Runnable, check_empty}, database::{Database, TypeSaved}, messages::redis_messages, native_types::{ErrorStruct, RSimpleString, RedisType}};
 
-use super::no_more_values;
 
 pub struct Set;
 
 impl Runnable<Database> for Set {
     fn run(
         &self,
-        mut buffer_vec: Vec<&str>,
+        mut buffer: Vec<&str>,
         database: &mut Database,
     ) -> Result<String, ErrorStruct> {
-        check_empty(&&mut buffer_vec, "set")?;
+        check_error_cases(&mut buffer)?;
 
-        let value = buffer_vec.pop().unwrap().to_string();
-        let key = buffer_vec.pop().unwrap().to_string();
-
-        no_more_values(&buffer_vec, "set")?;
+        let value = buffer[1].to_string();
+        let key = buffer[0].to_string();
 
         database.insert(key, TypeSaved::String(value)); // replace any old value with this key
         Ok(RSimpleString::encode(redis_messages::ok()))
     }
 }
+
+fn check_error_cases(buffer_vec: &mut Vec<&str>) -> Result<(), ErrorStruct> {
+    check_empty(&buffer_vec, "set")?;
+
+    if buffer_vec.len() == 1 {
+        // never "arg1"
+        let error_message = redis_messages::arguments_invalid_to("set");
+        return Err(ErrorStruct::new(
+            error_message.get_prefix(),
+            error_message.get_message(),
+        ));
+    }
+
+    // Different error output => checked with src/redis-server!!
+    if buffer_vec.len() != 2 {
+        // never "arg1 arg2 arg3 ... "
+        let error_message = redis_messages::syntax_error(); 
+        return Err(ErrorStruct::new(
+            error_message.get_prefix(),
+            error_message.get_message(),
+        ));
+    }
+
+    Ok(())
+}
+
+
 #[cfg(test)]
 mod test_set_function {
 
@@ -84,7 +103,7 @@ mod test_set_function {
         let result_received = Set.run(buffer_vec_mock, &mut database_mock);
         let result_received_encoded = result_received.unwrap_err().get_encoded_message_complete();
 
-        let expected_message_redis = redis_messages::arguments_invalid_to("set");
+        let expected_message_redis = redis_messages::syntax_error();
         let expected_result =
             ("-".to_owned() + &expected_message_redis.get_message_complete() + "\r\n").to_string();
         assert_eq!(expected_result, result_received_encoded);

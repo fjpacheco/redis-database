@@ -8,7 +8,7 @@ pub mod strings;
 
 fn check_empty(buffer: &&mut Vec<&str>, name: &str) -> Result<(), ErrorStruct> {
     if buffer.is_empty() {
-        let message_error = redis_messages::not_empty_values_for(name);
+        let message_error =  redis_messages::arguments_invalid_to(name);
         return Err(ErrorStruct::new(
             message_error.get_prefix(),
             message_error.get_message(),
