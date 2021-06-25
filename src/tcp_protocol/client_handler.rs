@@ -8,9 +8,11 @@ use std::{
     sync::mpsc::Sender,
     thread,
 };
+//use std::collections::HashSet;
 
 use crate::native_types::redis_type::encode_netcat_input;
 use crate::native_types::{ErrorStruct, RArray, RError, RedisType};
+use crate::messages::redis_messages;
 
 #[derive(Debug)]
 pub struct ClientHandler {
@@ -69,6 +71,17 @@ impl ClientHandler {
             stream: stream_received,
         }
     }
+
+    pub fn send_response(&mut self, response: String) -> Result<(), ErrorStruct>{
+
+        match self.stream.write_all(response.as_bytes()){
+            Ok(()) => Ok(()),
+            Err(_) => Err(ErrorStruct::new(
+                redis_messages::cannot_write_stream().get_prefix(),
+                redis_messages::cannot_write_stream().get_message(),
+            )),
+        }
+    }
 }
 
 fn process<G>(
@@ -87,6 +100,8 @@ where
                 command_vec,
                 RArray::encode(command_vec.clone())
             );
+            
+
             command_delegator_sender
                 .send((command_vec, sender))
                 .unwrap();

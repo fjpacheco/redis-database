@@ -79,6 +79,20 @@ pub mod redis_messages {
         }
     }
 
+    pub fn cannot_write_stream() -> MessageRedis {
+        MessageRedis {
+            prefix: "CANNOTWRITE".to_string(),
+            message: "an error occurred while writing the tcp stream".to_string(),
+        }
+    }
+
+    pub fn not_valid_pubsub() -> MessageRedis {
+        MessageRedis {
+            prefix: "ERR".to_string(),
+            message: "can't execute command: only SUBSCRIBE and UNSUBSCRIBE are allowed in this context".to_string(),
+        }
+    }
+
     pub fn command_not_found(command_type: String, buffer: Vec<String>) -> ErrorStruct {
         let mut args_received = String::new();
         buffer

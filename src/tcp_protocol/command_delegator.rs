@@ -74,8 +74,6 @@ impl CommandDelegator {
 
                 if let Some(command_dest) = commands_map.get(&command_type) {
                     let _ = command_dest.send((command_input_user, sender_to_client));
-                } else if let Some(command_dest) = commands_map.get_for_server(&command_type) {
-                    let _ = command_dest.send((command_input_user, sender_to_client));
                 } else {
                     let error = command_not_found(command_type.to_string(), command_input_user);
                     sender_to_client.send(RError::encode(error)).unwrap();
