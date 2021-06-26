@@ -11,6 +11,7 @@ pub struct FileHandler {
 }
 
 impl FileHandler {
+    #[allow(dead_code)]
     fn new() -> FileHandler {
         FileHandler { last_message: None }
     }
@@ -19,13 +20,14 @@ impl FileHandler {
         self.last_message = Some(line);
     }
 
+    #[allow(dead_code)]
     fn get(&mut self) -> Option<String> {
         self.last_message.take()
     }
 }
 
 pub struct LogCenter {
-    handler: Option<JoinHandle<()>>,
+    _handler: Option<JoinHandle<()>>,
 }
 
 impl LogCenter {
@@ -38,7 +40,7 @@ impl LogCenter {
         let log_handler = LogCenter::spawn_handler(builder, receiver, verbose_mode, writer)?;
 
         Ok(LogCenter {
-            handler: Some(log_handler),
+            _handler: Some(log_handler),
         })
     }
 
@@ -74,7 +76,7 @@ impl LogCenter {
         writer.lock().unwrap().write_line(close_message);
     }
 
-    fn print_log_message(message: &String) {
+    fn print_log_message(message: &str) {
         match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
             Ok(n) => println!("At {}: {}", n.as_secs(), message),
             Err(_) => panic!("SystemTime before UNIX EPOCH! Are we travelling to the past?"),

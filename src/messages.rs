@@ -89,7 +89,16 @@ pub mod redis_messages {
     pub fn not_valid_pubsub() -> MessageRedis {
         MessageRedis {
             prefix: "ERR".to_string(),
-            message: "can't execute command: only SUBSCRIBE and UNSUBSCRIBE are allowed in this context".to_string(),
+            message:
+                "can't execute command: only SUBSCRIBE and UNSUBSCRIBE are allowed in this context"
+                    .to_string(),
+        }
+    }
+
+    pub fn not_valid_monitor() -> MessageRedis {
+        MessageRedis {
+            prefix: "ERR".to_string(),
+            message: "Replica can't interract with the keyspace".to_string(),
         }
     }
 

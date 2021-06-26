@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
-use crate::{commands::Runnable, Database};
-
 use crate::commands::*;
+use crate::tcp_protocol::client_atributes::status::Status;
+use crate::{commands::Runnable, Database};
 
 use super::server::ServerRedis;
 
@@ -40,6 +40,18 @@ impl<T> RunnablesMap<T> {
             Box::new(server::config_set::ConfigSet),
         );
 
+        RunnablesMap { elements: map }
+    }
+
+    // Hace falta agregarle metodos de ejecutor
+    pub fn executor() -> RunnablesMap<Status> {
+        let map: HashMap<String, Box<dyn Runnable<Status> + Send + Sync>> = HashMap::new();
+        RunnablesMap { elements: map }
+    }
+
+    // Hace falta agregarle metodos de suscriptor
+    pub fn subscriber() -> RunnablesMap<Status> {
+        let map: HashMap<String, Box<dyn Runnable<Status> + Send + Sync>> = HashMap::new();
         RunnablesMap { elements: map }
     }
 }

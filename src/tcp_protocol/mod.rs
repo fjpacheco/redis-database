@@ -4,10 +4,10 @@ pub mod client_handler;
 pub mod command_delegator;
 pub mod command_subdelegator;
 //pub mod database_command_delegator;
+pub mod client_atributes;
 pub mod listener_processor;
 pub mod runnables_map;
 pub mod server;
-pub mod client_status;
 //pub mod server_command_delegator;
 
 type RawCommand = (Vec<String>, Sender<String>);
