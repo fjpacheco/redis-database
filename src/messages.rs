@@ -102,6 +102,13 @@ pub mod redis_messages {
         }
     }
 
+    pub fn unexpected_behaviour(reason: &str) -> MessageRedis {
+        MessageRedis {
+            prefix: "INSTAPANIC".to_string(),
+            message: reason.to_string(),
+        }
+    }
+
     pub fn command_not_found(command_type: String, buffer: Vec<String>) -> ErrorStruct {
         let mut args_received = String::new();
         buffer

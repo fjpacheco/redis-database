@@ -28,6 +28,9 @@ impl CommandSubDelegator {
                 let command_type = get_command_type(&mut command_input_user);
 
                 if let Some(runnable_command) = runnables_map.get(&command_type) {
+
+                    
+
                     match runnable_command.run(command_input_user, &mut data) {
                         Ok(encoded_resp) => sender_to_client.send(encoded_resp).unwrap(),
                         Err(err) => sender_to_client.send(RError::encode(err)).unwrap(),

@@ -12,6 +12,8 @@ use std::{
     thread,
 };
 //use std::collections::HashSet;
+use std::net::SocketAddr;
+use std::net::SocketAddrV4;
 
 use crate::messages::redis_messages;
 use crate::native_types::redis_type::encode_netcat_input;
@@ -32,7 +34,7 @@ impl ClientHandler {
         .set_read_timeout(Some(Duration::new(5, 0)))
         .expect("set_read_timeout call failed");*/
         let mut stream = stream_received.try_clone().unwrap();
-        let client_status = Arc::new(Mutex::new(ClientStatus::new()));
+        let client_status = Arc::new(Mutex::new(ClientStatus::new(get_socket_addr_from(&mut stream).unwrap())));
         let client_status_clone = Arc::clone(&client_status);
 
         let _client_thread = thread::spawn(move || {
@@ -98,6 +100,13 @@ impl ClientHandler {
     }
 }
 
+fn get_socket_addr_from(stream: &mut TcpStream) -> Option<SocketAddrV4> {
+    match stream.local_addr().unwrap() {
+        SocketAddr::V4(addr) => Some(addr),
+        SocketAddr::V6(_) => None,
+    }
+}
+
 fn process<G>(
     first_lecture: String,
     linesbuffer_reader: &mut Lines<G>,
@@ -115,9 +124,11 @@ where
                 RArray::encode(command_vec.clone())
             );
 
-            match client_status.lock().unwrap().review_command(command_vec) {
+            let answer = client_status.lock().unwrap().review_command(command_vec);
+
+            match answer {
                 StatusAnswer::Continue(command_vec) => {
-                    return delegate_command(command_vec, command_delegator_sender);
+                    return encode_result(delegate_command(command_vec, command_delegator_sender, client_status));
                 }
                 StatusAnswer::Break(some_error) => {
                     return RError::encode(some_error);
@@ -126,38 +137,47 @@ where
                     return encode_result(result);
                 }
             }
+
+            /*match delegate_command(command_vec, command_delegator_sender, client_status){
+                Ok(response) => response,
+                Err(error) => RError::encode(error),
+            }*/
         }
         Err(error) => {
             print!("Error decode in client handler");
             return RError::encode(error);
         }
     }
+}
 
-    fn encode_result(result: Result<String, ErrorStruct>) -> String {
-        match result {
-            Ok(encoded_resp) => encoded_resp,
-            Err(err) => RError::encode(err),
-        }
+fn encode_result(result: Result<String, ErrorStruct>) -> String {
+    match result {
+        Ok(encoded_resp) => encoded_resp,
+        Err(err) => RError::encode(err),
     }
+}
 
-    fn delegate_command(
-        command_vec: Vec<String>,
-        command_delegator_sender: &Sender<(Vec<String>, Sender<String>)>,
-    ) -> String {
-        let (sender, receiver): (mpsc::Sender<String>, mpsc::Receiver<String>) = mpsc::channel();
-        command_delegator_sender
-            .send((command_vec, sender))
-            .unwrap();
+fn delegate_command(
+    command_vec: Vec<String>,
+    command_delegator_sender: &Sender<(Vec<String>, Sender<String>)>,
+    client_status: Arc<Mutex<ClientStatus>>,
+) -> Result<String, ErrorStruct> {
+    let (sender, receiver): (mpsc::Sender<String>, mpsc::Receiver<String>) = mpsc::channel();
 
-        match receiver.recv() {
-            Ok(encoded_resp) => encoded_resp,
-            Err(err) => {
-                let error = ErrorStruct::new(
-                    "ERR".to_string(),
-                    format!("failed to receive channel content. Detail {:?}", err),
-                );
-                RError::encode(error)
-            }
+    client_status.lock().unwrap().review_command(command_vec)?;
+
+    command_delegator_sender
+        .send((command_vec, sender))
+        .unwrap();
+
+    match receiver.recv() {
+        Ok(encoded_resp) => encoded_resp,
+        Err(err) => {
+            let error = ErrorStruct::new(
+                "ERR".to_string(),
+                format!("failed to receive channel content. Detail {:?}", err),
+            );
+            RError::encode(error)
         }
     }
 }

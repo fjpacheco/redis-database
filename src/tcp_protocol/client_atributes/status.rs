@@ -5,7 +5,7 @@ use crate::tcp_protocol::runnables_map::RunnablesMap;
 
 pub enum Status {
     Executor,
-    Subscriber(HashSet<String>),
+    Subscriber,
     Monitor,
     Dead,
 }
@@ -18,8 +18,9 @@ impl Status {
     pub fn update_map(&self) -> Option<RunnablesMap<Status>> {
         match self {
             Self::Executor => Some(RunnablesMap::<Status>::executor()),
-            Self::Subscriber(_) => Some(RunnablesMap::<Status>::subscriber()),
+            Self::Subscriber => Some(RunnablesMap::<Status>::subscriber()),
             _ => None,
         }
     }
+
 }

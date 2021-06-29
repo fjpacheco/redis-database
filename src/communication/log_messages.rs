@@ -23,8 +23,16 @@ impl LogMessage {
         self.message.take()
     }
 
-    pub fn test_message() -> LogMessage {
-        LogMessage::new(2, "This is a test".to_string())
+    pub fn test_message1() -> LogMessage {
+        LogMessage::new(2, "This is test 1".to_string())
+    }
+
+    pub fn test_message2() -> LogMessage {
+        LogMessage::new(2, "This is test 2".to_string())
+    }
+
+    pub fn test_message3() -> LogMessage {
+        LogMessage::new(2, "This is test 3".to_string())
     }
 
     // A partir de aca abajo, pondriamos todos los

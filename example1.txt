@@ -1,0 +1,4 @@
+$14
+This is test 1
+$21
+Log center is closed.

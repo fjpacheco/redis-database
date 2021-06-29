@@ -46,12 +46,17 @@ impl<T> RunnablesMap<T> {
     // Hace falta agregarle metodos de ejecutor
     pub fn executor() -> RunnablesMap<Status> {
         let map: HashMap<String, Box<dyn Runnable<Status> + Send + Sync>> = HashMap::new();
+        //map.insert(String::from("monitor"), Box::new(server::monitor::Monitor));
+        //map.insert(String::from("subscribe"), Box::new(pubsub::subscribe::Subscribe));
+        //map.insert(String::from("unsubscribe"), Box::new(pubsub::unsubscribe::Unsubscribe));
         RunnablesMap { elements: map }
     }
 
     // Hace falta agregarle metodos de suscriptor
     pub fn subscriber() -> RunnablesMap<Status> {
         let map: HashMap<String, Box<dyn Runnable<Status> + Send + Sync>> = HashMap::new();
+        //map.insert(String::from("subscribe"), Box::new(pubsub::subscribe::Subscribe));
+        //map.insert(String::from("unsubscribe"), Box::new(pubsub::unsubscribe::Unsubscribe));
         RunnablesMap { elements: map }
     }
 }

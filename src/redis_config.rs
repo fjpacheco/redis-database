@@ -10,9 +10,16 @@ use crate::native_types::ErrorStruct;
 pub struct RedisConfig {
     ip: String,
     port: String,
+    log_filename: String,
+    verbose: usize,
 }
 
 impl RedisConfig {
+
+    pub fn new(ip: String, port: String, log_filename: String, verbose: usize) -> RedisConfig {
+        RedisConfig{ip, port, log_filename, verbose}
+    }
+
     pub fn parse_config(argv: Vec<String>) -> Result<RedisConfig, ErrorStruct> {
         let config = match argv.len().eq(&2) {
             true => RedisConfig::get_with_new_config(&argv[1])?,
@@ -43,7 +50,7 @@ impl RedisConfig {
             .get("port")
             .unwrap_or(&Self::default().port())
             .to_string();
-        Ok(RedisConfig { ip, port })
+        Ok(RedisConfig { ip, port, log_filename: String::from("logs.txt"), verbose: 0 })
     }
 
     pub fn ip(&self) -> String {
@@ -61,6 +68,14 @@ impl RedisConfig {
     pub fn update_port(&mut self, port: &str) {
         self.port = port.to_string();
     }
+
+    pub fn log_filename(&self) -> String {
+        String::from(&self.log_filename)
+    }
+
+    pub fn verbose(&self) -> &usize {
+        &self.verbose
+    }
 }
 
 impl Default for RedisConfig {
@@ -74,7 +89,9 @@ impl Default for RedisConfig {
     fn default() -> Self {
         let ip = "127.0.0.1".into();
         let port = "6379".into();
-        RedisConfig { ip, port }
+        let log_filename = "logs.txt".to_string();
+        let verbose = 0;
+        RedisConfig{ ip, port, log_filename, verbose}
     }
 }
 

@@ -2,6 +2,7 @@ use crate::{messages::redis_messages, native_types::ErrorStruct};
 
 pub mod keys;
 pub mod lists;
+pub mod pubsub;
 pub mod server;
 pub mod sets;
 pub mod strings;
