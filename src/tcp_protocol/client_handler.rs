@@ -128,7 +128,7 @@ where
 
             match answer {
                 StatusAnswer::Continue(command_vec) => {
-                    return encode_result(delegate_command(command_vec, command_delegator_sender, client_status));
+                    return delegate_command(command_vec, command_delegator_sender, client_status);
                 }
                 StatusAnswer::Break(some_error) => {
                     return RError::encode(some_error);
@@ -161,10 +161,10 @@ fn delegate_command(
     command_vec: Vec<String>,
     command_delegator_sender: &Sender<(Vec<String>, Sender<String>)>,
     client_status: Arc<Mutex<ClientStatus>>,
-) -> Result<String, ErrorStruct> {
+) -> String {
     let (sender, receiver): (mpsc::Sender<String>, mpsc::Receiver<String>) = mpsc::channel();
 
-    client_status.lock().unwrap().review_command(command_vec)?;
+    //client_status.lock().unwrap().review_command(command_vec)?;
 
     command_delegator_sender
         .send((command_vec, sender))
