@@ -68,6 +68,7 @@ mod test_file_manager {
         let file_manager = FileManager::new();
         let text = "This is a line to be written".to_string();
         let file = File::create("example1.txt").unwrap();
+        // file.set_len(0);
         let mut file = LineWriter::new(file);
         file_manager.write_to_file(&mut file, text).unwrap();
 
@@ -81,6 +82,7 @@ mod test_file_manager {
     fn test02_write_many_lines() {
         let file_manager = FileManager::new();
         let file = File::create("example2.txt").unwrap();
+        // file.set_len(0);
         let mut file = LineWriter::new(file);
 
         let text1 = "This is a line to be written".to_string();
