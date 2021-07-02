@@ -8,9 +8,17 @@ use std::thread;
 use crate::native_types::ErrorStruct;
 use crate::tcp_protocol::runnables_map::RunnablesMap;
 
-use super::{get_command_type, RawCommand};
+use super::{remove_command, RawCommand};
 pub struct CommandSubDelegator;
 /// Interprets commands and delegates tasks
+
+/*
+Recibir una estructura tal que tenga Agentes Notificadores
+Es decir, si necesito avisar a los Monitors, o hasta el Log de tal cosa
+O hasta alguien externo!!!
+
+Aca esta dificil, no sé 'quién' me habla, no se su peer()
+*/
 
 impl CommandSubDelegator {
     pub fn start<T: 'static>(
@@ -25,15 +33,11 @@ impl CommandSubDelegator {
 
         let command_sub_delegator_handler = builder.spawn(move || {
             for (mut command_input_user, sender_to_client) in rcv_cmd.iter() {
-                let command_type = get_command_type(&mut command_input_user);
-
+                let command_type = remove_command(&mut command_input_user);
                 if let Some(runnable_command) = runnables_map.get(&command_type) {
-
-                    
-
                     match runnable_command.run(command_input_user, &mut data) {
                         Ok(encoded_resp) => sender_to_client.send(encoded_resp).unwrap(),
-                        Err(err) => sender_to_client.send(RError::encode(err)).unwrap(),
+                        Err(err) => sender_to_client.send(RError::encode(err)).unwrap(), // TODO: matchear error por poisson!
                     };
                 } else {
                     let error = command_not_found(command_type, command_input_user);

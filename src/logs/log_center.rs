@@ -1,16 +1,40 @@
-use std::sync::Mutex;
-use std::sync::Arc;
-use std::sync::mpsc::Receiver;
-use std::fs::File;
 use std::fs::OpenOptions;
 use std::io::LineWriter;
+use std::sync::mpsc::Receiver;
+use std::sync::Arc;
+use std::sync::Mutex;
 use std::thread::{self, JoinHandle};
 use std::time::SystemTime;
 
 use crate::communication::log_messages::LogMessage;
-use crate::native_types::error::ErrorStruct;
 use crate::file_manager::FileManager;
+use crate::native_types::error::ErrorStruct;
 use crate::redis_config::RedisConfig;
+
+pub struct FileHandler {
+    last_message: Option<String>,
+}
+
+impl Default for FileHandler {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl FileHandler {
+    pub fn new() -> FileHandler {
+        FileHandler { last_message: None }
+    }
+
+    fn _write_line(&mut self, line: String) {
+        self.last_message = Some(line);
+    }
+
+    #[allow(dead_code)]
+    fn get(&mut self) -> Option<String> {
+        self.last_message.take()
+    }
+}
 
 pub struct LogCenter {
     _handler: Option<JoinHandle<()>>,
@@ -21,7 +45,6 @@ impl LogCenter {
         receiver: Receiver<LogMessage>,
         redis_config: Arc<Mutex<RedisConfig>>,
         writer: FileManager,
-        
     ) -> Result<LogCenter, ErrorStruct> {
         let builder = thread::Builder::new().name("Log Center".into());
         let log_handler = LogCenter::spawn_handler(builder, receiver, redis_config, writer)?;
@@ -46,18 +69,28 @@ impl LogCenter {
         }
     }
 
-    fn start(receiver: Receiver<LogMessage>, redis_config: Arc<Mutex<RedisConfig>>, writer: FileManager) {
-
+    fn start(
+        receiver: Receiver<LogMessage>,
+        redis_config: Arc<Mutex<RedisConfig>>,
+        writer: FileManager,
+    ) {
         // Open? Or create? D:
-        let file = OpenOptions::new().write(true).open(&redis_config.lock().unwrap().log_filename()).unwrap();
+        let file = OpenOptions::new()
+            .write(true)
+            .open(&redis_config.lock().unwrap().log_filename())
+            .unwrap();
         let mut file = LineWriter::new(file);
         // Considerar caso en el que cambia el archivo redis config
         for mut log_message in receiver.iter() {
-            if let Some(message) = log_message.is_verbosely_printable(redis_config.lock().unwrap().verbose()) {
+            if let Some(message) =
+                log_message.is_verbosely_printable(redis_config.lock().unwrap().verbose())
+            {
                 LogCenter::print_log_message(message);
             }
 
-            writer.write_to_file(&mut file, log_message.take_message().unwrap()).unwrap();
+            writer
+                .write_to_file(&mut file, log_message.take_message().unwrap())
+                .unwrap();
         }
 
         let close_message = LogMessage::log_closed().take_message().unwrap();
@@ -77,8 +110,9 @@ impl LogCenter {
 pub mod test_log_center {
 
     use super::*;
-    use std::sync::mpsc;
     use std::fs;
+    use std::fs::File;
+    use std::sync::mpsc;
 
     #[test]
     fn test01_sending_a_log_message() {
@@ -87,7 +121,7 @@ pub mod test_log_center {
             String::new(),
             String::new(),
             String::from("example1.txt"),
-            0
+            0,
         )));
         let writer = FileManager::new();
         let message = LogMessage::test_message1();
@@ -111,7 +145,7 @@ pub mod test_log_center {
                 String::new(),
                 String::new(),
                 String::from("example2.txt"),
-                0
+                0,
             )));
             let writer = FileManager::new();
             let message = LogMessage::test_message2();

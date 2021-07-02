@@ -1,8 +1,8 @@
-use std::collections::HashSet;
 use std::mem;
 
 use crate::tcp_protocol::runnables_map::RunnablesMap;
 
+#[derive(PartialEq, Eq)]
 pub enum Status {
     Executor,
     Subscriber,
@@ -22,5 +22,4 @@ impl Status {
             _ => None,
         }
     }
-
 }

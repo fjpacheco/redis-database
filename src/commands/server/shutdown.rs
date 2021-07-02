@@ -1,11 +1,17 @@
 use std::net::TcpStream;
 
-use crate::{commands::Runnable, native_types::ErrorStruct, tcp_protocol::server::ServerRedis};
+use crate::{
+    commands::Runnable, native_types::ErrorStruct, tcp_protocol::server::ServerRedisAtributes,
+};
 
 pub struct Shutdown;
 
-impl Runnable<ServerRedis> for Shutdown {
-    fn run(&self, _buffer: Vec<String>, server: &mut ServerRedis) -> Result<String, ErrorStruct> {
+impl Runnable<ServerRedisAtributes> for Shutdown {
+    fn run(
+        &self,
+        _buffer: Vec<String>,
+        server: &mut ServerRedisAtributes,
+    ) -> Result<String, ErrorStruct> {
         server.store(true);
         match TcpStream::connect(server.get_addr()) {
             Ok(_) => Ok("+SERVER OFF\r\n".to_string()),

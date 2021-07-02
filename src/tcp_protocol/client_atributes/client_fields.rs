@@ -1,23 +1,23 @@
-use std::collections::HashSet;
 use crate::messages::redis_messages::not_valid_monitor;
 use crate::messages::redis_messages::not_valid_pubsub;
+use crate::messages::redis_messages::unexpected_behaviour;
 use crate::native_types::ErrorStruct;
 use crate::tcp_protocol::client_atributes::{status::Status, status_answer::StatusAnswer};
 use crate::tcp_protocol::runnables_map::RunnablesMap;
-use crate::messages::redis_messages::unexpected_behaviour;
+use std::collections::HashSet;
 
 use std::net::SocketAddrV4;
 
-pub struct ClientStatus {
+pub struct ClientFields {
     map: Option<RunnablesMap<Status>>,
     status: Status,
     subscriptions: HashSet<String>,
-    address: SocketAddrV4,
+    pub address: SocketAddrV4,
 }
 
-impl ClientStatus {
-    pub fn new(address: SocketAddrV4) -> ClientStatus {
-        ClientStatus {
+impl ClientFields {
+    pub fn new(address: SocketAddrV4) -> ClientFields {
+        ClientFields {
             map: Some(RunnablesMap::<Status>::executor()),
             status: Status::Executor,
             subscriptions: HashSet::new(),
@@ -49,6 +49,10 @@ impl ClientStatus {
             )),
             Status::Dead => panic!(),
         }
+    }
+
+    pub fn is_monitor_notifiable(&self) -> bool {
+        self.status == Status::Monitor
     }
 
     fn rc_case_subscriber(&mut self, mut command: Vec<String>) -> StatusAnswer {
@@ -84,40 +88,52 @@ impl ClientStatus {
         }
     }
 
-    pub fn add_subscriptions(&mut self, channels: &Vec<String>) -> Result<isize, ErrorStruct>{
+    pub fn add_subscriptions(&mut self, channels: &[String]) -> Result<isize, ErrorStruct> {
         match self.status {
             Status::Executor => self.as_case_executor(channels),
             Status::Subscriber => self.as_case_subscriber(channels),
             _ => Err(ErrorStruct::new(
-                unexpected_behaviour("Dead client (or monitor) is trying to execute invalid command").get_prefix(),
-                unexpected_behaviour("Dead client (or monitor) is trying to execute invalid command").get_message(),
+                unexpected_behaviour(
+                    "Dead client (or monitor) is trying to execute invalid command",
+                )
+                .get_prefix(),
+                unexpected_behaviour(
+                    "Dead client (or monitor) is trying to execute invalid command",
+                )
+                .get_message(),
             )),
         }
     }
 
-    fn as_case_executor(&mut self, channels: &Vec<String>) -> Result<isize, ErrorStruct> {
+    fn as_case_executor(&mut self, channels: &[String]) -> Result<isize, ErrorStruct> {
         let added = self.add_channels(channels);
         self.replace_status(Status::Subscriber);
         Ok(added)
     }
 
-    fn as_case_subscriber(&mut self, channels: &Vec<String>) -> Result<isize, ErrorStruct> {
+    fn as_case_subscriber(&mut self, channels: &[String]) -> Result<isize, ErrorStruct> {
         let added = self.add_channels(channels);
         Ok(added)
     }
 
-    pub fn remove_subscriptions(&mut self, channels: &Vec<String>) -> Result<isize, ErrorStruct>{
+    pub fn remove_subscriptions(&mut self, channels: &[String]) -> Result<isize, ErrorStruct> {
         match &self.status {
             Status::Executor => Ok(0),
             Status::Subscriber => self.rs_case_subscriber(channels),
             _ => Err(ErrorStruct::new(
-                unexpected_behaviour("Dead client (or monitor) is trying to execute invalid command").get_prefix(),
-                unexpected_behaviour("Dead client (or monitor) is trying to execute invalid command").get_message(),
+                unexpected_behaviour(
+                    "Dead client (or monitor) is trying to execute invalid command",
+                )
+                .get_prefix(),
+                unexpected_behaviour(
+                    "Dead client (or monitor) is trying to execute invalid command",
+                )
+                .get_message(),
             )),
         }
     }
 
-    fn rs_case_subscriber(&mut self, channels: &Vec<String>) -> Result<isize, ErrorStruct> {
+    fn rs_case_subscriber(&mut self, channels: &[String]) -> Result<isize, ErrorStruct> {
         if channels.is_empty() {
             self.status.replace(Status::Executor);
             Ok(0)
@@ -130,14 +146,14 @@ impl ClientStatus {
         }
     }
 
-    fn add_channels(&mut self, new_channels: &Vec<String>) -> isize {
+    fn add_channels(&mut self, new_channels: &[String]) -> isize {
         for channel in new_channels.iter() {
             self.subscriptions.insert(String::from(channel));
         }
         new_channels.len() as isize
     }
-    
-    fn remove_channels(&mut self, new_channels: &Vec<String>) -> isize {
+
+    fn remove_channels(&mut self, new_channels: &[String]) -> isize {
         for channel in new_channels.iter() {
             self.subscriptions.remove(channel);
         }
@@ -145,19 +161,12 @@ impl ClientStatus {
     }
 }
 
-
-
 /*#[cfg(test)]
-
 mod test_client_status {
-
     use super::*;
     use std::net::Ipv4Addr;
-
     fn test01_add_subscriptions(){
-
         let status = ClientStatus::new(SocketAddrV4::new(Ipv4Addr::new(127, 0, 0, 1), 8080));
         let added = status.add_subscriptions(vec!["telefe".to_string(), "trece".to_string()]);
-
     }
 }*/

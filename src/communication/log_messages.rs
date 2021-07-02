@@ -1,3 +1,11 @@
+use std::{
+    error::Error,
+    net::{TcpListener, TcpStream},
+    sync::{Arc, Mutex},
+};
+
+use crate::tcp_protocol::client_atributes::client_fields::ClientFields;
+
 pub struct LogMessage {
     verbose_priority: usize,
     message: Option<String>,
@@ -43,8 +51,48 @@ impl LogMessage {
         LogMessage::new(9, format!("Database update: {}", formatted_data))
     }
 
+    pub fn off_server(listener: &TcpListener) -> LogMessage {
+        LogMessage::new(
+            2,
+            format!("Server OFF in {:?}", listener.local_addr().unwrap()),
+        )
+    }
+
+    pub fn start_up(listener: &TcpListener) -> LogMessage {
+        LogMessage::new(
+            2,
+            format!("Server ON in {:?}", listener.local_addr().unwrap()),
+        )
+    }
+
+    pub fn error_to_connect_client(err: &dyn Error) -> LogMessage {
+        LogMessage::new(2, format!("Error to connect client: {:?}", err))
+    }
+
     pub fn log_closed() -> LogMessage {
-        LogMessage::new(9, "Log center is closed.".to_string())
+        LogMessage::new(2, "Log center is closed.".to_string())
+    }
+
+    pub fn command_send_by_client(
+        command: &[String],
+        client_fields: Arc<Mutex<ClientFields>>,
+    ) -> LogMessage {
+        let addr = client_fields.lock().unwrap().address.to_string();
+        LogMessage::new(2, format!("[{}] {:?}", addr, command))
+    }
+
+    pub fn client_off(client: &TcpStream) -> LogMessage {
+        LogMessage::new(
+            2,
+            format!("Client disconected: {:?}", client.peer_addr().unwrap()),
+        )
+    }
+
+    pub fn new_conection(client: &TcpStream) -> LogMessage {
+        LogMessage::new(
+            2,
+            format!("New conection: {:?}", client.peer_addr().unwrap()),
+        )
     }
 }
 

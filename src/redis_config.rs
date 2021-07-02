@@ -12,12 +12,18 @@ pub struct RedisConfig {
     port: String,
     log_filename: String,
     verbose: usize,
+    timeout_secs: u64,
 }
 
 impl RedisConfig {
-
     pub fn new(ip: String, port: String, log_filename: String, verbose: usize) -> RedisConfig {
-        RedisConfig{ip, port, log_filename, verbose}
+        RedisConfig {
+            ip,
+            port,
+            log_filename,
+            verbose,
+            timeout_secs: 0,
+        }
     }
 
     pub fn parse_config(argv: Vec<String>) -> Result<RedisConfig, ErrorStruct> {
@@ -46,11 +52,36 @@ impl RedisConfig {
 
         let config = get_configs(file);
         let ip = "127.0.0.1".into();
+
         let port = config
             .get("port")
             .unwrap_or(&Self::default().port())
             .to_string();
-        Ok(RedisConfig { ip, port, log_filename: String::from("logs.txt"), verbose: 0 })
+
+        let log_filename = config
+            .get("logfile")
+            .unwrap_or(&Self::default().log_filename())
+            .to_string();
+
+        let timeout_secs = config
+            .get("timeout")
+            .unwrap_or(&Self::default().timeout().to_string())
+            .parse::<u64>()
+            .unwrap_or_else(|_| Self::default().timeout());
+
+        let verbose = config
+            .get("verbose")
+            .unwrap_or(&Self::default().verbose().to_string())
+            .parse::<usize>()
+            .unwrap_or_else(|_| *Self::default().verbose());
+
+        Ok(RedisConfig {
+            ip,
+            port,
+            log_filename,
+            verbose,
+            timeout_secs,
+        })
     }
 
     pub fn ip(&self) -> String {
@@ -59,6 +90,10 @@ impl RedisConfig {
 
     pub fn port(&self) -> String {
         self.port.to_string()
+    }
+
+    pub fn timeout(&self) -> u64 {
+        self.timeout_secs
     }
 
     pub fn get_addr(&self) -> String {
@@ -90,18 +125,27 @@ impl Default for RedisConfig {
         let ip = "127.0.0.1".into();
         let port = "6379".into();
         let log_filename = "logs.txt".to_string();
-        let verbose = 0;
-        RedisConfig{ ip, port, log_filename, verbose}
+        let verbose = 10;
+        let timeout_secs = 0;
+        RedisConfig {
+            ip,
+            port,
+            log_filename,
+            verbose,
+            timeout_secs,
+        }
     }
 }
 
-/// Transforms each line of a [File] into [HashMap] with:
+/// Each line of the [File] is inserted into a [HashMap] with format:
 ///
 /// * **key** => *"name_config"*
 ///
 /// * **value** => *"estate_config"*
 ///
-/// It is assumed that each line of the [File] maintains the *name* and *configuration* status **in only two words**.
+/// ## Example
+///
+/// A line from the file with "port 7777" in the HashMap was saved (key, value): (port, 7777)
 fn get_configs(file: File) -> HashMap<String, String> {
     BufReader::new(file)
         .lines()

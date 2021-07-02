@@ -32,15 +32,18 @@ impl FileManager {
         first_lecture.remove(0); // Redis Type inference
         first_lecture.pop().unwrap(); // popping \n
         first_lecture.pop().unwrap(); // popping \r
-        let decoded_text = RBulkString::decode(first_lecture, &mut bufreader.lines());
-        decoded_text
+        RBulkString::decode(first_lecture, &mut bufreader.lines())
     }
 
     #[allow(dead_code)]
-    pub fn write_to_file(&self, file: &mut LineWriter<File>, text: String) -> Result<(), ErrorStruct> {
+    pub fn write_to_file(
+        &self,
+        file: &mut LineWriter<File>,
+        text: String,
+    ) -> Result<(), ErrorStruct> {
         // RECEIVES TEXT, ENCODES IT AND WRITES IT
         let encoded_text = RBulkString::encode(text);
-        if let Ok(_) = file.write_all(&encoded_text.into_bytes()) {
+        if file.write_all(&encoded_text.into_bytes()).is_ok() {
             Ok(())
         } else {
             Err(ErrorStruct::new(
@@ -51,6 +54,11 @@ impl FileManager {
         // if last line doesn't end in a newline flush or drop LineWriter is needed to finish writing
         // file.flush()?;
         // Ok(())
+    }
+}
+impl Default for FileManager {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

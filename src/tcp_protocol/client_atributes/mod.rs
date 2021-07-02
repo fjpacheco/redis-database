@@ -1,3 +1,3 @@
-pub mod client_status;
+pub mod client_fields;
 pub mod status;
 pub mod status_answer;

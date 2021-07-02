@@ -5,26 +5,19 @@ use super::RawCommand;
 
 use crate::messages::redis_messages::command_not_found;
 use crate::native_types::{ErrorStruct, RError, RedisType};
+use crate::tcp_protocol::get_command;
 
 pub struct CommandsMap {
     channel_map: HashMap<String, Sender<RawCommand>>,
-    channel_map_server: HashMap<String, Sender<RawCommand>>,
 }
 
 impl CommandsMap {
     pub fn new(channel_map: HashMap<String, Sender<RawCommand>>) -> CommandsMap {
-        CommandsMap {
-            channel_map,
-            channel_map_server: HashMap::new(),
-        }
+        CommandsMap { channel_map }
     }
 
     pub fn get(&self, string: &str) -> Option<&Sender<RawCommand>> {
         self.channel_map.get(string)
-    }
-
-    pub fn get_for_server(&self, string: &str) -> Option<&Sender<RawCommand>> {
-        self.channel_map_server.get(string)
     }
 
     pub fn default() -> (CommandsMap, Receiver<RawCommand>, Receiver<RawCommand>) {
@@ -35,21 +28,16 @@ impl CommandsMap {
             mpsc::channel();
 
         let mut channel_map: HashMap<String, Sender<RawCommand>> = HashMap::new();
-        let mut channel_map_server: HashMap<String, Sender<RawCommand>> = HashMap::new();
         channel_map.insert(String::from("set"), snd_cmd_dat.clone());
         channel_map.insert(String::from("get"), snd_cmd_dat.clone());
         channel_map.insert(String::from("strlen"), snd_cmd_dat);
-        channel_map_server.insert(String::from("shutdown"), snd_cmd_server.clone());
-        channel_map_server.insert(String::from("config set"), snd_cmd_server);
+        channel_map.insert(String::from("shutdown"), snd_cmd_server.clone());
+        channel_map.insert(String::from("monitor"), snd_cmd_server.clone());
+        channel_map.insert(String::from("notify_monitors"), snd_cmd_server.clone());
+        channel_map.insert(String::from("clear_client"), snd_cmd_server.clone());
+        channel_map.insert(String::from("config get"), snd_cmd_server);
 
-        (
-            CommandsMap {
-                channel_map,
-                channel_map_server,
-            },
-            rcv_cmd_dat,
-            rcv_cmd_server,
-        )
+        (Self { channel_map }, rcv_cmd_dat, rcv_cmd_server)
     }
 }
 
@@ -66,12 +54,7 @@ impl CommandDelegator {
 
         let command_delegator_handler = builder.spawn(move || {
             for (command_input_user, sender_to_client) in command_delegator_recv.iter() {
-                let mut command_type = command_input_user[0].to_string();
-                if command_type.contains("config") {
-                    command_type =
-                        command_type.to_owned() + " " + &command_input_user[1].to_string();
-                }
-
+                let command_type = get_command(&command_input_user);
                 if let Some(command_dest) = commands_map.get(&command_type) {
                     let _ = command_dest.send((command_input_user, sender_to_client));
                 } else {

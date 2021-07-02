@@ -1,15 +1,16 @@
 use crate::{
     commands::Runnable,
-    native_types::{error::ErrorStruct, redis_type::RedisType, simple_string::SimpleString},
-    tcp_protocol::client_atributes::client_status::ClientStatus,
-    
+    native_types::{ErrorStruct, RSimpleString, RedisType},
+    tcp_protocol::client_atributes::status::Status,
 };
 
 pub struct Monitor;
 
-impl Runnable<Arc<Mutex<ClientStatus>>> for Monitor {
-    fn run(&self, mut buffer: Vec<String>, status: &mut Arc<Mutex<ClientStatus>>) -> Result<String, ErrorStruct> {
-        status.lock().unwrap().replace_status(Status::Monitor);
-        Ok(SimpleString::encode("OK".to_string())
+impl Runnable<Status> for Monitor {
+    fn run(&self, mut _buffer: Vec<String>, status: &mut Status) -> Result<String, ErrorStruct> {
+        status.replace(Status::Monitor);
+        Ok(RSimpleString::encode(
+            "MODE MONITOR ACTIVATED. PRESS CRTL+C FOR EXIT".to_string(),
+        ))
     }
 }
