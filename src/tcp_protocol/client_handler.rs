@@ -85,7 +85,7 @@ fn process_client(
         }
         write_stream(&mut stream, response);
     }
-    notifiers.off_client(&stream);
+    notifiers.off_client(&stream, c_shared_fields);
 }
 
 fn write_stream(stream: &mut TcpStream, response: String) {
@@ -125,18 +125,14 @@ where
 {
     match RArray::decode(first_lecture, lines_buffer_reader) {
         Ok(command_vec) => {
-            let answer = client_status.lock().unwrap().review_command(command_vec);
 
-            match answer {
-                StatusAnswer::Continue(command_vec) => {
-                    delegate_command(command_vec, client_status, notifiers)
-                }
-                StatusAnswer::Break(some_error) => RError::encode(some_error),
-                StatusAnswer::Done(result) => match result {
-                    Ok(encoded_resp) => encoded_resp,
-                    Err(err) => RError::encode(err),
-                },
+            let allowed = client_status.lock().unwrap().is_allowed_to(&command_vec[0]);
+
+            match allowed {
+                Ok(()) => delegate_command(command_vec, client_status, notifiers),
+                Err(error) => RError::encode(error),
             }
+
         }
         Err(error) => RError::encode(error),
     }
@@ -150,7 +146,7 @@ fn delegate_command(
     let command_received_initial = command_received.clone();
     let (sender, receiver): (mpsc::Sender<String>, mpsc::Receiver<String>) = mpsc::channel();
 
-    let _a = notifiers.send_command_delegator(command_received, sender);
+    let _a = notifiers.send_command_delegator((command_received, sender, Arc::clone(&client_fields)));
 
     match receiver.recv() {
         Ok(response) => {

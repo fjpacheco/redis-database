@@ -1,4 +1,18 @@
-$14
-This is test 2
-$21
-Log center is closed.
+$27
+Server ON in 127.0.0.1:6379
+$30
+New conection: 127.0.0.1:47562
+$30
+New conection: 127.0.0.1:47564
+$35
+Client disconected: 127.0.0.1:47562
+$41
+[127.0.0.1:47564] ["set", "key", "value"]
+$30
+New conection: 127.0.0.1:47566
+$30
+[127.0.0.1:47566] ["shutdown"]
+$35
+Client disconected: 127.0.0.1:47566
+$35
+Client disconected: 127.0.0.1:47564

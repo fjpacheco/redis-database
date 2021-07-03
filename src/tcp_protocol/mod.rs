@@ -1,4 +1,8 @@
+use std::sync::Mutex;
+use std::sync::Arc;
+use crate::commands::Runnable;
 use std::sync::mpsc::Sender;
+use crate::tcp_protocol::client_atributes::client_fields::ClientFields;
 
 pub mod client_atributes;
 pub mod client_handler;
@@ -10,7 +14,8 @@ pub mod notifiers;
 pub mod runnables_map;
 pub mod server;
 
-type RawCommand = (Vec<String>, Sender<String>);
+type RawCommand = (Vec<String>, Sender<String>, Arc<Mutex<ClientFields>>);
+type BoxedCommand<T> = Box<dyn Runnable<T> + Send + Sync>;
 
 fn remove_command(command_input_user: &mut Vec<String>) -> String {
     if command_input_user[0].contains("config") & command_input_user.len().eq(&3) {
