@@ -19,7 +19,7 @@ impl Runnable<ServerRedisAtributes> for ClearClient {
             .lock()
             .unwrap()
             .remove_client(client_addr);
-
+        println!("holaaaaaaaaaaaaaa");
         Ok(RSimpleString::encode(redis_messages::ok()))
     }
 }

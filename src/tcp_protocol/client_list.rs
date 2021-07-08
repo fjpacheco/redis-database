@@ -1,3 +1,5 @@
+use crate::native_types::ErrorStruct;
+use crate::native_types::{RBulkString, RedisType};
 use std::collections::HashMap;
 use std::sync::mpsc::Sender;
 use std::time::SystemTime;
@@ -29,12 +31,24 @@ impl ClientList {
             let remove = x.fields.lock().unwrap().address.to_string();
             !remove.eq(&client_addr)
         });
+        println!("HOLA QUE PASA");
+        let clients_detail = self
+            .list
+            .iter()
+            .map(|x| x.get_detail())
+            .collect::<Vec<String>>();
+
+        if !clients_detail.len().eq(&0) {
+            self._log_channel
+                .send(LogMessage::detail_clients(clients_detail))
+                .unwrap();
+        }
     }
 
-    pub fn notify_monitors(&mut self, notification: Vec<String>) {
+    pub fn notify_monitors(&mut self, addr: String, notification: Vec<String>) {
         self.list
             .iter_mut()
-            .filter(|x| x.is_monitor_notifiable())
+            .filter(|x| x.is_monitor_notificable())
             .for_each(|client| {
                 let time = match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
                     Ok(n) => n.as_secs(),
@@ -42,13 +56,31 @@ impl ClientList {
                         panic!("SystemTime before UNIX EPOCH! Are we travelling to the past?")
                     }
                 };
-                let peer = client.get_peer().unwrap().to_string();
-                let message_to_notify = format!("At {}: [{}] {:?}\r\n", time, peer, notification);
-                client.write_stream(message_to_notify);
+                let message_to_notify = format!("At {}: [{}] {:?}\r\n", time, &addr, notification);
+                client.write_stream(RBulkString::encode(message_to_notify));
             });
     }
 
-    pub fn increase_channels(&mut self, channels: &mut Vec<String>) {
+    pub fn send_message_to_subscriptors(
+        &mut self,
+        channel: String,
+        message: String,
+    ) -> Result<usize, ErrorStruct> {
+        self.list
+            .iter_mut()
+            .filter(|x| x.is_subscripted_to(&channel))
+            .for_each(|client| {
+                client.write_stream(RBulkString::encode(String::from(&message)));
+            });
+
+        Ok(self
+            .list
+            .iter()
+            .filter(|x| x.is_subscripted_to(&channel))
+            .count())
+    }
+
+    pub fn increase_channels(&mut self, channels: Vec<String>) {
         for channel in channels.iter() {
             if let Some(counter) = self.channel_register.get_mut(channel) {
                 *counter += 1;
@@ -58,7 +90,7 @@ impl ClientList {
         }
     }
 
-    pub fn decrease_channels(&mut self, channels: &mut Vec<String>) {
+    pub fn decrease_channels(&mut self, channels: Vec<String>) {
         for channel in channels.iter() {
             let same_channel = String::from(channel);
             if let Some(counter) = self.channel_register.get_mut(channel) {

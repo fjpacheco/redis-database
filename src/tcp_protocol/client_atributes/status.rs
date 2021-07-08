@@ -1,13 +1,11 @@
-use std::sync::Mutex;
-use std::sync::Arc;
 use crate::tcp_protocol::client_atributes::client_fields::ClientFields;
-use std::collections::HashSet;
 use std::mem;
+use std::sync::Arc;
+use std::sync::Mutex;
 
 use crate::tcp_protocol::runnables_map::RunnablesMap;
 
-#[derive(Debug)]
-#[derive(PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Status {
     Executor,
     Subscriber,
@@ -27,5 +25,4 @@ impl Status {
             _ => None,
         }
     }
-
 }

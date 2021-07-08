@@ -109,6 +109,20 @@ pub mod redis_messages {
         }
     }
 
+    pub fn closed_socket() -> MessageRedis {
+        MessageRedis {
+            prefix: "SOCKET".to_string(),
+            message: "Attempted to write to a closed socket".to_string(),
+        }
+    }
+
+    pub fn closed_sender() -> MessageRedis {
+        MessageRedis {
+            prefix: "SENDER".to_string(),
+            message: "Attempted to send to a closed channel".to_string(),
+        }
+    }
+
     pub fn command_not_found(command_type: String, buffer: Vec<String>) -> ErrorStruct {
         let mut args_received = String::new();
         buffer

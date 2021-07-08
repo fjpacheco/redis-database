@@ -33,3 +33,22 @@ impl Runnable<ServerRedisAtributes> for ConfigGet {
         }
     }
 }
+
+/*pub struct Config;
+
+impl Runnable<ServerRedisAtributes> for Config {
+    fn run(
+        &self,
+        buffer: Vec<String>,
+        server: &mut ServerRedisAtributes,
+    ) -> Result<String, ErrorStruct> {
+
+        if let Some(item) = buffer.remove(0) {
+            match item {
+                "get" => ConfigGet.run(),
+                "set" => ConfigSet.run(),
+                _ => Err()
+            }
+        }
+
+}*/

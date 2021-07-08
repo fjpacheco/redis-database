@@ -1,8 +1,8 @@
-use std::sync::Mutex;
-use std::sync::Arc;
 use crate::commands::Runnable;
-use std::sync::mpsc::Sender;
 use crate::tcp_protocol::client_atributes::client_fields::ClientFields;
+use std::sync::mpsc::Sender;
+use std::sync::Arc;
+use std::sync::Mutex;
 
 pub mod client_atributes;
 pub mod client_handler;
@@ -32,6 +32,7 @@ fn remove_command(command_input_user: &mut Vec<String>) -> String {
     }
 }
 
+#[allow(dead_code)]
 fn get_command(command_input_user: &[String]) -> String {
     let mut command_type = command_input_user[0].clone();
     if command_type.contains("config") & command_input_user.len().eq(&3) {

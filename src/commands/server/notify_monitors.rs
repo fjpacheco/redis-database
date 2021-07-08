@@ -10,14 +10,15 @@ pub struct NotifyMonitors;
 impl Runnable<ServerRedisAtributes> for NotifyMonitors {
     fn run(
         &self,
-        buffer: Vec<String>,
+        mut buffer: Vec<String>,
         server: &mut ServerRedisAtributes,
     ) -> Result<String, ErrorStruct> {
+        let addr = buffer.pop();
         server
             .shared_clients
             .lock()
             .unwrap()
-            .notify_monitors(buffer);
+            .notify_monitors(addr.unwrap(), buffer);
         Ok(RSimpleString::encode(redis_messages::ok()))
     }
 }

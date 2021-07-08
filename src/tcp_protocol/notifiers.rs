@@ -1,12 +1,9 @@
-use std::{
-    net::TcpStream,
-    sync::{
-        mpsc::{channel, Receiver, SendError, Sender},
-        Arc, Mutex,
-    },
+use std::sync::{
+    mpsc::{channel, Receiver, SendError, Sender},
+    Arc, Mutex,
 };
 
-use crate::{communication::log_messages::LogMessage, vec_strings};
+use crate::communication::log_messages::LogMessage;
 
 use super::{client_atributes::client_fields::ClientFields, RawCommand};
 
@@ -31,11 +28,13 @@ impl Notifiers {
         let _a = self.sender_log.send(message);
     }
 
-    pub fn off_client(&self, client: &TcpStream, client_fields: Arc<Mutex<ClientFields>>) {
-        let (sender_notify, receiver_notify): (Sender<String>, Receiver<String>) = channel();
+    pub fn off_client(&self, addr: String /*, client_fields: Arc<Mutex<ClientFields>>*/) {
+        self.sender_log
+            .send(LogMessage::client_off(addr.to_string()))
+            .unwrap();
 
-        let addr = client.peer_addr().unwrap().to_string();
-        let command_vec = vec_strings!["clear_client", addr];
+        /*let (sender_notify, receiver_notify): (Sender<String>, Receiver<String>) = channel();
+        let command_vec = vec_strings!["clear_client", &addr];
 
         self.command_delegator_sender
             .send((command_vec, sender_notify, client_fields))
@@ -44,11 +43,11 @@ impl Notifiers {
         match receiver_notify.recv() {
             Ok(_) => {}
             Err(_) => panic!("HELP ME!"),
-        }
+        }*/
+    }
 
-        self.sender_log
-            .send(LogMessage::client_off(&client))
-            .unwrap();
+    pub fn get_addr(&self, client_fields: Arc<Mutex<ClientFields>>) -> String {
+        client_fields.lock().unwrap().get_addr()
     }
 
     pub fn send_command_delegator(
@@ -67,7 +66,7 @@ impl Notifiers {
 
         let mut command_vec_mod = command_received.clone();
         command_vec_mod.insert(0, "notify_monitors".to_string());
-
+        command_vec_mod.push(client_fields.lock().unwrap().get_addr());
         self.command_delegator_sender
             .send((command_vec_mod, sender_notify, Arc::clone(&client_fields)))
             .unwrap();

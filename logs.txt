@@ -1,18 +1,74 @@
 $27
 Server ON in 127.0.0.1:6379
 $30
-New conection: 127.0.0.1:47562
+New conection: 127.0.0.1:36410
 $30
-New conection: 127.0.0.1:47564
-$35
-Client disconected: 127.0.0.1:47562
+New conection: 127.0.0.1:36412
+$37
+Client disconected: "127.0.0.1:36410"
 $41
-[127.0.0.1:47564] ["set", "key", "value"]
+[127.0.0.1:36412] ["set", "key", "value"]
 $30
-New conection: 127.0.0.1:47566
+New conection: 127.0.0.1:36414
+$28
+Server OFF in 127.0.0.1:6379
 $30
-[127.0.0.1:47566] ["shutdown"]
-$35
-Client disconected: 127.0.0.1:47566
-$35
-Client disconected: 127.0.0.1:47564
+[127.0.0.1:36414] ["shutdown"]
+$37
+Client disconected: "127.0.0.1:36414"
+$37
+Client disconected: "127.0.0.1:36412"
+f clients:
+               -> Client: "127.0.0.1:59434" -- Status: Executor -- Subscriptions: {}
+$37
+Client disconected: "127.0.0.1:59432"
+s:
+               -> Client: "127.0.0.1:57982" -- Status: Executor -- Subscriptions: {}
+               -> Client: "127.0.0.1:57984" -- Status: Executor -- Subscriptions: {}
+               -> Client: "127.0.0.1:57988" -- Status: Executor -- Subscriptions: {}
+$37
+Client disconected: "127.0.0.1:57984"
+ecutor -- Subscriptions: {}
+               -> Client: "127.0.0.1:40622" -- Status: Monitor -- Subscriptions: {}
+$37
+Client disconected: "127.0.0.1:40620"
+$30
+New conection: 127.0.0.1:40626
+$56
+[127.0.0.1:40618] ["subscribe", "agus", "pach", "marti"]
+$212
+List of clients:
+               -> Client: "127.0.0.1:40618" -- Status: Subscriber -- Subscriptions: {"pach", "marti", "agus"}
+               -> Client: "127.0.0.1:40622" -- Status: Monitor -- Subscriptions: {}
+$37
+Client disconected: "127.0.0.1:40626"
+$39
+[127.0.0.1:40618] ["subscribe", "pach"]
+$30
+New conection: 127.0.0.1:40628
+$212
+List of clients:
+               -> Client: "127.0.0.1:40618" -- Status: Subscriber -- Subscriptions: {"pach", "marti", "agus"}
+               -> Client: "127.0.0.1:40622" -- Status: Monitor -- Subscriptions: {}
+$37
+Client disconected: "127.0.0.1:40628"
+$41
+[127.0.0.1:40618] ["unsubscribe", "pach"]
+$30
+New conection: 127.0.0.1:40632
+$204
+List of clients:
+               -> Client: "127.0.0.1:40618" -- Status: Subscriber -- Subscriptions: {"marti", "agus"}
+               -> Client: "127.0.0.1:40622" -- Status: Monitor -- Subscriptions: {}
+$37
+Client disconected: "127.0.0.1:40632"
+$33
+[127.0.0.1:40618] ["unsubscribe"]
+$30
+New conection: 127.0.0.1:40634
+$187
+List of clients:
+               -> Client: "127.0.0.1:40618" -- Status: Executor -- Subscriptions: {}
+               -> Client: "127.0.0.1:40622" -- Status: Monitor -- Subscriptions: {}
+$37
+Client disconected: "127.0.0.1:40634"

@@ -26,8 +26,8 @@ impl CommandSubDelegator {
         let command_sub_delegator_handler = builder.spawn(move || {
             for (mut command_input_user, sender_to_client, _) in rcv_cmd.iter() {
                 let command_type = remove_command(&mut command_input_user);
-                if let Some(runnable_command) = runnables_map.get(&command_type) {                   
-                     match runnable_command.run(command_input_user, &mut data) {
+                if let Some(runnable_command) = runnables_map.get(&command_type) {
+                    match runnable_command.run(command_input_user, &mut data) {
                         Ok(encoded_resp) => sender_to_client.send(encoded_resp).unwrap(),
                         Err(err) => sender_to_client.send(RError::encode(err)).unwrap(),
                     };
@@ -50,19 +50,19 @@ impl CommandSubDelegator {
 
 #[cfg(test)]
 pub mod test_database_command_delegator {
-    use crate::tcp_protocol::BoxedCommand;
-    use crate::tcp_protocol::client_atributes::client_fields::ClientFields;
-use std::sync::Mutex;
-use std::sync::Arc;
-use crate::commands::lists::llen::Llen;
+    use crate::commands::lists::llen::Llen;
     use crate::commands::lists::rpop::RPop;
     use crate::commands::lists::rpush::RPush;
     use crate::commands::strings::get::Get;
     use crate::commands::strings::set::Set;
     use crate::commands::strings::strlen::Strlen;
+    use crate::tcp_protocol::client_atributes::client_fields::ClientFields;
+    use crate::tcp_protocol::BoxedCommand;
+    use std::sync::Arc;
+    use std::sync::Mutex;
 
+    use crate::database::Database;
     use crate::vec_strings;
-    use crate::{commands::Runnable, database::Database};
     use std::{
         collections::HashMap,
         sync::mpsc::{self, Receiver, Sender},
@@ -204,21 +204,36 @@ use crate::commands::lists::llen::Llen;
 
         let (tx2, rx2): (Sender<String>, Receiver<String>) = mpsc::channel();
         let buffer_mock = vec_strings!["set", "key", "value"];
-        tx1.send((buffer_mock, tx2, Arc::new(Mutex::new(ClientFields::default())))).unwrap();
+        tx1.send((
+            buffer_mock,
+            tx2,
+            Arc::new(Mutex::new(ClientFields::default())),
+        ))
+        .unwrap();
 
         let response1 = rx2.recv().unwrap();
         assert_eq!(response1, "+OK\r\n".to_string());
 
         let (tx3, rx3): (Sender<String>, Receiver<String>) = mpsc::channel();
         let buffer_mock_get = vec!["get".to_string(), "key".to_string()];
-        tx1.send((buffer_mock_get, tx3, Arc::new(Mutex::new(ClientFields::default())))).unwrap();
+        tx1.send((
+            buffer_mock_get,
+            tx3,
+            Arc::new(Mutex::new(ClientFields::default())),
+        ))
+        .unwrap();
 
         let response2 = rx3.recv().unwrap();
         assert_eq!(response2, "$5\r\nvalue\r\n".to_string());
 
         let buffer_mock_strlen = vec_strings!["strlen", "key"];
         let (tx4, rx4): (Sender<String>, Receiver<String>) = mpsc::channel();
-        tx1.send((buffer_mock_strlen, tx4, Arc::new(Mutex::new(ClientFields::default())))).unwrap();
+        tx1.send((
+            buffer_mock_strlen,
+            tx4,
+            Arc::new(Mutex::new(ClientFields::default())),
+        ))
+        .unwrap();
 
         let response3 = rx4.recv().unwrap();
         assert_eq!(response3, ":5\r\n".to_string());
@@ -239,14 +254,24 @@ use crate::commands::lists::llen::Llen;
 
         let (tx2, rx2): (Sender<String>, Receiver<String>) = mpsc::channel();
         let buffer_mock = vec_strings!["set", "key", "value"];
-        tx1.send((buffer_mock, tx2, Arc::new(Mutex::new(ClientFields::default())))).unwrap();
+        tx1.send((
+            buffer_mock,
+            tx2,
+            Arc::new(Mutex::new(ClientFields::default())),
+        ))
+        .unwrap();
 
         let response1 = rx2.recv().unwrap();
         assert_eq!(response1, "+OK\r\n".to_string());
 
         let (tx3, rx3): (Sender<String>, Receiver<String>) = mpsc::channel();
         let buffer_mock_get = vec_strings!["get", "key"];
-        tx1.send((buffer_mock_get, tx3, Arc::new(Mutex::new(ClientFields::default())))).unwrap();
+        tx1.send((
+            buffer_mock_get,
+            tx3,
+            Arc::new(Mutex::new(ClientFields::default())),
+        ))
+        .unwrap();
 
         let response2 = rx3.recv().unwrap();
         assert_eq!(
@@ -278,14 +303,24 @@ use crate::commands::lists::llen::Llen;
             "value2".to_string(),
             "value3".to_string(),
         ];
-        tx1.send((buffer_mock, tx2, Arc::new(Mutex::new(ClientFields::default())))).unwrap();
+        tx1.send((
+            buffer_mock,
+            tx2,
+            Arc::new(Mutex::new(ClientFields::default())),
+        ))
+        .unwrap();
 
         let response1 = rx2.recv().unwrap();
         assert_eq!(response1, ":3\r\n".to_string());
 
         let (tx3, rx3): (Sender<String>, Receiver<String>) = mpsc::channel();
         let buffer_mock = vec_strings!["rpop", "key", "2"];
-        tx1.send((buffer_mock, tx3, Arc::new(Mutex::new(ClientFields::default())))).unwrap();
+        tx1.send((
+            buffer_mock,
+            tx3,
+            Arc::new(Mutex::new(ClientFields::default())),
+        ))
+        .unwrap();
 
         let response1 = rx3.recv().unwrap();
         assert_eq!(
@@ -295,7 +330,12 @@ use crate::commands::lists::llen::Llen;
 
         let (tx4, rx4): (Sender<String>, Receiver<String>) = mpsc::channel();
         let buffer_mock = vec_strings!["llen", "value"];
-        tx1.send((buffer_mock, tx4, Arc::new(Mutex::new(ClientFields::default())))).unwrap();
+        tx1.send((
+            buffer_mock,
+            tx4,
+            Arc::new(Mutex::new(ClientFields::default())),
+        ))
+        .unwrap();
 
         let response1 = rx4.recv().unwrap();
         assert_eq!(response1, ":0\r\n".to_string());

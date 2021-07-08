@@ -1,6 +1,7 @@
 use std::io::{BufRead, Lines};
 
 use super::redis_type::RedisType;
+use crate::messages::MessageRedis;
 
 #[derive(Debug, Clone)]
 pub struct ErrorStruct {
@@ -11,6 +12,13 @@ pub struct ErrorStruct {
 impl ErrorStruct {
     pub fn new(prefix: String, message: String) -> Self {
         ErrorStruct { prefix, message }
+    }
+
+    pub fn from(message: MessageRedis) -> Self {
+        ErrorStruct {
+            prefix: message.get_prefix(),
+            message: message.get_message(),
+        }
     }
     #[allow(dead_code)]
     pub fn print_it(&self) -> String {

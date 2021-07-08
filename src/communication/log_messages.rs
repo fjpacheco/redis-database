@@ -77,15 +77,12 @@ impl LogMessage {
         command: &[String],
         client_fields: Arc<Mutex<ClientFields>>,
     ) -> LogMessage {
-        let addr = client_fields.lock().unwrap().address.to_string();
+        let addr = client_fields.lock().unwrap().get_addr();
         LogMessage::new(2, format!("[{}] {:?}", addr, command))
     }
 
-    pub fn client_off(client: &TcpStream) -> LogMessage {
-        LogMessage::new(
-            2,
-            format!("Client disconected: {:?}", client.peer_addr().unwrap()),
-        )
+    pub fn client_off(client_addr: String) -> LogMessage {
+        LogMessage::new(2, format!("Client disconected: {:?}", client_addr))
     }
 
     pub fn new_conection(client: &TcpStream) -> LogMessage {
@@ -93,6 +90,18 @@ impl LogMessage {
             2,
             format!("New conection: {:?}", client.peer_addr().unwrap()),
         )
+    }
+
+    pub fn detail_clients(clients_detail: Vec<String>) -> LogMessage {
+        let mut message = String::from("List of clients:\r\n");
+        for (index, client) in clients_detail.iter().enumerate() {
+            message.push_str("               -> ");
+            message.push_str(&client);
+            if !(clients_detail.len() - 1).eq(&(index)) {
+                message.push_str("\r\n")
+            }
+        }
+        LogMessage::new(2, format!("{}", message))
     }
 }
 
