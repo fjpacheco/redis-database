@@ -1,15 +1,20 @@
 use crate::messages::redis_messages;
 use crate::native_types::error::ErrorStruct;
 use crate::time_expiration::expire_info::ExpireInfo;
+use crate::regex::super_regex::SuperRegex;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::fmt;
+
+use regex;
+
+extern crate rand;
+use rand::seq::IteratorRandom;
+
 pub struct Database {
     elements: HashMap<String, (ExpireInfo, TypeSaved)>,
 }
 
-extern crate rand;
 
-use rand::seq::IteratorRandom;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum TypeSaved {
@@ -127,6 +132,17 @@ impl Database {
     pub fn random_key(&mut self) -> Option<String> {
         let mut rng = rand::thread_rng();
         self.elements.keys().choose(&mut rng).map(String::from)
+    }
+
+    pub fn match_pattern(&self, regex: &str) -> Result<Vec<String>, regex::Error> {
+        let matcher = SuperRegex::from(regex)?;
+
+        Ok(self.elements
+            .keys()
+            .filter(|key| matcher.is_match(key) )
+            .map(|key| String::from(key) )
+            .collect()
+        )
     }
 }
 

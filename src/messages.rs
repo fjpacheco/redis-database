@@ -123,6 +123,13 @@ pub mod redis_messages {
         }
     }
 
+    pub fn wrong_regex_pattern(regex: &str) -> MessageRedis {
+        MessageRedis{
+            prefix: "REGEX".to_string(),
+            message: format!("Given pattern could not be parsed: {}", regex),
+        }
+    }
+
     pub fn command_not_found(command_type: String, buffer: Vec<String>) -> ErrorStruct {
         let mut args_received = String::new();
         buffer
