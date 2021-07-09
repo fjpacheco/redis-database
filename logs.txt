@@ -1,23 +1,23 @@
 $27
 Server ON in 127.0.0.1:6379
 $30
-New conection: 127.0.0.1:56966
+New conection: 127.0.0.1:46356
+$30
+New conection: 127.0.0.1:46358
 $37
-Client disconected: "127.0.0.1:56966"
-$30
-New conection: 127.0.0.1:56968
+Client disconected: "127.0.0.1:46356"
 $41
-[127.0.0.1:56968] ["set", "key", "value"]
+[127.0.0.1:46358] ["set", "key", "value"]
 $30
-New conection: 127.0.0.1:56970
+New conection: 127.0.0.1:46360
 $28
 Server OFF in 127.0.0.1:6379
 $30
-[127.0.0.1:56970] ["shutdown"]
+[127.0.0.1:46360] ["shutdown"]
 $37
-Client disconected: "127.0.0.1:56970"
+Client disconected: "127.0.0.1:46360"
 $37
-Client disconected: "127.0.0.1:56936"
+Client disconected: "127.0.0.1:46358"
 f clients:
                -> Client: "127.0.0.1:59434" -- Status: Executor -- Subscriptions: {}
 $37

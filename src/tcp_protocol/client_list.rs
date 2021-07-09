@@ -1,3 +1,4 @@
+use crate::regex::super_regex::SuperRegex;
 use crate::native_types::ErrorStruct;
 use crate::native_types::{RBulkString, RedisType};
 use std::collections::HashMap;
@@ -100,5 +101,71 @@ impl ClientList {
                 }
             }
         }
+    }
+
+    pub fn match_pattern(&self, matcher: SuperRegex) -> Vec<String> {
+
+        self.channel_register.keys()
+                            .filter(|key| matcher.is_match(key) )
+                            .map(|key| String::from(key) )
+                            .collect()
+
+    }
+
+    pub fn get_register(&self) -> Vec<String> {
+        let mut register: Vec<String> = Vec::new();
+
+        for (channel, subs) in self.channel_register.iter() {
+            register.push(String::from(channel));
+            register.push(subs.to_string());
+        }
+
+        register
+    }
+}
+
+#[cfg(test)]
+
+mod test_client_list {
+    use super::*;
+    use std::sync::mpsc;
+
+    #[test]
+    fn test01_get_register(){
+
+        let (sender, _) = mpsc::channel();
+        let mut list = ClientList::new(sender);
+
+        list.increase_channels(vec!["a".to_string(), "b".to_string()]);
+        let mut register = list.get_register();
+        register.sort();
+        assert_eq!("1", &register[0]);
+        assert_eq!("1", &register[1]);
+        assert_eq!("a", &register[2]);
+        assert_eq!("b", &register[3]);
+        assert_eq!(4, register.len());
+
+        list.increase_channels(vec!["a".to_string()]);
+        list.increase_channels(vec!["a".to_string(), "c".to_string()]);
+        register = list.get_register();
+        register.sort();
+        assert_eq!("1", &register[0]);
+        assert_eq!("1", &register[1]);
+        assert_eq!("3", &register[2]);
+        assert_eq!("a", &register[3]);
+        assert_eq!("b", &register[4]);
+        assert_eq!("c", &register[5]);
+        assert_eq!(6, register.len());
+
+        list.decrease_channels(vec!["a".to_string(), "b".to_string()]);
+        let mut register = list.get_register();
+        register.sort();
+        assert_eq!("1", &register[0]);
+        assert_eq!("2", &register[1]);
+        assert_eq!("a", &register[2]);
+        assert_eq!("c", &register[3]);
+        assert_eq!(4, register.len());
+
+
     }
 }

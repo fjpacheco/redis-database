@@ -1,5 +1,8 @@
 use crate::native_types::ErrorStruct;
 
+pub mod pubsub;
+pub mod channels;
+pub mod numsub;
 pub mod publish;
 pub mod subscribe_cf;
 pub mod subscribe_cl;
@@ -7,8 +10,8 @@ pub mod unsubscribe_cf;
 pub mod unsubscribe_cl;
 
 #[allow(dead_code)]
-fn pop_value(buffer: &mut Vec<String>, name: &str) -> Result<String, ErrorStruct> {
-    if let Some(value) = buffer.pop() {
+pub fn pop_value(buffer: &mut Vec<String>, name: &str) -> Result<String, ErrorStruct> {
+   if let Some(value) = buffer.pop() {
         Ok(value)
     } else {
         Err(ErrorStruct::new(
@@ -19,7 +22,7 @@ fn pop_value(buffer: &mut Vec<String>, name: &str) -> Result<String, ErrorStruct
 }
 
 #[allow(dead_code)]
-fn no_more_values(buffer: &[String], name: &str) -> Result<(), ErrorStruct> {
+pub fn no_more_values(buffer: &[String], name: &str) -> Result<(), ErrorStruct> {
     if buffer.is_empty() {
         Ok(())
     } else {

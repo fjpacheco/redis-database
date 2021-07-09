@@ -43,6 +43,10 @@ impl ServerRedisAtributes {
             .to_string()
     }
 
+    pub fn get_client_list(&self) -> Arc<Mutex<ClientList>> {
+        Arc::clone(&self.shared_clients)
+    }
+
     pub fn store(&self, val: bool) {
         self.status_listener.store(val, Ordering::SeqCst);
     }
