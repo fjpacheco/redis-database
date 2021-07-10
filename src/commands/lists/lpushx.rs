@@ -8,7 +8,7 @@ use super::pushx_at;
 pub struct LPushx;
 
 impl Runnable<Database> for LPushx {
-    fn run(&self, buffer: Vec<&str>, database: &mut Database) -> Result<String, ErrorStruct> {
+    fn run(&self, buffer: Vec<String>, database: &mut Database) -> Result<String, ErrorStruct> {
         pushx_at(buffer, database, fill_list_from_top)
     }
 }
@@ -18,7 +18,7 @@ pub mod test_lpushx {
 
     use std::collections::VecDeque;
 
-    use crate::database::TypeSaved;
+    use crate::{database::TypeSaved, vec_strings};
 
     use super::*;
 
@@ -31,7 +31,7 @@ pub mod test_lpushx {
         new_list.push_back("values".to_string());
         data.insert("key".to_string(), TypeSaved::List(new_list));
 
-        let buffer = vec!["key", "list", "a", "is", "this"];
+        let buffer = vec_strings!["key", "list", "a", "is", "this"];
         let encode = LPushx.run(buffer, &mut data);
         assert_eq!(encode.unwrap(), ":7\r\n".to_string());
         match data.get_mut("key").unwrap() {
@@ -51,7 +51,7 @@ pub mod test_lpushx {
     #[test]
     fn test02_lpushx_values_on_a_non_existing_list() {
         let mut data = Database::new();
-        let buffer: Vec<&str> = vec!["key", "this", "is", "a", "list"];
+        let buffer = vec_strings!["key", "this", "is", "a", "list"];
         let error = LPushx.run(buffer, &mut data);
         assert_eq!(
             error.unwrap_err().print_it(),

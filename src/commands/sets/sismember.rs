@@ -9,19 +9,15 @@ use crate::{
 pub struct Sismember;
 
 impl Runnable<Database> for Sismember {
-    fn run(
-        &self,
-        mut buffer_vec: Vec<&str>,
-        database: &mut Database,
-    ) -> Result<String, ErrorStruct> {
-        check_error_cases(&mut buffer_vec)?;
+    fn run(&self, buffer: Vec<String>, database: &mut Database) -> Result<String, ErrorStruct> {
+        check_error_cases(&buffer)?;
 
-        let key = buffer_vec[0];
+        let key = &buffer[0];
 
         match database.get_mut(key) {
             Some(item) => match item {
                 TypeSaved::Set(item) => {
-                    let member = buffer_vec[1];
+                    let member = &buffer[1];
                     let result = match item.contains(member) {
                         true => 1,
                         false => 0,
@@ -37,10 +33,10 @@ impl Runnable<Database> for Sismember {
     }
 }
 
-fn check_error_cases(buffer_vec: &mut Vec<&str>) -> Result<(), ErrorStruct> {
-    check_empty(&buffer_vec, "sismember")?;
+fn check_error_cases(buffer: &[String]) -> Result<(), ErrorStruct> {
+    check_empty(&buffer, "sismember")?;
 
-    if buffer_vec.len() != 2 {
+    if buffer.len() != 2 {
         let error_message = redis_messages::arguments_invalid_to("sismember");
         return Err(ErrorStruct::new(
             error_message.get_prefix(),
@@ -54,6 +50,8 @@ fn check_error_cases(buffer_vec: &mut Vec<&str>) -> Result<(), ErrorStruct> {
 mod test_sismember_function {
     use std::collections::{HashSet, VecDeque};
 
+    use crate::vec_strings;
+
     use super::*;
 
     #[test]
@@ -63,11 +61,11 @@ mod test_sismember_function {
         set.insert(String::from("m2"));
         let mut database_mock = Database::new();
         database_mock.insert("key".to_string(), TypeSaved::Set(set));
-        let buffer_vec_mock_1 = vec!["key", "m1"];
-        let buffer_vec_mock_2 = vec!["key", "m2"];
+        let buffer_mock_1 = vec_strings!["key", "m1"];
+        let buffer_mock_2 = vec_strings!["key", "m2"];
 
-        let result_received_1 = Sismember.run(buffer_vec_mock_1, &mut database_mock);
-        let result_received_2 = Sismember.run(buffer_vec_mock_2, &mut database_mock);
+        let result_received_1 = Sismember.run(buffer_mock_1, &mut database_mock);
+        let result_received_2 = Sismember.run(buffer_mock_2, &mut database_mock);
 
         let excepted_1 = RInteger::encode(1);
         let excepted_2 = RInteger::encode(1);
@@ -81,9 +79,9 @@ mod test_sismember_function {
         set.insert(String::from("m1"));
         let mut database_mock = Database::new();
         database_mock.insert("key".to_string(), TypeSaved::Set(set));
-        let buffer_vec_mock = vec!["key", "m_random"];
+        let buffer_mock = vec_strings!["key", "m_random"];
 
-        let result_received = Sismember.run(buffer_vec_mock, &mut database_mock);
+        let result_received = Sismember.run(buffer_mock, &mut database_mock);
 
         let excepted = RInteger::encode(0);
         assert_eq!(excepted, result_received.unwrap());
@@ -96,9 +94,9 @@ mod test_sismember_function {
         set.insert(String::from("m1"));
         let mut database_mock = Database::new();
         database_mock.insert("key".to_string(), TypeSaved::Set(set));
-        let buffer_vec_mock = vec!["key_random", "m_random"];
+        let buffer_mock = vec_strings!["key_random", "m_random"];
 
-        let result_received = Sismember.run(buffer_vec_mock, &mut database_mock);
+        let result_received = Sismember.run(buffer_mock, &mut database_mock);
 
         let excepted = RInteger::encode(0);
         assert_eq!(excepted, result_received.unwrap());
@@ -111,9 +109,9 @@ mod test_sismember_function {
             "keyOfString".to_string(),
             TypeSaved::String("value".to_string()),
         );
-        let buffer_vec_mock = vec!["keyOfString", "value"];
+        let buffer_mock = vec_strings!["keyOfString", "value"];
 
-        let result_received = Sismember.run(buffer_vec_mock, &mut database_mock);
+        let result_received = Sismember.run(buffer_mock, &mut database_mock);
         let result_received_encoded = result_received.unwrap_err().get_encoded_message_complete();
 
         let expected_message_redis = redis_messages::wrongtype();
@@ -130,9 +128,9 @@ mod test_sismember_function {
         new_list.push_back("value_other".to_string());
         database_mock.insert("keyOfList".to_string(), TypeSaved::List(new_list));
 
-        let buffer_vec_mock = vec!["keyOfList", "value"];
+        let buffer_mock = vec_strings!["keyOfList", "value"];
 
-        let result_received = Sismember.run(buffer_vec_mock, &mut database_mock);
+        let result_received = Sismember.run(buffer_mock, &mut database_mock);
         let result_received_encoded = result_received.unwrap_err().get_encoded_message_complete();
 
         let expected_message_redis = redis_messages::wrongtype();
@@ -142,11 +140,11 @@ mod test_sismember_function {
     }
 
     #[test]
-    fn test06_sismember_return_error_arguments_invalid_if_buffer_has_more_than_3_arguments() {
+    fn test06_sismember_return_error_arguments_invalid_ifbuffer_has_more_than_3_arguments() {
         let mut database_mock = Database::new();
-        let buffer_vec_mock = vec!["arg1", "arg2", "arg3"];
+        let buffer_mock = vec_strings!["arg1", "arg2", "arg3"];
 
-        let result_received = Sismember.run(buffer_vec_mock, &mut database_mock);
+        let result_received = Sismember.run(buffer_mock, &mut database_mock);
         let result_received_encoded = result_received.unwrap_err().get_encoded_message_complete();
 
         let expected_message_redis = redis_messages::arguments_invalid_to("sismember");

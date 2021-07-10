@@ -13,20 +13,16 @@ pub struct Rename;
 /// usually a constant-time operation.
 
 impl Runnable<Database> for Rename {
-    fn run(
-        &self,
-        mut _buffer_vec: Vec<&str>,
-        database: &mut Database,
-    ) -> Result<String, ErrorStruct> {
-        check_not_empty(&_buffer_vec)?;
-        let new_key = _buffer_vec.pop().unwrap();
-        check_not_empty(&_buffer_vec)?;
-        let old_key = _buffer_vec.pop().unwrap();
-        check_empty_2(&_buffer_vec)?;
-        if let Some(string_list) = database.get(old_key) {
+    fn run(&self, mut buffer: Vec<String>, database: &mut Database) -> Result<String, ErrorStruct> {
+        check_not_empty(&buffer)?;
+        let new_key = buffer.pop().unwrap();
+        check_not_empty(&buffer)?;
+        let old_key = buffer.pop().unwrap();
+        check_empty_2(&buffer)?;
+        if let Some(string_list) = database.get(&old_key) {
             let value = string_list.clone();
-            database.remove(old_key);
-            database.insert(new_key.to_string(), value);
+            database.remove(&old_key);
+            database.insert(new_key, value);
             Ok(RSimpleString::encode("OK".to_string()))
         } else {
             Err(ErrorStruct::new(
@@ -41,17 +37,19 @@ impl Runnable<Database> for Rename {
 mod test_rename {
 
     use super::*;
-    use crate::{commands::strings::get::Get, database::TypeSaved, native_types::RBulkString};
+    use crate::{
+        commands::strings::get::Get, database::TypeSaved, native_types::RBulkString, vec_strings,
+    };
 
     #[test]
     fn test01_rename_existing_key_with_new_key() {
         let mut database = Database::new();
         database.insert("key".to_string(), TypeSaved::String("value".to_string()));
-        let buffer_vec_mock_1 = vec!["key", "new_key"];
-        let result1 = Rename.run(buffer_vec_mock_1, &mut database);
+        let buffer_mock_1 = vec_strings!["key", "new_key"];
+        let result1 = Rename.run(buffer_mock_1, &mut database);
         assert_eq!(result1.unwrap(), "+OK\r\n".to_string());
-        let buffer_vec_mock_2 = vec!["new_key"];
-        let result2 = Get.run(buffer_vec_mock_2, &mut database);
+        let buffer_mock_2 = vec_strings!["new_key"];
+        let result2 = Get.run(buffer_mock_2, &mut database);
         assert_eq!(RBulkString::encode("value".to_string()), result2.unwrap());
     }
 
@@ -59,8 +57,8 @@ mod test_rename {
     fn test02_rename_non_existing_key() {
         let mut database = Database::new();
         database.insert("key".to_string(), TypeSaved::String("value".to_string()));
-        let buffer_vec_mock = vec!["random_key", "new_key"];
-        let error = Rename.run(buffer_vec_mock, &mut database);
+        let buffer_mock = vec_strings!["random_key", "new_key"];
+        let error = Rename.run(buffer_mock, &mut database);
         assert_eq!(error.unwrap_err().print_it(), "ERR no such key".to_string());
     }
 
@@ -68,11 +66,11 @@ mod test_rename {
     fn test03_rename_existing_key_with_existing_key() {
         let mut database = Database::new();
         database.insert("key".to_string(), TypeSaved::String("value".to_string()));
-        let buffer_vec_mock_1 = vec!["key", "key"];
-        let result1 = Rename.run(buffer_vec_mock_1, &mut database);
+        let buffer_mock_1 = vec_strings!["key", "key"];
+        let result1 = Rename.run(buffer_mock_1, &mut database);
         assert_eq!(result1.unwrap(), "+OK\r\n".to_string());
-        let buffer_vec_mock_2 = vec!["key"];
-        let result2 = Get.run(buffer_vec_mock_2, &mut database);
+        let buffer_mock_2 = vec_strings!["key"];
+        let result2 = Get.run(buffer_mock_2, &mut database);
         assert_eq!(RBulkString::encode("value".to_string()), result2.unwrap());
     }
 }

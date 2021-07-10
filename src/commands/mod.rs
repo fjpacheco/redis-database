@@ -2,13 +2,14 @@ use crate::{messages::redis_messages, native_types::ErrorStruct};
 
 pub mod keys;
 pub mod lists;
+pub mod pubsub;
 pub mod server;
 pub mod sets;
 pub mod strings;
 
-fn check_empty(buffer: &&mut Vec<&str>, name: &str) -> Result<(), ErrorStruct> {
+fn check_empty(buffer: &[String], name: &str) -> Result<(), ErrorStruct> {
     if buffer.is_empty() {
-        let message_error = redis_messages::not_empty_values_for(name);
+        let message_error = redis_messages::arguments_invalid_to(name);
         return Err(ErrorStruct::new(
             message_error.get_prefix(),
             message_error.get_message(),
@@ -16,6 +17,11 @@ fn check_empty(buffer: &&mut Vec<&str>, name: &str) -> Result<(), ErrorStruct> {
     }
 
     Ok(())
+}
+
+#[macro_export]
+macro_rules! vec_strings {
+    ($($x:expr),*) => (vec![$($x.to_string()),*]);
 }
 
 #[macro_export]
@@ -39,9 +45,10 @@ pub trait Runnable<T> {
     /// use redis_rust::commands::strings::set::Set;
     /// use redis_rust::native_types::ErrorStruct;
     /// use redis_rust::commands::Runnable;
+    /// use redis_rust::vec_strings;
     ///
     /// fn execute<Database>(command: &dyn Runnable<Database>,
-    ///            buffer: Vec<&str>,
+    ///            buffer: Vec<String>,
     ///            database: &mut Database)
     ///         -> Result<String, ErrorStruct>
     /// {
@@ -49,14 +56,14 @@ pub trait Runnable<T> {
     /// }
     ///
     /// let mut database = Database::new();
-    /// let buffer = vec!["key", "value"];
+    /// let buffer = vec_strings!["key", "value"];
     /// let object_commmand = Set;
     /// let result_received = execute(&object_commmand, buffer, &mut database);
     ///
     /// let expected_result = "+OK\r\n".to_string();
     /// assert_eq!(expected_result, result_received.unwrap());
     /// ```
-    fn run(&self, buffer_vec: Vec<&str>, item: &mut T) -> Result<String, ErrorStruct>;
+    fn run(&self, buffer: Vec<String>, item: &mut T) -> Result<String, ErrorStruct>;
 }
 
 // Fun aux
@@ -74,7 +81,7 @@ pub fn get_as_integer(value: &str) -> Result<isize, ErrorStruct> {
 
 // Check number of arguments
 
-pub fn check_not_empty(buffer: &[&str]) -> Result<(), ErrorStruct> {
+pub fn check_not_empty(buffer: &[String]) -> Result<(), ErrorStruct> {
     if buffer.is_empty() {
         Err(ErrorStruct::new(
             String::from("ERR"),
@@ -85,7 +92,7 @@ pub fn check_not_empty(buffer: &[&str]) -> Result<(), ErrorStruct> {
     }
 }
 
-pub fn check_empty_2(buffer: &[&str]) -> Result<(), ErrorStruct> {
+pub fn check_empty_2(buffer: &[String]) -> Result<(), ErrorStruct> {
     if !buffer.is_empty() {
         Err(ErrorStruct::new(
             String::from("ERR"),

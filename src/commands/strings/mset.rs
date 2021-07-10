@@ -8,14 +8,10 @@ use crate::{
 pub struct Mset;
 
 impl Runnable<Database> for Mset {
-    fn run(
-        &self,
-        mut buffer_vec: Vec<&str>,
-        database: &mut Database,
-    ) -> Result<String, ErrorStruct> {
-        check_error_cases(&mut buffer_vec)?;
+    fn run(&self, buffer: Vec<String>, database: &mut Database) -> Result<String, ErrorStruct> {
+        check_error_cases(&buffer)?;
 
-        let keys_and_value = buffer_vec.chunks(2);
+        let keys_and_value = buffer.chunks(2);
         keys_and_value.into_iter().for_each(|pair_key_value| {
             database.insert(
                 pair_key_value[0].to_string(),
@@ -27,10 +23,10 @@ impl Runnable<Database> for Mset {
     }
 }
 
-fn check_error_cases(buffer_vec: &mut Vec<&str>) -> Result<(), ErrorStruct> {
-    check_empty(&buffer_vec, "mset")?;
+fn check_error_cases(buffer: &[String]) -> Result<(), ErrorStruct> {
+    check_empty(buffer, "mset")?;
 
-    if buffer_vec.is_empty() || is_odd(&*buffer_vec) {
+    if buffer.is_empty() || is_odd(buffer) {
         // never odd => "key1 value1 key2 value2 ...""
         let error_message = redis_messages::arguments_invalid_to("mset");
         return Err(ErrorStruct::new(
@@ -42,24 +38,24 @@ fn check_error_cases(buffer_vec: &mut Vec<&str>) -> Result<(), ErrorStruct> {
     Ok(())
 }
 
-fn is_odd(buffer_vec: &[&str]) -> bool {
-    buffer_vec.len() % 2 == 1
+fn is_odd(buffer: &[String]) -> bool {
+    buffer.len() % 2 == 1
 }
 
 #[cfg(test)]
 mod test_mset_function {
 
-    use crate::native_types::RBulkString;
+    use crate::{native_types::RBulkString, vec_strings};
 
     use super::*;
 
     #[test]
     fn test01_mset_reemplace_value_old_of_key_and_insert_more_elements() {
-        let buffer_vec_mock2 = vec!["key1", "value1_new", "key2", "value2"];
+        let buffer_mock2 = vec_strings!["key1", "value1_new", "key2", "value2"];
         let mut database_mock = Database::new();
         database_mock.insert("key1".to_string(), TypeSaved::String("value1".to_string()));
 
-        let _ = Mset.run(buffer_vec_mock2, &mut database_mock);
+        let _ = Mset.run(buffer_mock2, &mut database_mock);
 
         let mut get_received_1 = String::new();
         if let TypeSaved::String(item) = database_mock.get("key1").unwrap() {
@@ -79,10 +75,10 @@ mod test_mset_function {
 
     #[test]
     fn test02_mset_with_bad_args_return_err() {
-        let buffer_vec_mock = vec!["key1", "value1_new", "key2"];
+        let buffer_mock = vec_strings!["key1", "value1_new", "key2"];
         let mut database_mock = Database::new();
 
-        let result_received = Mset.run(buffer_vec_mock, &mut database_mock);
+        let result_received = Mset.run(buffer_mock, &mut database_mock);
         let result_received_encoded = result_received.unwrap_err().get_encoded_message_complete();
 
         let expected_message_redis = redis_messages::arguments_invalid_to("mset");

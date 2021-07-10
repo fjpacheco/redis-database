@@ -79,9 +79,75 @@ pub mod redis_messages {
         }
     }
 
-    pub fn command_not_found(command_type: String, buffer_vec: Vec<String>) -> ErrorStruct {
+    pub fn cannot_write_stream() -> MessageRedis {
+        MessageRedis {
+            prefix: "CANNOTWRITE".to_string(),
+            message: "an error occurred while writing the tcp stream".to_string(),
+        }
+    }
+
+    pub fn not_valid_pubsub() -> MessageRedis {
+        MessageRedis {
+            prefix: "ERR".to_string(),
+            message:
+                "can't execute command: only SUBSCRIBE and UNSUBSCRIBE are allowed in this context"
+                    .to_string(),
+        }
+    }
+
+    pub fn not_valid_monitor() -> MessageRedis {
+        MessageRedis {
+            prefix: "ERR".to_string(),
+            message: "Replica can't interract with the keyspace".to_string(),
+        }
+    }
+
+    pub fn unexpected_behaviour(reason: &str) -> MessageRedis {
+        MessageRedis {
+            prefix: "INSTAPANIC".to_string(),
+            message: reason.to_string(),
+        }
+    }
+
+    pub fn closed_socket() -> MessageRedis {
+        MessageRedis {
+            prefix: "SOCKET".to_string(),
+            message: "Attempted to write to a closed socket".to_string(),
+        }
+    }
+
+    pub fn closed_sender() -> MessageRedis {
+        MessageRedis {
+            prefix: "SENDER".to_string(),
+            message: "Attempted to send to a closed channel".to_string(),
+        }
+    }
+
+    pub fn wrong_regex_pattern(regex: &str) -> MessageRedis {
+        MessageRedis {
+            prefix: "REGEX".to_string(),
+            message: format!("Given pattern could not be parsed: {}", regex),
+        }
+    }
+
+    pub fn unknown_command(command_type: String, buffer: Vec<String>) -> MessageRedis {
         let mut args_received = String::new();
-        buffer_vec
+        buffer
+            .into_iter()
+            .for_each(|one_arg| args_received.push_str(&("\'".to_owned() + &one_arg + "\', ")));
+
+        MessageRedis {
+            prefix: "UNKNOWN".to_string(),
+            message: format!(
+                "unknown command \'{}\', with args beginning with: {}",
+                command_type, args_received
+            ),
+        }
+    }
+
+    pub fn command_not_found(command_type: String, buffer: Vec<String>) -> ErrorStruct {
+        let mut args_received = String::new();
+        buffer
             .into_iter()
             .for_each(|one_arg| args_received.push_str(&("\'".to_owned() + &one_arg + "\', ")));
 

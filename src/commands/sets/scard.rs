@@ -9,14 +9,10 @@ use crate::{
 pub struct Scard;
 
 impl Runnable<Database> for Scard {
-    fn run(
-        &self,
-        mut buffer_vec: Vec<&str>,
-        database: &mut Database,
-    ) -> Result<String, ErrorStruct> {
-        check_error_cases(&mut buffer_vec)?;
+    fn run(&self, mut buffer: Vec<String>, database: &mut Database) -> Result<String, ErrorStruct> {
+        check_error_cases(&mut buffer)?;
 
-        let key = buffer_vec[0];
+        let key = &buffer[0];
 
         match database.get_mut(key) {
             Some(item) => match item {
@@ -30,10 +26,10 @@ impl Runnable<Database> for Scard {
     }
 }
 
-fn check_error_cases(buffer_vec: &mut Vec<&str>) -> Result<(), ErrorStruct> {
-    check_empty(&buffer_vec, "scard")?;
+fn check_error_cases(buffer: &mut Vec<String>) -> Result<(), ErrorStruct> {
+    check_empty(&buffer, "scard")?;
 
-    if buffer_vec.len() != 1 {
+    if buffer.len() != 1 {
         let error_message = redis_messages::arguments_invalid_to("scard");
         return Err(ErrorStruct::new(
             error_message.get_prefix(),
@@ -47,6 +43,8 @@ fn check_error_cases(buffer_vec: &mut Vec<&str>) -> Result<(), ErrorStruct> {
 mod test_scard_function {
     use std::collections::{HashSet, VecDeque};
 
+    use crate::vec_strings;
+
     use super::*;
 
     #[test]
@@ -57,9 +55,9 @@ mod test_scard_function {
         set.insert(String::from("m3"));
         let mut database_mock = Database::new();
         database_mock.insert("key".to_string(), TypeSaved::Set(set));
-        let buffer_vec_mock = vec!["key"];
+        let buffer_mock = vec_strings!["key"];
 
-        let result_received = Scard.run(buffer_vec_mock, &mut database_mock);
+        let result_received = Scard.run(buffer_mock, &mut database_mock);
 
         let excepted = RInteger::encode(3);
         assert_eq!(excepted, result_received.unwrap());
@@ -82,9 +80,9 @@ mod test_scard_function {
         set.insert(String::from("m3"));
         let mut database_mock = Database::new();
         database_mock.insert("key".to_string(), TypeSaved::Set(set));
-        let buffer_vec_mock = vec!["key"];
+        let buffer_mock = vec_strings!["key"];
 
-        let result_received = Scard.run(buffer_vec_mock, &mut database_mock);
+        let result_received = Scard.run(buffer_mock, &mut database_mock);
 
         let excepted = RInteger::encode(3);
         assert_eq!(excepted, result_received.unwrap());
@@ -95,9 +93,9 @@ mod test_scard_function {
         let set: HashSet<String> = HashSet::new();
         let mut database_mock = Database::new();
         database_mock.insert("key".to_string(), TypeSaved::Set(set));
-        let buffer_vec_mock = vec!["key"];
+        let buffer_mock = vec_strings!["key"];
 
-        let result_received = Scard.run(buffer_vec_mock, &mut database_mock);
+        let result_received = Scard.run(buffer_mock, &mut database_mock);
 
         let excepted = RInteger::encode(0);
         assert_eq!(excepted, result_received.unwrap());
@@ -108,9 +106,9 @@ mod test_scard_function {
         let set: HashSet<String> = HashSet::new();
         let mut database_mock = Database::new();
         database_mock.insert("key".to_string(), TypeSaved::Set(set));
-        let buffer_vec_mock = vec!["key_random"];
+        let buffer_mock = vec_strings!["key_random"];
 
-        let result_received = Scard.run(buffer_vec_mock, &mut database_mock);
+        let result_received = Scard.run(buffer_mock, &mut database_mock);
 
         let excepted = RInteger::encode(0);
         assert_eq!(excepted, result_received.unwrap());
@@ -123,9 +121,9 @@ mod test_scard_function {
             "keyOfString".to_string(),
             TypeSaved::String("value".to_string()),
         );
-        let buffer_vec_mock = vec!["keyOfString"];
+        let buffer_mock = vec_strings!["keyOfString"];
 
-        let result_received = Scard.run(buffer_vec_mock, &mut database_mock);
+        let result_received = Scard.run(buffer_mock, &mut database_mock);
         let result_received_encoded = result_received.unwrap_err().get_encoded_message_complete();
 
         let expected_message_redis = redis_messages::wrongtype();
@@ -141,9 +139,9 @@ mod test_scard_function {
         new_list.push_back("value1".to_string());
         new_list.push_back("value2".to_string());
         database_mock.insert("keyOfList".to_string(), TypeSaved::List(new_list));
-        let buffer_vec_mock = vec!["keyOfList"];
+        let buffer_mock = vec_strings!["keyOfList"];
 
-        let result_received = Scard.run(buffer_vec_mock, &mut database_mock);
+        let result_received = Scard.run(buffer_mock, &mut database_mock);
         let result_received_encoded = result_received.unwrap_err().get_encoded_message_complete();
 
         let expected_message_redis = redis_messages::wrongtype();
@@ -153,11 +151,11 @@ mod test_scard_function {
     }
 
     #[test]
-    fn test07_scard_return_error_arguments_invalid_if_buffer_has_many_one_key() {
+    fn test07_scard_return_error_arguments_invalid_ifbuffer_has_many_one_key() {
         let mut database_mock = Database::new();
-        let buffer_vec_mock = vec!["key1", "key2", "key3"];
+        let buffer_mock = vec_strings!["key1", "key2", "key3"];
 
-        let result_received = Scard.run(buffer_vec_mock, &mut database_mock);
+        let result_received = Scard.run(buffer_mock, &mut database_mock);
         let result_received_encoded = result_received.unwrap_err().get_encoded_message_complete();
 
         let expected_message_redis = redis_messages::arguments_invalid_to("scard");

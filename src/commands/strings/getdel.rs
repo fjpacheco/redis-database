@@ -9,13 +9,9 @@ use super::{no_more_values, pop_value};
 pub struct Getdel;
 
 impl Runnable<Database> for Getdel {
-    fn run(
-        &self,
-        mut buffer_vec: Vec<&str>,
-        database: &mut Database,
-    ) -> Result<String, ErrorStruct> {
-        let key = pop_value(&mut buffer_vec)?;
-        no_more_values(&buffer_vec, "getdel")?;
+    fn run(&self, mut buffer: Vec<String>, database: &mut Database) -> Result<String, ErrorStruct> {
+        let key = pop_value(&mut buffer)?;
+        no_more_values(&buffer, "getdel")?;
 
         if let Some(value) = database.remove(&key) {
             match value {
@@ -35,7 +31,10 @@ impl Runnable<Database> for Getdel {
 pub mod test_getdel {
 
     use super::*;
-    use crate::database::{Database, TypeSaved};
+    use crate::{
+        database::{Database, TypeSaved},
+        vec_strings,
+    };
 
     #[test]
     fn test01_getdel_of_an_existing_key() {
@@ -43,7 +42,7 @@ pub mod test_getdel {
 
         data.insert("key".to_string(), TypeSaved::String("value".to_string()));
 
-        let buffer: Vec<&str> = vec!["key"];
+        let buffer = vec_strings!["key"];
         let encoded = Getdel.run(buffer, &mut data);
 
         assert_eq!(encoded.unwrap(), "$5\r\nvalue\r\n".to_string());
@@ -53,7 +52,7 @@ pub mod test_getdel {
     #[test]
     fn test02_getdel_of_a_non_existing_key() {
         let mut data = Database::new();
-        let buffer: Vec<&str> = vec!["key"];
+        let buffer = vec_strings!["key"];
         let encoded = Getdel.run(buffer, &mut data);
 
         assert_eq!(encoded.unwrap(), "$-1\r\n".to_string());
@@ -66,7 +65,7 @@ pub mod test_getdel {
 
         data.insert("key".to_string(), TypeSaved::String("value".to_string()));
 
-        let buffer: Vec<&str> = vec!["key", "ahre", "mas", "argumentos"];
+        let buffer = vec_strings!["key", "ahre", "mas", "argumentos"];
         let encoded = Getdel.run(buffer, &mut data);
         match encoded {
             Ok(_value) => {}

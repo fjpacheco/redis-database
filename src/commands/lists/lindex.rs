@@ -13,9 +13,9 @@ use crate::{
 pub struct LIndex;
 
 impl Runnable<Database> for LIndex {
-    fn run(&self, mut buffer: Vec<&str>, database: &mut Database) -> Result<String, ErrorStruct> {
+    fn run(&self, mut buffer: Vec<String>, database: &mut Database) -> Result<String, ErrorStruct> {
         check_not_empty(&buffer)?;
-        let key = String::from(buffer.remove(0));
+        let key = buffer.remove(0);
         check_not_empty(&buffer)?;
         let index = parse_index(&mut buffer)?;
         check_empty_2(&buffer)?;
@@ -34,7 +34,7 @@ impl Runnable<Database> for LIndex {
     }
 }
 
-fn parse_index(buffer: &mut Vec<&str>) -> Result<isize, ErrorStruct> {
+fn parse_index(buffer: &mut Vec<String>) -> Result<isize, ErrorStruct> {
     if let Some(value) = buffer.pop() {
         if let Ok(index) = value.parse::<isize>() {
             Ok(index)
@@ -67,6 +67,8 @@ fn get_from_index(mut index: isize, list: &VecDeque<String>) -> String {
 #[cfg(test)]
 pub mod test_lpush {
 
+    use crate::vec_strings;
+
     use super::*;
     use std::collections::VecDeque;
 
@@ -80,7 +82,7 @@ pub mod test_lpush {
         new_list.push_back("list".to_string());
         data.insert("key".to_string(), TypeSaved::List(new_list));
 
-        let buffer = vec!["key", "2"];
+        let buffer = vec_strings!["key", "2"];
         let encode = LIndex.run(buffer, &mut data);
         assert_eq!(encode.unwrap(), "$1\r\na\r\n".to_string());
     }
@@ -95,7 +97,7 @@ pub mod test_lpush {
         new_list.push_back("list".to_string());
         data.insert("key".to_string(), TypeSaved::List(new_list));
 
-        let buffer = vec!["key", "-1"];
+        let buffer = vec_strings!["key", "-1"];
         let encode = LIndex.run(buffer, &mut data);
         assert_eq!(encode.unwrap(), "$4\r\nlist\r\n".to_string());
     }
@@ -103,7 +105,7 @@ pub mod test_lpush {
     #[test]
     fn test03_lindex_from_a_non_existing_list() {
         let mut data = Database::new();
-        let buffer = vec!["key", "4"];
+        let buffer = vec_strings!["key", "4"];
         let encode = LIndex.run(buffer, &mut data);
         assert_eq!(encode.unwrap(), "$-1\r\n".to_string());
         assert_eq!(data.get("key"), None);
@@ -118,7 +120,7 @@ pub mod test_lpush {
         new_list.push_back("a".to_string());
         new_list.push_back("list".to_string());
         data.insert("key".to_string(), TypeSaved::List(new_list));
-        let buffer = vec!["key", "6"];
+        let buffer = vec_strings!["key", "6"];
         let encode = LIndex.run(buffer, &mut data);
         assert_eq!(encode.unwrap(), "$-1\r\n".to_string());
     }

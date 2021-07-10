@@ -10,11 +10,11 @@ pub struct Clean;
 impl Runnable<Database> for Clean {
     fn run(
         &self,
-        mut buffer_vec: Vec<&str>,
+        mut buffer: Vec<String>,
         mut database: &mut Database,
     ) -> Result<String, ErrorStruct> {
-        let argument = pop_value(&mut buffer_vec, "clean")?;
-        no_more_values(&buffer_vec, "clean")?;
+        let argument = pop_value(&mut buffer, "clean")?;
+        no_more_values(&buffer, "clean")?;
         let iterations = parse_integer(argument)?;
 
         let mut continue_cleaning = true;
@@ -52,6 +52,7 @@ mod test_clean {
 
     use super::*;
     use crate::database::TypeSaved;
+    use crate::vec_strings;
     use std::collections::VecDeque;
     use std::thread::sleep;
     use std::time::Duration;
@@ -89,7 +90,7 @@ mod test_clean {
 
         sleep(Duration::new(5, 0));
 
-        let command = vec!["3"];
+        let command = vec_strings!["3"];
         let mut response = Clean.run(command, &mut database).unwrap();
         response.remove(0);
         response.pop();

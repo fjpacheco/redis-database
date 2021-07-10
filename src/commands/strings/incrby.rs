@@ -11,8 +11,8 @@ pub struct Incrby;
 /// This operation is limited to 64 bit signed integers.
 
 impl Runnable<Database> for Incrby {
-    fn run(&self, buffer_vec: Vec<&str>, database: &mut Database) -> Result<String, ErrorStruct> {
-        execute_value_modification(database, buffer_vec, incr)
+    fn run(&self, buffer: Vec<String>, database: &mut Database) -> Result<String, ErrorStruct> {
+        execute_value_modification(database, buffer, incr)
     }
 }
 
@@ -23,7 +23,10 @@ fn incr(addend1: isize, addend2: isize) -> isize {
 #[cfg(test)]
 pub mod test_incrby {
 
-    use crate::database::{Database, TypeSaved};
+    use crate::{
+        database::{Database, TypeSaved},
+        vec_strings,
+    };
 
     use super::*;
 
@@ -33,7 +36,7 @@ pub mod test_incrby {
         // redis> SET mykey 10
         data.insert("mykey".to_string(), TypeSaved::String("10".to_string()));
         // redis> INCRBY mykey 3 ---> (integer) 13
-        let buffer: Vec<&str> = vec!["mykey", "3"];
+        let buffer = vec_strings!["mykey", "3"];
         let encoded = Incrby.run(buffer, &mut data);
 
         assert_eq!(encoded.unwrap(), ":13\r\n".to_string());
@@ -49,7 +52,7 @@ pub mod test_incrby {
         // redis> SET mykey 10
         data.insert("mykey".to_string(), TypeSaved::String("10".to_string()));
         // redis> INCRBY mykey -3
-        let buffer: Vec<&str> = vec!["mykey", "-3"];
+        let buffer = vec_strings!["mykey", "-3"];
         let encoded = Incrby.run(buffer, &mut data);
 
         assert_eq!(encoded.unwrap(), ":7\r\n".to_string());
@@ -62,7 +65,7 @@ pub mod test_incrby {
         // redis> SET mykey -10
         data.insert("mykey".to_string(), TypeSaved::String("-10".to_string()));
         // redis> INCRBY mykey 3
-        let buffer: Vec<&str> = vec!["mykey", "3"];
+        let buffer = vec_strings!["mykey", "3"];
         let encoded = Incrby.run(buffer, &mut data);
 
         assert_eq!(encoded.unwrap(), ":-7\r\n".to_string());
@@ -78,7 +81,7 @@ pub mod test_incrby {
         // redis> SET mykey -10
         data.insert("mykey".to_string(), TypeSaved::String("-10".to_string()));
         // redis> INCRBY mykey -3
-        let buffer: Vec<&str> = vec!["mykey", "-3"];
+        let buffer = vec_strings!["mykey", "-3"];
         let encoded = Incrby.run(buffer, &mut data);
 
         assert_eq!(encoded.unwrap(), ":-13\r\n".to_string());
@@ -91,7 +94,7 @@ pub mod test_incrby {
     #[test]
     fn test05_incrby_non_existing_key() {
         let mut data = Database::new();
-        let buffer: Vec<&str> = vec!["mykey", "3"];
+        let buffer = vec_strings!["mykey", "3"];
         let encoded = Incrby.run(buffer, &mut data);
 
         assert_eq!(encoded.unwrap(), ":3\r\n".to_string());
@@ -104,7 +107,7 @@ pub mod test_incrby {
         // redis> SET mykey value
         data.insert("mykey".to_string(), TypeSaved::String("value".to_string()));
         // redis> INCRBY mykey 1
-        let buffer: Vec<&str> = vec!["mykey", "value"];
+        let buffer = vec_strings!["mykey", "value"];
         let error = Incrby.run(buffer, &mut data);
 
         assert_eq!(
@@ -119,7 +122,7 @@ pub mod test_incrby {
         // redis> SET mykey 10
         data.insert("mykey".to_string(), TypeSaved::String("10".to_string()));
         // redis> INCRBY mykey a
-        let buffer: Vec<&str> = vec!["mykey", "a"];
+        let buffer = vec_strings!["mykey", "a"];
         let error = Incrby.run(buffer, &mut data);
 
         assert_eq!(

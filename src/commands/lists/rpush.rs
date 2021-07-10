@@ -8,7 +8,7 @@ use super::push_at;
 pub struct RPush;
 
 impl Runnable<Database> for RPush {
-    fn run(&self, buffer: Vec<&str>, database: &mut Database) -> Result<String, ErrorStruct> {
+    fn run(&self, buffer: Vec<String>, database: &mut Database) -> Result<String, ErrorStruct> {
         push_at(buffer, database, fill_list_from_bottom)
     }
 }
@@ -18,7 +18,7 @@ pub mod test_rpush {
 
     use std::collections::VecDeque;
 
-    use crate::database::TypeSaved;
+    use crate::{database::TypeSaved, vec_strings};
 
     use super::*;
 
@@ -32,7 +32,7 @@ pub mod test_rpush {
         new_list.push_back("list".to_string());
         data.insert("key".to_string(), TypeSaved::List(new_list));
 
-        let buffer = vec!["key", "with", "new", "values"];
+        let buffer = vec_strings!["key", "with", "new", "values"];
         let encode = RPush.run(buffer, &mut data);
         assert_eq!(encode.unwrap(), ":7\r\n".to_string());
         match data.get_mut("key").unwrap() {
@@ -52,7 +52,7 @@ pub mod test_rpush {
     #[test]
     fn test02_rpush_values_on_a_non_existing_list() {
         let mut data = Database::new();
-        let buffer: Vec<&str> = vec!["key", "this", "is", "a", "list"];
+        let buffer = vec_strings!["key", "this", "is", "a", "list"];
         let encode = RPush.run(buffer, &mut data);
         assert_eq!(encode.unwrap(), ":4\r\n".to_string());
         match data.get_mut("key").unwrap() {

@@ -5,39 +5,57 @@ use crate::{
     native_types::{ErrorStruct, RSimpleString, RedisType},
 };
 
-use super::no_more_values;
-
 pub struct Set;
 
 impl Runnable<Database> for Set {
-    fn run(
-        &self,
-        mut buffer_vec: Vec<&str>,
-        database: &mut Database,
-    ) -> Result<String, ErrorStruct> {
-        check_empty(&&mut buffer_vec, "set")?;
+    fn run(&self, buffer: Vec<String>, database: &mut Database) -> Result<String, ErrorStruct> {
+        check_error_cases(&buffer)?;
 
-        let value = buffer_vec.pop().unwrap().to_string();
-        let key = buffer_vec.pop().unwrap().to_string();
-
-        no_more_values(&buffer_vec, "set")?;
+        let value = buffer[1].to_string();
+        let key = buffer[0].to_string();
 
         database.insert(key, TypeSaved::String(value)); // replace any old value with this key
         Ok(RSimpleString::encode(redis_messages::ok()))
     }
 }
+
+fn check_error_cases(buffer: &[String]) -> Result<(), ErrorStruct> {
+    check_empty(buffer, "set")?;
+
+    if buffer.len() == 1 {
+        // never "arg1"
+        let error_message = redis_messages::arguments_invalid_to("set");
+        return Err(ErrorStruct::new(
+            error_message.get_prefix(),
+            error_message.get_message(),
+        ));
+    }
+
+    // Different error output => checked with src/redis-server!!
+    if buffer.len() != 2 {
+        // never "arg1 arg2 arg3 ... "
+        let error_message = redis_messages::syntax_error();
+        return Err(ErrorStruct::new(
+            error_message.get_prefix(),
+            error_message.get_message(),
+        ));
+    }
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod test_set_function {
 
-    use crate::native_types::RBulkString;
+    use crate::{native_types::RBulkString, vec_strings};
 
     use super::*;
     #[test]
     fn test01_set_key_and_value_return_ok() {
-        let buffer_vec_mock = vec!["key", "value"];
+        let buffer_mock = vec_strings!["key", "value"];
         let mut database_mock = Database::new();
 
-        let result_received = Set.run(buffer_vec_mock, &mut database_mock);
+        let result_received = Set.run(buffer_mock, &mut database_mock);
 
         let expected_result: String = ("+".to_owned() + &redis_messages::ok() + "\r\n").to_string();
         assert_eq!(expected_result, result_received.unwrap());
@@ -45,10 +63,10 @@ mod test_set_function {
 
     #[test]
     fn test02_set_key_and_value_save_correctly_in_database_mock() {
-        let buffer_vec_mock_set = vec!["key", "value"];
+        let buffer_mock_set = vec_strings!["key", "value"];
         let mut database_mock = Database::new();
 
-        let _ = Set.run(buffer_vec_mock_set, &mut database_mock);
+        let _ = Set.run(buffer_mock_set, &mut database_mock);
         let mut get_received = String::new();
         if let TypeSaved::String(item) = database_mock.get("key").unwrap() {
             get_received = RBulkString::encode(item.to_string());
@@ -60,10 +78,10 @@ mod test_set_function {
 
     #[test]
     fn test03_set_key_and_value_but_get_another_key_return_none() {
-        let buffer_vec_mock = vec!["key", "value"];
+        let buffer_mock = vec_strings!["key", "value"];
         let mut database_mock = Database::new();
 
-        let _ = Set.run(buffer_vec_mock, &mut database_mock);
+        let _ = Set.run(buffer_mock, &mut database_mock);
         let mut get_received = String::new();
         if let TypeSaved::String(item) = database_mock
             .get("key2")
@@ -78,13 +96,13 @@ mod test_set_function {
 
     #[test]
     fn test04_set_without_value_and_key_return_err_syntax() {
-        let buffer_vec_mock = vec!["set", "set", "set", "set"];
+        let buffer_mock = vec_strings!["set", "set", "set", "set"];
         let mut database_mock = Database::new();
 
-        let result_received = Set.run(buffer_vec_mock, &mut database_mock);
+        let result_received = Set.run(buffer_mock, &mut database_mock);
         let result_received_encoded = result_received.unwrap_err().get_encoded_message_complete();
 
-        let expected_message_redis = redis_messages::arguments_invalid_to("set");
+        let expected_message_redis = redis_messages::syntax_error();
         let expected_result =
             ("-".to_owned() + &expected_message_redis.get_message_complete() + "\r\n").to_string();
         assert_eq!(expected_result, result_received_encoded);

@@ -1,64 +1,52 @@
+use std::net::TcpListener;
+
 use crate::{
+    communication::log_messages::LogMessage, messages::redis_messages::redis_logo,
     native_types::ErrorStruct, redis_config::RedisConfig,
     tcp_protocol::client_handler::ClientHandler,
 };
-use std::{
-    collections::HashMap,
-    net::{SocketAddr, TcpListener},
-    sync::{atomic::AtomicBool, mpsc::Sender, Arc, Mutex},
-};
 
-use super::RawCommand;
+use super::{notifiers::Notifiers, server::ServerRedisAtributes};
 
 pub struct ListenerProcessor;
 
 impl ListenerProcessor {
     pub fn incoming(
         listener: TcpListener,
-        c_status: Arc<AtomicBool>,
-        c_command_delegator_sender: Sender<RawCommand>,
-        c_clients: Arc<Mutex<HashMap<SocketAddr, ClientHandler>>>,
+        server_redis: ServerRedisAtributes,
+        notifiers: Notifiers,
     ) {
+        print!("{}", redis_logo(&server_redis.get_port()));
+        let _ = notifiers.send_log(LogMessage::start_up(&listener));
+
         for stream in listener.incoming() {
-            if c_status.load(std::sync::atomic::Ordering::SeqCst) {
-                println!("<Server>: OFF Listener in {:?}", listener);
+            if server_redis.is_listener_off() {
                 break;
             }
 
-            let c_command_delegator_sender = c_command_delegator_sender.clone();
             match stream {
                 Ok(client) => {
-                    // For debug:
-                    let especificacion_cliente: String = "Client: ".to_owned()
-                        + "IP: "
-                        + client.local_addr().unwrap().to_string().as_str()
-                        + " | "
-                        + "Peer: "
-                        + client.peer_addr().unwrap().to_string().as_str();
-                    println!("\n<Server>: Nueva conexión => {}\n", especificacion_cliente);
-                    // -----
-
-                    let peer = client.peer_addr().unwrap();
-                    //let client_jeje = client.try_clone().unwrap();
-                    let new_client = ClientHandler::new(client, c_command_delegator_sender);
-                    let mut lock = c_clients.lock().unwrap();
-                    // Add user to global hashmap.
-                    (*lock).insert(peer, new_client);
+                    server_redis.set_timeout(&client);
+                    let _ = notifiers.send_log(LogMessage::new_conection(&client));
+                    let new_client = ClientHandler::new(client, notifiers.clone());
+                    server_redis
+                        .shared_clients
+                        .lock()
+                        .unwrap()
+                        .insert(new_client);
                 }
                 Err(e) => {
-                    println!("<Server>: Error to connect client: {:?}", e);
+                    let _ = notifiers.send_log(LogMessage::error_to_connect_client(&e));
                 }
             }
         }
-        println!("<Server>: FIN del For de listener.incoming()");
+        let _ = notifiers.send_log(LogMessage::off_server(&listener));
     }
 
     pub fn new_tcp_listener(config: &RedisConfig) -> Result<TcpListener, ErrorStruct> {
         let ip = config.ip();
         let port = config.port();
         let listener = Self::bind(&ip, &port)?;
-        //print!("{}", redis_logo(&port));
-        println!("<Server>: Server ON. Bind in: {}", ip + ":" + &port);
         Ok(listener)
     }
 

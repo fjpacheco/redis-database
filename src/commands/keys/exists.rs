@@ -9,12 +9,12 @@ pub struct Exists;
 impl Runnable<Database> for Exists {
     fn run(
         &self,
-        mut _buffer_vec: Vec<&str>,
+        mut buffer: Vec<&str>,
         database: &mut Database,
     ) -> Result<String, ErrorStruct> {
-        check_not_empty(&_buffer_vec)?;
-        let key = _buffer_vec.pop().unwrap();
-        check_empty_2(&_buffer_vec)?;
+        check_not_empty(&buffer)?;
+        let key = buffer.pop().unwrap();
+        check_empty_2(&buffer)?;
         if database.contains_key(key).is_some() {
             Ok(RInteger::encode(1))
         } else {
@@ -33,8 +33,8 @@ mod test_exists {
     fn test01_exists_existing_key() {
         let mut database = Database::new();
         database.insert("key".to_string(), TypeSaved::String("value".to_string()));
-        let buffer_vec_mock = vec!["key"];
-        let result_received = Exists.run(buffer_vec_mock, &mut database);
+        let buffer_mock = vec!["key"];
+        let result_received = Exists.run(buffer_mock, &mut database);
         assert_eq!(RInteger::encode(1), result_received.unwrap());
     }
 
@@ -42,8 +42,8 @@ mod test_exists {
     fn test02_exists_non_existing_key() {
         let mut database = Database::new();
         database.insert("key".to_string(), TypeSaved::String("value".to_string()));
-        let buffer_vec_mock = vec!["key1"];
-        let result_received = Exists.run(buffer_vec_mock, &mut database);
+        let buffer_mock = vec!["key1"];
+        let result_received = Exists.run(buffer_mock, &mut database);
         assert_eq!(RInteger::encode(0), result_received.unwrap());
     }
 
