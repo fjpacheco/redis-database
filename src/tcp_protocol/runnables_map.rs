@@ -19,11 +19,14 @@ impl<T> RunnablesMap<T> {
     }
 
     pub fn get(&self, string: &str) -> Option<Arc<BoxedCommand<T>>> {
-        if let Some(summoner) = self.elements.get(string) {
+        /*if let Some(summoner) = self.elements.get(string) {
             Some(Arc::clone(summoner))
         } else {
             None
-        }
+        }*/
+        self.elements
+            .get(string)
+            .map(|summoner| Arc::clone(summoner))
     }
 
     pub fn contains_key(&self, string: &str) -> bool {
@@ -55,10 +58,6 @@ impl<T> RunnablesMap<T> {
         map.insert(
             String::from("notify_monitors"),
             Arc::new(Box::new(server::notify_monitors::NotifyMonitors)),
-        );
-        map.insert(
-            String::from("clear_client"),
-            Arc::new(Box::new(server::clear_client::ClearClient)),
         );
         map.insert(
             String::from("subscribe"),

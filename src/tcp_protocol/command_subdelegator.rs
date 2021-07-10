@@ -4,47 +4,71 @@ use crate::native_types::RedisType;
 use std::fmt::Display;
 use std::sync::mpsc::Receiver;
 use std::thread;
+use std::thread::JoinHandle;
 
 use crate::native_types::ErrorStruct;
 use crate::tcp_protocol::runnables_map::RunnablesMap;
 
 use super::{remove_command, RawCommand};
-pub struct CommandSubDelegator;
+pub struct CommandSubDelegator {
+    join: Option<JoinHandle<Result<(), ErrorStruct>>>,
+}
 /// Interprets commands and delegates tasks
-
+impl Drop for CommandSubDelegator {
+    fn drop(&mut self) {
+        println!(
+            "BYE COMMAND DELEGATOR! {:?}",
+            self.join.as_ref().unwrap().thread().name().unwrap()
+        );
+        if let Some(handle) = self.join.take() {
+            let _ = handle.join().unwrap();
+        }
+    }
+}
 impl CommandSubDelegator {
     pub fn start<T: 'static>(
         rcv_cmd: Receiver<RawCommand>,
         runnables_map: RunnablesMap<T>,
         mut data: T,
-    ) -> Result<(), ErrorStruct>
+    ) -> Result<Self, ErrorStruct>
     where
         T: Send + Sync + Display,
     {
         let builder = thread::Builder::new().name(format!("Command Sub-Delegator for {}", data));
 
-        let command_sub_delegator_handler = builder.spawn(move || {
-            for (mut command_input_user, sender_to_client, _) in rcv_cmd.iter() {
-                let command_type = remove_command(&mut command_input_user);
-                if let Some(runnable_command) = runnables_map.get(&command_type) {
-                    match runnable_command.run(command_input_user, &mut data) {
-                        Ok(encoded_resp) => sender_to_client.send(encoded_resp).unwrap(),
-                        Err(err) => sender_to_client.send(RError::encode(err)).unwrap(),
-                    };
-                } else {
-                    let error = command_not_found(command_type, command_input_user);
-                    sender_to_client.send(RError::encode(error)).unwrap();
-                }
-            }
-        });
+        let command_sub_delegator_handler = builder
+            .spawn(move || {
+                for (mut command_input_user, sender_to_client, _) in rcv_cmd.iter() {
+                    let unwrap_sender;
+                    let command_type = remove_command(&mut command_input_user);
+                    if let Some(runnable_command) = runnables_map.get(&command_type) {
+                        unwrap_sender = match runnable_command.run(command_input_user, &mut data) {
+                            Ok(encoded_resp) => sender_to_client
+                                .send(encoded_resp)
+                                .map_err(|x| ErrorStruct::new("ERR_SENDER".into(), x.to_string())),
+                            Err(err) => sender_to_client
+                                .send(RError::encode(err))
+                                .map_err(|x| ErrorStruct::new("ERR_SENDER".into(), x.to_string())),
+                        };
+                    } else {
+                        let error = command_not_found(command_type, command_input_user);
+                        unwrap_sender = sender_to_client
+                            .send(RError::encode(error))
+                            .map_err(|x| ErrorStruct::new("ERR_SENDER".into(), x.to_string()));
+                    }
 
-        match command_sub_delegator_handler {
-            Ok(_) => Ok(()),
-            Err(item) => Err(ErrorStruct::new(
-                "ERR_THREAD_BUILDER".into(),
-                format!("{}", item),
-            )),
-        }
+                    match unwrap_sender {
+                        Ok(()) => {}
+                        Err(err) => return Err(err),
+                    }
+                }
+                Ok(())
+            })
+            .map_err(|x| ErrorStruct::new("ERR_THREAD_SPAWN".into(), x.to_string()))?;
+
+        Ok(Self {
+            join: Some(command_sub_delegator_handler),
+        })
     }
 }
 
@@ -187,6 +211,7 @@ pub mod test_database_command_delegator {
     */
 
     #[test]
+
     fn test01_set_get_strlen() {
         let mut map: HashMap<String, Arc<BoxedCommand<Database>>> = HashMap::new();
         map.insert(String::from("set"), Arc::new(Box::new(Set)));
@@ -235,6 +260,7 @@ pub mod test_database_command_delegator {
         ))
         .unwrap();
 
+        drop(tx1);
         let response3 = rx4.recv().unwrap();
         assert_eq!(response3, ":5\r\n".to_string());
     }
@@ -278,6 +304,7 @@ pub mod test_database_command_delegator {
             response2,
             "-ERR unknown command \'get\', with args beginning with: \'key\', \r\n".to_string()
         );
+        drop(tx1);
     }
 
     #[test]
@@ -336,7 +363,7 @@ pub mod test_database_command_delegator {
             Arc::new(Mutex::new(ClientFields::default())),
         ))
         .unwrap();
-
+        drop(tx1);
         let response1 = rx4.recv().unwrap();
         assert_eq!(response1, ":0\r\n".to_string());
     }

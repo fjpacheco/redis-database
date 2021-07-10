@@ -1,15 +1,6 @@
 use crate::{
-    commands::{
-        Runnable,
-        pubsub::{
-            no_more_values,
-        }
-    },
-    native_types::{
-        ErrorStruct,
-        RedisType,
-        RArray,
-    },
+    commands::{pubsub::no_more_values, Runnable},
+    native_types::{ErrorStruct, RArray, RedisType},
     tcp_protocol::server::ServerRedisAtributes,
 };
 
@@ -21,10 +12,9 @@ impl Runnable<ServerRedisAtributes> for Numsub {
         buffer: Vec<String>,
         server: &mut ServerRedisAtributes,
     ) -> Result<String, ErrorStruct> {
-
         no_more_values(&buffer, "numsub")?;
-        Ok(RArray::encode(server.get_client_list().lock().unwrap().get_register()))
-
+        Ok(RArray::encode(
+            server.get_client_list().lock().unwrap().get_register(),
+        ))
     }
-
 }

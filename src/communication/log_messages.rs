@@ -101,7 +101,7 @@ impl LogMessage {
                 message.push_str("\r\n")
             }
         }
-        LogMessage::new(2, format!("{}", message))
+        LogMessage::new(2, message)
     }
 }
 

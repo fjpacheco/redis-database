@@ -3,6 +3,7 @@ use crate::tcp_protocol::BoxedCommand;
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::Arc;
 use std::sync::Mutex;
+use std::thread::JoinHandle;
 use std::{collections::HashMap, thread};
 
 use super::RawCommand;
@@ -15,6 +16,15 @@ pub struct CommandsMap {
 }
 
 impl CommandsMap {
+    pub fn kill_senders(&mut self) {
+        self.channel_map.iter_mut().for_each(|x| {
+            let senders = x.1;
+            senders.iter_mut().for_each(|x| {
+                let _ = x.take();
+            })
+        })
+    }
+
     pub fn new(channel_map: HashMap<String, Vec<Option<Sender<RawCommand>>>>) -> CommandsMap {
         CommandsMap { channel_map }
     }
@@ -60,27 +70,40 @@ impl CommandsMap {
             String::from("unsubscribe"),
             vec![None, Some(snd_cmd_server.clone())],
         );
-        channel_map.insert(String::from("publish"), vec![Some(snd_cmd_server.clone())]);
+        channel_map.insert(String::from("publish"), vec![Some(snd_cmd_server)]);
 
         (CommandsMap { channel_map }, rcv_cmd_dat, rcv_cmd_server)
     }
 }
 
-pub struct CommandDelegator;
+pub struct CommandDelegator {
+    join: Option<JoinHandle<()>>,
+}
 
 /// Interprets commands and delegates tasks
+impl Drop for CommandDelegator {
+    fn drop(&mut self) {
+        println!(
+            "BYE COMMAND DELEGATOR! {:?}",
+            self.join.as_ref().unwrap().thread().name().unwrap()
+        );
+        if let Some(handle) = self.join.take() {
+            handle.join().unwrap();
+        }
+    }
+}
 
 impl CommandDelegator {
     pub fn start(
         command_delegator_recv: Receiver<RawCommand>,
-        commands_map: CommandsMap,
-    ) -> Result<(), ErrorStruct> {
+        commands_map: Arc<Mutex<CommandsMap>>,
+    ) -> Result<Self, ErrorStruct> {
         let builder = thread::Builder::new().name("Command Delegator".into());
 
         let command_delegator_handler = builder.spawn(move || {
             for raw_command in command_delegator_recv.iter() {
                 let command_type = raw_command.0.get(0).unwrap();
-                if let Some(command_dest) = commands_map.get(command_type) {
+                if let Some(command_dest) = commands_map.lock().unwrap().get(command_type) {
                     delegate_jobs(raw_command, command_dest);
                 } else {
                     let error = command_not_found(command_type.to_string(), raw_command.0);
@@ -90,7 +113,7 @@ impl CommandDelegator {
         });
 
         match command_delegator_handler {
-            Ok(_) => Ok(()),
+            Ok(join) => Ok(Self { join: Some(join) }),
             Err(item) => Err(ErrorStruct::new(
                 "ERR_THREAD_BUILDER".into(),
                 format!("{}", item),
@@ -99,7 +122,7 @@ impl CommandDelegator {
     }
 }
 
-fn delegate_jobs(raw_command: RawCommand, sender_list: &Vec<Option<Sender<RawCommand>>>) {
+fn delegate_jobs(raw_command: RawCommand, sender_list: &[Option<Sender<RawCommand>>]) {
     for sender in sender_list.iter() {
         let raw_command_clone = clone_raw_command(&raw_command);
         if let Some(snd_struct) = sender.as_ref() {
@@ -158,7 +181,7 @@ fn clone_raw_command(raw_command: &RawCommand) -> RawCommand {
     )
 }
 
-fn clone_command_vec(command_vec: &Vec<String>) -> Vec<String> {
+fn clone_command_vec(command_vec: &[String]) -> Vec<String> {
     let mut clone = Vec::new();
     for word in command_vec.iter() {
         clone.push(String::from(word));
@@ -206,11 +229,12 @@ pub mod test_command_delegator {
         channel_map.insert(String::from("lset"), vec![Some(snd_cmd_dat.clone())]);
 
         let commands_map = CommandsMap::new(channel_map);
+        let c_commands_map = Arc::new(Mutex::new(commands_map));
 
         let (snd_test_cmd, rcv_test_cmd): (Sender<RawCommand>, Receiver<RawCommand>) =
             mpsc::channel();
 
-        let _command_delegator = CommandDelegator::start(rcv_test_cmd, commands_map);
+        let _command_delegator = CommandDelegator::start(rcv_test_cmd, Arc::clone(&c_commands_map));
 
         // ACT
 
@@ -270,6 +294,10 @@ pub mod test_command_delegator {
             response1,
             "*4\r\n$8\r\nbreaking\r\n$2\r\nmy\r\n$3\r\nnew\r\n$9\r\ndelegator\r\n".to_string()
         );
+
+        c_commands_map.lock().unwrap().kill_senders();
+        drop(snd_test_cmd);
+        drop(snd_cmd_dat);
     }
 
     #[test]
@@ -295,11 +323,12 @@ pub mod test_command_delegator {
         channel_map.insert(String::from("lset"), vec![Some(snd_cmd_dat.clone())]);
 
         let commands_map = CommandsMap::new(channel_map);
+        let c_commands_map = Arc::new(Mutex::new(commands_map));
 
         let (snd_test_cmd, rcv_test_cmd): (Sender<RawCommand>, Receiver<RawCommand>) =
             mpsc::channel();
 
-        let _command_delegator = CommandDelegator::start(rcv_test_cmd, commands_map);
+        let _command_delegator = CommandDelegator::start(rcv_test_cmd, Arc::clone(&c_commands_map));
 
         // ACT
 
@@ -317,5 +346,8 @@ pub mod test_command_delegator {
 
         let response1 = rcv_dat_test.recv().unwrap();
         assert_eq!(response1, "-ERR unknown command \'lpush\', with args beginning with: \'lpush\', \'key\', \'delegator\', \'new\', \'my\', \'testing\', \r\n".to_string());
+        c_commands_map.lock().unwrap().kill_senders();
+        drop(snd_test_cmd);
+        drop(snd_cmd_dat);
     }
 }

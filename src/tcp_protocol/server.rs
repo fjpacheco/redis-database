@@ -1,6 +1,6 @@
 use std::{
     fmt,
-    net::TcpStream,
+    net::{Ipv4Addr, SocketAddrV4, TcpStream},
     sync::{
         atomic::{AtomicBool, Ordering},
         mpsc::{self, channel},
@@ -15,12 +15,10 @@ use crate::{
     native_types::ErrorStruct,
     redis_config::RedisConfig,
     tcp_protocol::{
-        command_delegator::CommandDelegator, /*database_command_delegator::DatabaseCommandDelegator,*/
-        listener_processor::ListenerProcessor,
-        runnables_map::RunnablesMap,
-        /*server_command_delegator::ServerCommandDelegator,*/
+        client_atributes::client_fields::ClientFields, command_delegator::CommandDelegator,
+        listener_processor::ListenerProcessor, runnables_map::RunnablesMap,
     },
-    Database,
+    vec_strings, Database,
 };
 
 use super::{
@@ -114,6 +112,7 @@ impl ServerRedis {
         // ################## CLIENTS ##################
         let clients = ClientList::new(sender_log.clone());
         let shared_clients = Arc::new(Mutex::new(clients));
+        let drop_shared_clients = Arc::clone(&shared_clients);
 
         let server_redis = ServerRedisAtributes {
             config: Arc::clone(&config),
@@ -127,9 +126,11 @@ impl ServerRedis {
         // ################## SYSTEM LIST CLIENTS ##################
 
         // ################## Start the Four Threads with the important delegators and listener ##################
-        CommandDelegator::start(command_delegator_recv, commands_map)?;
-        CommandSubDelegator::start::<Database>(rcv_cmd_dat, runnables_database, database)?;
-        CommandSubDelegator::start::<ServerRedisAtributes>(
+        let c_commands_map = Arc::new(Mutex::new(commands_map));
+
+        let a = CommandDelegator::start(command_delegator_recv, Arc::clone(&c_commands_map))?;
+        let b = CommandSubDelegator::start::<Database>(rcv_cmd_dat, runnables_database, database)?;
+        let c = CommandSubDelegator::start::<ServerRedisAtributes>(
             rcv_cmd_sv,
             runnables_server,
             server_redis.clone(),
@@ -162,8 +163,49 @@ impl ServerRedis {
         .expect("Error setting Ctrl-C handler");
         */
 
-        let notifiers = Notifiers::new(sender_log, command_delegator_sender);
-        ListenerProcessor::incoming(listener, server_redis, notifiers);
+        // TODO: EN CONSTRUCCIÓN.. ESTO ESTA MUY FEO! Hay que tener en cuenta el análisis de unwraps!!!!!!!!!!!!
+        let notifiers = Notifiers::new(sender_log.clone(), command_delegator_sender.clone());
+        ListenerProcessor::incoming(listener, server_redis.clone(), notifiers.clone());
+
+        let (sender_drop, recv_drop) = channel();
+        command_delegator_sender
+            .send((
+                vec_strings!["OK"],
+                sender_drop,
+                Arc::new(Mutex::new(ClientFields::new(SocketAddrV4::new(
+                    Ipv4Addr::new(127, 0, 0, 1),
+                    8080,
+                )))),
+            ))
+            .unwrap(); // NECESITO SI O SI LA STRUC PACKAGE_FOR_SEND
+        println!("arranco a esperar a estos giles qls");
+        std::thread::spawn(move || match recv_drop.recv() {
+            Ok(_) => {
+                drop(drop_shared_clients);
+
+                c_commands_map.lock().unwrap().kill_senders();
+                drop(command_delegator_sender);
+                drop(sender_log);
+                drop(notifiers);
+                drop(server_redis);
+                drop(a);
+                drop(b);
+                drop(c);
+            }
+            Err(_) => todo!("Help me! Se cerró el server con errores..."),
+        })
+        .join()
+        .unwrap();
+
+        /*drop(drop_shared_clients);
+        c_commands_map.lock().unwrap().kill_senders();
+        drop(command_delegator_sender);
+        drop(sender_log);
+        drop(notifiers);
+        drop(server_redis);
+        drop(a);
+        drop(b);
+        drop(c);*/
         Ok(())
     }
 }

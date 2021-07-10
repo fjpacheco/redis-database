@@ -4,7 +4,7 @@ use crate::messages::redis_messages::unexpected_behaviour;
 use crate::native_types::ErrorStruct;
 use crate::tcp_protocol::client_atributes::status::Status;
 use crate::tcp_protocol::runnables_map::RunnablesMap;
-use crate::tcp_protocol::BoxedCommand;
+use crate::tcp_protocol::RawCommandTwo;
 use std::collections::HashSet;
 use std::net::Ipv4Addr;
 use std::sync::Arc;
@@ -47,6 +47,10 @@ impl ClientFields {
         self.subscriptions.contains(channel)
     }
 
+    pub fn is_dead(&self) -> bool {
+        self.status.eq(&Status::Dead)
+    }
+
     pub fn is_allowed_to(&self, command: &str) -> Result<(), ErrorStruct> {
         match self.status {
             Status::Executor => Ok(()),
@@ -67,10 +71,7 @@ impl ClientFields {
         }
     }
 
-    pub fn review_command(
-        &mut self,
-        command: &Vec<String>,
-    ) -> Result<Option<Arc<BoxedCommand<Arc<Mutex<ClientFields>>>>>, ErrorStruct> {
+    pub fn review_command(&mut self, command: &[String]) -> Result<RawCommandTwo, ErrorStruct> {
         match self.status {
             Status::Executor => self.rc_case_executor(command),
             Status::Subscriber => self.rc_case_subscriber(command),
@@ -86,10 +87,7 @@ impl ClientFields {
         self.status == Status::Monitor
     }
 
-    fn rc_case_subscriber(
-        &mut self,
-        command: &Vec<String>,
-    ) -> Result<Option<Arc<BoxedCommand<Arc<Mutex<ClientFields>>>>>, ErrorStruct> {
+    fn rc_case_subscriber(&mut self, command: &[String]) -> Result<RawCommandTwo, ErrorStruct> {
         if let Some(runnable) = self.map.as_ref().unwrap().get(command.get(0).unwrap()) {
             Ok(Some(runnable))
         } else {
@@ -100,10 +98,7 @@ impl ClientFields {
         }
     }
 
-    fn rc_case_executor(
-        &mut self,
-        command: &Vec<String>,
-    ) -> Result<Option<Arc<BoxedCommand<Arc<Mutex<ClientFields>>>>>, ErrorStruct> {
+    fn rc_case_executor(&mut self, command: &[String]) -> Result<RawCommandTwo, ErrorStruct> {
         Ok(self.map.as_ref().unwrap().get(command.get(0).unwrap()))
     }
 
@@ -164,14 +159,13 @@ impl ClientFields {
         if channels.is_empty() {
             self.status.replace(Status::Executor);
             self.subscriptions.clear();
-            Ok(self.subscriptions.len() as isize)
         } else {
             let _removed = self.remove_channels(channels);
             if self.subscriptions.is_empty() {
                 self.replace_status(Status::Executor);
             }
-            Ok(self.subscriptions.len() as isize)
         }
+        Ok(self.subscriptions.len() as isize)
     }
 
     fn add_channels(&mut self, new_channels: Vec<String>) -> isize {

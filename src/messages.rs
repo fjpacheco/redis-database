@@ -124,7 +124,7 @@ pub mod redis_messages {
     }
 
     pub fn wrong_regex_pattern(regex: &str) -> MessageRedis {
-        MessageRedis{
+        MessageRedis {
             prefix: "REGEX".to_string(),
             message: format!("Given pattern could not be parsed: {}", regex),
         }
@@ -136,14 +136,13 @@ pub mod redis_messages {
             .into_iter()
             .for_each(|one_arg| args_received.push_str(&("\'".to_owned() + &one_arg + "\', ")));
 
-        MessageRedis{
+        MessageRedis {
             prefix: "UNKNOWN".to_string(),
             message: format!(
                 "unknown command \'{}\', with args beginning with: {}",
                 command_type, args_received
             ),
         }
-            
     }
 
     pub fn command_not_found(command_type: String, buffer: Vec<String>) -> ErrorStruct {

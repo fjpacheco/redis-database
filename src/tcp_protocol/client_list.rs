@@ -1,17 +1,28 @@
-use crate::regex::super_regex::SuperRegex;
 use crate::native_types::ErrorStruct;
 use crate::native_types::{RBulkString, RedisType};
+use crate::regex::super_regex::SuperRegex;
 use std::collections::HashMap;
-use std::sync::mpsc::Sender;
+use std::sync::mpsc::{SendError, Sender};
 use std::time::SystemTime;
 
 use crate::communication::log_messages::LogMessage;
 use crate::tcp_protocol::client_handler::ClientHandler;
 
 pub struct ClientList {
-    list: Vec<ClientHandler>,
+    list: Vec<Option<ClientHandler>>,
     channel_register: HashMap<String, usize>,
-    _log_channel: Sender<LogMessage>,
+    log_channel: Sender<LogMessage>,
+}
+
+impl Drop for ClientList {
+    fn drop(&mut self) {
+        println!("😍😍 HEADSHOT CLIENTLIST 😍😍");
+        /*self.list.iter_mut().for_each(|client| {
+            drop(client); //clippy say:
+        });
+        println!("😍😍 IZI HEADSHOT CLIENTLSIT 😍😍");
+        */
+    }
 }
 
 impl ClientList {
@@ -19,36 +30,47 @@ impl ClientList {
         ClientList {
             list: Vec::new(),
             channel_register: HashMap::new(),
-            _log_channel: log_channel,
+            log_channel,
         }
+    }
+
+    pub fn drop_clients_dead(&mut self) {
+        self.list.iter_mut().for_each(|client_option| {
+            if let Some(client) = client_option {
+                if client.is_dead() {
+                    let client_owner = client_option.take();
+                    drop(client_owner);
+                }
+            }
+        });
+        self.list.retain(|client| client.is_some());
     }
 
     pub fn insert(&mut self, new_client: ClientHandler) {
-        self.list.push(new_client);
+        self.drop_clients_dead();
+        self.list.push(Some(new_client));
+        self.print_detail_clients().unwrap();
     }
 
-    pub fn remove_client(&mut self, client_addr: String) {
-        self.list.retain(|x| {
-            let remove = x.fields.lock().unwrap().address.to_string();
-            !remove.eq(&client_addr)
-        });
-        println!("HOLA QUE PASA");
+    pub fn print_detail_clients(&mut self) -> Result<(), SendError<LogMessage>> {
         let clients_detail = self
             .list
             .iter()
-            .map(|x| x.get_detail())
+            .filter(|x| x.is_some())
+            .map(|x| x.as_ref().unwrap().get_detail())
             .collect::<Vec<String>>();
 
         if !clients_detail.len().eq(&0) {
-            self._log_channel
-                .send(LogMessage::detail_clients(clients_detail))
-                .unwrap();
+            self.log_channel
+                .send(LogMessage::detail_clients(clients_detail))?
         }
+        Ok(())
     }
 
     pub fn notify_monitors(&mut self, addr: String, notification: Vec<String>) {
         self.list
             .iter_mut()
+            .map(|x| x.as_ref().unwrap())
             .filter(|x| x.is_monitor_notificable())
             .for_each(|client| {
                 let time = match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
@@ -58,7 +80,7 @@ impl ClientList {
                     }
                 };
                 let message_to_notify = format!("At {}: [{}] {:?}\r\n", time, &addr, notification);
-                client.write_stream(RBulkString::encode(message_to_notify));
+                let _ = client.write_stream(RBulkString::encode(message_to_notify));
             });
     }
 
@@ -69,14 +91,16 @@ impl ClientList {
     ) -> Result<usize, ErrorStruct> {
         self.list
             .iter_mut()
+            .map(|x| x.as_ref().unwrap())
             .filter(|x| x.is_subscripted_to(&channel))
             .for_each(|client| {
-                client.write_stream(RBulkString::encode(String::from(&message)));
+                let _ = client.write_stream(RBulkString::encode(String::from(&message)));
             });
 
         Ok(self
             .list
             .iter()
+            .map(|x| x.as_ref().unwrap())
             .filter(|x| x.is_subscripted_to(&channel))
             .count())
     }
@@ -104,12 +128,11 @@ impl ClientList {
     }
 
     pub fn match_pattern(&self, matcher: SuperRegex) -> Vec<String> {
-
-        self.channel_register.keys()
-                            .filter(|key| matcher.is_match(key) )
-                            .map(|key| String::from(key) )
-                            .collect()
-
+        self.channel_register
+            .keys()
+            .filter(|key| matcher.is_match(key))
+            .map(String::from)
+            .collect()
     }
 
     pub fn get_register(&self) -> Vec<String> {
@@ -131,8 +154,7 @@ mod test_client_list {
     use std::sync::mpsc;
 
     #[test]
-    fn test01_get_register(){
-
+    fn test01_get_register() {
         let (sender, _) = mpsc::channel();
         let mut list = ClientList::new(sender);
 
@@ -165,7 +187,5 @@ mod test_client_list {
         assert_eq!("a", &register[2]);
         assert_eq!("c", &register[3]);
         assert_eq!(4, register.len());
-
-
     }
 }

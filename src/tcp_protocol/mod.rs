@@ -15,6 +15,7 @@ pub mod runnables_map;
 pub mod server;
 
 type RawCommand = (Vec<String>, Sender<String>, Arc<Mutex<ClientFields>>);
+type RawCommandTwo = Option<Arc<BoxedCommand<Arc<Mutex<ClientFields>>>>>;
 type BoxedCommand<T> = Box<dyn Runnable<T> + Send + Sync>;
 
 fn remove_command(command_input_user: &mut Vec<String>) -> String {

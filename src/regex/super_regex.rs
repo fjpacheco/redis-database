@@ -1,4 +1,3 @@
-
 use regex::Error;
 use regex::Regex;
 
@@ -9,21 +8,16 @@ pub struct SuperRegex {
 impl SuperRegex {
     pub fn from(input: &str) -> Result<SuperRegex, Error> {
         let mut regex = String::from("^");
-        let replaced = input
-        .replace("?", ".")
-        .replace("*", ".*");
+        let replaced = input.replace("?", ".").replace("*", ".*");
         regex.push_str(&replaced);
         regex.push('$');
         let matcher = Regex::new(&regex)?;
-        Ok(SuperRegex {
-            matcher: matcher
-        })
+        Ok(SuperRegex { matcher })
     }
 
     pub fn is_match(&self, word: &str) -> bool {
         self.matcher.is_match(word)
     }
-
 }
 
 #[cfg(test)]
@@ -127,5 +121,3 @@ pub mod test_super_regex {
         assert!(!regex.is_match("hgllo"));
     }
 }
-
-

@@ -17,7 +17,7 @@ impl ListenerProcessor {
         notifiers: Notifiers,
     ) {
         print!("{}", redis_logo(&server_redis.get_port()));
-        notifiers.write_log(LogMessage::start_up(&listener));
+        let _ = notifiers.send_log(LogMessage::start_up(&listener));
 
         for stream in listener.incoming() {
             if server_redis.is_listener_off() {
@@ -27,7 +27,7 @@ impl ListenerProcessor {
             match stream {
                 Ok(client) => {
                     server_redis.set_timeout(&client);
-                    notifiers.write_log(LogMessage::new_conection(&client));
+                    let _ = notifiers.send_log(LogMessage::new_conection(&client));
                     let new_client = ClientHandler::new(client, notifiers.clone());
                     server_redis
                         .shared_clients
@@ -36,11 +36,11 @@ impl ListenerProcessor {
                         .insert(new_client);
                 }
                 Err(e) => {
-                    notifiers.write_log(LogMessage::error_to_connect_client(&e));
+                    let _ = notifiers.send_log(LogMessage::error_to_connect_client(&e));
                 }
             }
         }
-        notifiers.write_log(LogMessage::off_server(&listener));
+        let _ = notifiers.send_log(LogMessage::off_server(&listener));
     }
 
     pub fn new_tcp_listener(config: &RedisConfig) -> Result<TcpListener, ErrorStruct> {

@@ -6,11 +6,10 @@ use std::{
     thread,
 };
 
-use crate::native_types::{
-    redis_type::encode_netcat_input, ErrorStruct, RArray, RError, RedisType,
-};
+use crate::native_types::{redis_type::encode_netcat_input, ErrorStruct, RArray, RedisType};
 
 use crate::messages::redis_messages;
+use crate::tcp_protocol::client_atributes::status::Status;
 
 use super::{client_atributes::client_fields::ClientFields, notifiers::Notifiers};
 
@@ -24,11 +23,15 @@ pub struct ClientHandler {
 }
 
 impl ClientHandler {
+    pub fn is_dead(&self) -> bool {
+        self.fields.lock().unwrap().is_dead()
+    }
+
     pub fn new(mut stream_received: TcpStream, notifiers: Notifiers) -> ClientHandler {
         let in_stream = stream_received.try_clone().unwrap();
         let out_stream = stream_received.try_clone().unwrap();
         let address = get_peer(&mut stream_received).unwrap();
-        let addr = address.clone();
+        let addr = address;
         let fields = ClientFields::new(address);
         let shared_fields = Arc::new(Mutex::new(fields));
         let c_shared_fields = Arc::clone(&shared_fields);
@@ -104,40 +107,50 @@ fn read_socket(
     response_snd: mpsc::Sender<Option<String>>,
 ) -> Result<(), ErrorStruct> {
     let buf_reader_stream = BufReader::new(stream.try_clone().unwrap());
-    let mut lines_buffer_reader = buf_reader_stream.lines();
+    let mut lines = buf_reader_stream.lines();
     let mut response;
-    while let Some(received) = lines_buffer_reader.next() {
+    while let Some(received) = lines.next() {
         match received {
             Ok(input) => {
+                let client_status = Arc::clone(&c_shared_fields);
                 if input.starts_with('*') {
-                    response = process_command_redis(
-                        input,
-                        &mut lines_buffer_reader,
-                        Arc::clone(&c_shared_fields),
-                        &notifiers,
-                    );
+                    response = process_command_redis(input, &mut lines, client_status, &notifiers);
                 } else {
-                    response =
-                        process_command_string(input, Arc::clone(&c_shared_fields), &notifiers);
+                    response = process_command_string(input, client_status, &notifiers);
                 }
-                send_response(response, &response_snd)?;
             }
-            Err(err) => match err.kind() {
-                std::io::ErrorKind::WouldBlock => break, // FOR TIMEOUT OF REDIS.CONF
-                _ => {
-                    response = RError::encode(ErrorStruct::new(
-                        "ERR".to_string(),
-                        format!("Error received in next line.\nDetail: {:?}", err),
-                    ));
-                    send_response(response, &response_snd)?;
-                    return Err(ErrorStruct::new(
-                        "ERR".to_string(),
-                        format!("Error received in next line.\nDetail: {:?}", err),
-                    ));
+            Err(err) => {
+                match err.kind() {
+                    std::io::ErrorKind::WouldBlock => break, // FOR TIMEOUT OF REDIS.CONF
+                    _ => {
+                        /*response = Err(ErrorStruct::new(
+                            "ERR".to_string(),
+                            format!("Error received in next line.\nDetail: {:?}", err),
+                        ))*/
+                        response = Err(ErrorStruct::new(
+                            "ERR".to_string(),
+                            format!("Error received in next line.\nDetail: {:?}", err),
+                        ))
+                    }
                 }
-            },
+            }
         }
+
+        //TODO: ANALISIS DE UNWRAPS. EL PRIMER UNWRAP ES DEMASIADO CRITICO => PREFIX POCO UTIL, DEBATIR IDEA DE
+        let response_str;
+        match response {
+            Ok(item) => {
+                response_str = item;
+            }
+            Err(item) => {
+                response_str = item.print_it();
+            }
+        }
+        println!("asd");
+        send_response(response_str, &response_snd).unwrap();
     }
+    println!("😢 UN CLENTE SE FUE 😢 => LE PONGO STATUS DEAD :) ");
+    c_shared_fields.lock().unwrap().replace_status(Status::Dead);
     notifiers.off_client(stream.peer_addr().unwrap().to_string());
     Ok(())
 }
@@ -147,7 +160,7 @@ fn process_command_redis(
     mut lines_buffer_reader: &mut Lines<BufReader<TcpStream>>,
     client_status: Arc<Mutex<ClientFields>>,
     notifiers: &Notifiers,
-) -> String {
+) -> Result<String, ErrorStruct> {
     input.remove(0);
     process_command_general(input, &mut lines_buffer_reader, client_status, notifiers)
 }
@@ -156,7 +169,7 @@ fn process_command_string(
     input: String,
     client_status: Arc<Mutex<ClientFields>>,
     notifiers: &Notifiers,
-) -> String {
+) -> Result<String, ErrorStruct> {
     let mut input_encoded = encode_netcat_input(input);
     input_encoded.remove(0);
     let mut lines = BufReader::new(input_encoded.as_bytes()).lines();
@@ -169,44 +182,37 @@ fn process_command_general<G>(
     lines_buffer_reader: &mut Lines<G>,
     client_status: Arc<Mutex<ClientFields>>,
     notifiers: &Notifiers,
-) -> String
+) -> Result<String, ErrorStruct>
 where
     G: BufRead,
 {
-    match RArray::decode(first_lecture, lines_buffer_reader) {
-        Ok(command_vec) => {
-            let allowed = client_status.lock().unwrap().is_allowed_to(&command_vec[0]);
-
-            match allowed {
-                Ok(()) => delegate_command(command_vec, client_status, notifiers),
-                Err(error) => RError::encode(error),
-            }
-        }
-        Err(error) => RError::encode(error),
-    }
+    let command_vec = RArray::decode(first_lecture, lines_buffer_reader)?;
+    client_status
+        .lock()
+        .map_err(|err| ErrorStruct::new("ERR_POISSON_CLIENT_FIELDS".into(), err.to_string()))?
+        .is_allowed_to(&command_vec[0])?;
+    delegate_command(command_vec, client_status, notifiers)
 }
 
 fn delegate_command(
     command_received: Vec<String>,
     client_fields: Arc<Mutex<ClientFields>>,
     notifiers: &Notifiers,
-) -> String {
+) -> Result<String, ErrorStruct> {
     let command_received_initial = command_received.clone();
     let (sender, receiver): (mpsc::Sender<String>, mpsc::Receiver<String>) = mpsc::channel();
 
-    let _a =
-        notifiers.send_command_delegator((command_received, sender, Arc::clone(&client_fields)));
+    notifiers.send_command_delegator((command_received, sender, Arc::clone(&client_fields)))?;
 
-    match receiver.recv() {
-        Ok(response) => {
-            notifiers.notify_successful_shipment(client_fields, command_received_initial);
-            response
-        }
-        Err(err) => RError::encode(ErrorStruct::new(
-            "ERR".to_string(),
-            format!("failed to receive channel content. Detail {:?}", err),
-        )),
-    }
+    let response = receiver.recv().map_err(|err| {
+        ErrorStruct::new(
+            "ERR_RECV_ASOCIADO_AL_SENDER_ENVIADO_EN_EL_COMMAND_DELEGATOR".into(),
+            err.to_string(),
+        )
+    })?;
+
+    notifiers.notify_successful_shipment(client_fields, command_received_initial)?;
+    Ok(response)
 }
 
 pub fn get_peer(stream: &mut TcpStream) -> Option<SocketAddrV4> {
@@ -232,20 +238,16 @@ impl Drop for ClientHandler {
         self.stream
             .shutdown(Shutdown::Both)
             .expect("Error to close TcpStream");
+
         if let Some(handle) = self.in_thread.take() {
-            match handle.join() {
-                Ok(_) => {}
-                Err(_) => {}
-            }
+            handle.join().unwrap().unwrap();
         }
-        println!("COMIENZA EL DROP");
         self.response_snd.send(None).unwrap();
+
         if let Some(handle) = self.out_thread.take() {
-            match handle.join() {
-                Ok(_) => {}
-                Err(_) => {}
-            }
+            handle.join().unwrap().unwrap();
         }
-        println!("ME ELIMINE");
+
+        println!("ME ELIMINE -- DROP//JOIN SUCCESS");
     }
 }
