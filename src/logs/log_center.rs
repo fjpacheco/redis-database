@@ -69,17 +69,8 @@ impl LogCenter {
         }
     }
 
-    fn start(
-        receiver: Receiver<LogMessage>,
-        redis_config: Arc<Mutex<RedisConfig>>,
-        writer: FileManager,
-    ) {
-        // Open? Or create? D:
-        let file = OpenOptions::new()
-            .write(true)
-            .open(&redis_config.lock().unwrap().log_filename())
-            .unwrap();
-        let mut file = LineWriter::new(file);
+    fn start(receiver: Receiver<LogMessage>, redis_config: Arc<Mutex<RedisConfig>>, writer: FileManager) {
+
         // Considerar caso en el que cambia el archivo redis config
         for mut log_message in receiver.iter() {
             if let Some(message) =
@@ -87,15 +78,18 @@ impl LogCenter {
             {
                 LogCenter::print_log_message(message);
             }
-
-            writer
-                .write_to_file(&mut file, log_message.take_message().unwrap())
-                .unwrap();
+            if let Some(file) = redis_config.lock().unwrap().get_mut_linewriter() {
+                writer.write_to_file(file, log_message.take_message().unwrap()).unwrap();
+                //TODO: manejar error de no escritura, cortar todo xD
+            }
         }
 
         let close_message = LogMessage::log_closed().take_message().unwrap();
         LogCenter::print_log_message(&close_message);
-        writer.write_to_file(&mut file, close_message).unwrap();
+        if let Some(mut file) = redis_config.lock().unwrap().get_mut_linewriter() {
+            writer.write_to_file(&mut file, close_message).unwrap();
+            //TODO: manejar error de no escritura, cortar todo xD
+        }
     }
 
     fn print_log_message(message: &str) {
@@ -110,19 +104,18 @@ impl LogCenter {
 pub mod test_log_center {
 
     use super::*;
+    use std::{fs::File, sync::mpsc};
     use std::fs;
-    use std::fs::File;
-    use std::sync::mpsc;
 
     #[test]
     fn test01_sending_a_log_message() {
-        let _ = File::create("example1.txt").unwrap();
+        let _ = File::create("example4.txt").unwrap();
         let config = Arc::new(Mutex::new(RedisConfig::new(
             String::new(),
             String::new(),
-            String::from("example1.txt"),
-            0,
-        )));
+            String::from("example4.txt"),
+            0
+        ).unwrap()));
         let writer = FileManager::new();
         let message = LogMessage::test_message1();
         let (sender, receiver) = mpsc::channel();
@@ -132,7 +125,7 @@ pub mod test_log_center {
         thread::sleep(std::time::Duration::from_millis(1));
 
         assert_eq!(
-            fs::read("example1.txt").unwrap(),
+            fs::read("example4.txt").unwrap(),
             b"$14\r\nThis is test 1\r\n"
         );
     }
@@ -140,13 +133,13 @@ pub mod test_log_center {
     #[test]
     fn test02_sending_a_log_message_and_drop_log_center() {
         {
-            let _ = File::create("example2.txt").unwrap();
+            let _ = File::create("example5.txt").unwrap();
             let config = Arc::new(Mutex::new(RedisConfig::new(
                 String::new(),
                 String::new(),
-                String::from("example2.txt"),
-                0,
-            )));
+                String::from("example5.txt"),
+                0
+            ).unwrap()));
             let writer = FileManager::new();
             let message = LogMessage::test_message2();
             let (sender, receiver) = mpsc::channel();
@@ -154,15 +147,51 @@ pub mod test_log_center {
             sender.send(message).unwrap();
             thread::sleep(std::time::Duration::from_millis(1));
             assert_eq!(
-                fs::read("example2.txt").unwrap(),
+                fs::read("example5.txt").unwrap(),
                 b"$14\r\nThis is test 2\r\n"
             );
         }
 
         thread::sleep(std::time::Duration::from_millis(1));
         assert_eq!(
-            fs::read("example2.txt").unwrap(),
+            fs::read("example5.txt").unwrap(),
             b"$14\r\nThis is test 2\r\n$21\r\nLog center is closed.\r\n"
+        );
+    }
+
+
+    #[test]
+    fn test03_changing_logfile_name() {
+        let _ = File::create("example6.txt").unwrap();
+        let config = Arc::new(Mutex::new(RedisConfig::new(
+            String::new(),
+            String::new(),
+            String::from("example6.txt"),
+            0
+        ).unwrap()));
+        let writer = FileManager::new();
+        let message1 = LogMessage::test_message1();
+        let (sender, receiver) = mpsc::channel();
+        let _log_center = LogCenter::new(receiver, Arc::clone(&config), writer);
+
+        sender.send(message1).unwrap();
+        thread::sleep(std::time::Duration::from_millis(1));
+
+        assert_eq!(
+            fs::read("example6.txt").unwrap(),
+            b"$14\r\nThis is test 1\r\n"
+        );
+
+        let _ = File::create("new_file_name.txt").unwrap();
+        config.lock().unwrap().change_file("new_file_name.txt".to_string()).unwrap();
+
+        let message2 = LogMessage::test_message1();
+        sender.send(message2).unwrap();
+        thread::sleep(std::time::Duration::from_millis(1)); // Para no leer el archivo antes de que se escriba
+
+        assert_eq!(
+            fs::read("new_file_name.txt").unwrap(),
+            b"$14\r\nThis is test 1\r\n"
         );
     }
 }

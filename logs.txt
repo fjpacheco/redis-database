@@ -72,3 +72,25 @@ List of clients:
                -> Client: "127.0.0.1:40622" -- Status: Monitor -- Subscriptions: {}
 $37
 Client disconected: "127.0.0.1:40634"
+$27
+Server ON in 127.0.0.1:6379
+$30
+New conection: 127.0.0.1:62048
+$30
+New conection: 127.0.0.1:62049
+$37
+Client disconected: "127.0.0.1:62048"
+$41
+[127.0.0.1:62049] ["set", "key", "value"]
+$30
+New conection: 127.0.0.1:62050
+$28
+Server OFF in 127.0.0.1:6379
+$30
+[127.0.0.1:62050] ["shutdown"]
+$37
+Client disconected: "127.0.0.1:62050"
+$37
+Client disconected: "127.0.0.1:62049"
+$21
+Log center is closed.

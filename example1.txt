@@ -1,4 +1,2 @@
-$14
-This is test 1
-$21
-Log center is closed.
+$28
+This is a line to be written

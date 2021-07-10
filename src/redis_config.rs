@@ -1,9 +1,4 @@
-use std::{
-    collections::HashMap,
-    fs::File,
-    io::{BufRead, BufReader},
-    path::Path,
-};
+use std::{collections::HashMap, fs::{File, OpenOptions}, io::{BufRead, BufReader, LineWriter}, path::Path};
 
 use crate::native_types::ErrorStruct;
 
@@ -12,17 +7,24 @@ pub struct RedisConfig {
     port: String,
     log_filename: String,
     verbose: usize,
+    lwriter: LineWriter<File>,
     timeout_secs: u64,
+
 }
 
 impl RedisConfig {
-    pub fn new(ip: String, port: String, log_filename: String, verbose: usize) -> RedisConfig {
-        RedisConfig {
-            ip,
-            port,
-            log_filename,
-            verbose,
-            timeout_secs: 0,
+
+    pub fn new(ip: String, port: String, log_filename: String, verbose: usize) -> Result<RedisConfig, ErrorStruct> {
+        let lwriter;
+        match OpenOptions::new().append(true).create(true).open(&log_filename) {
+            Ok(file) => {
+                lwriter = LineWriter::new(file);
+                Ok(RedisConfig{ip, port, log_filename, verbose, lwriter, timeout_secs: 0 })
+            }
+            Err(err) => Err(ErrorStruct::new(
+                "ERR_CONFIG".into(),
+                format!("Setting a new config failed. Detail: {}", err),
+            )),
         }
     }
 
@@ -32,6 +34,23 @@ impl RedisConfig {
             false => RedisConfig::default(),
         };
         Ok(config)
+    }
+
+    pub fn get_mut_linewriter(&mut self) -> Option<&mut LineWriter<File>> {
+        Some(&mut self.lwriter)
+    }
+
+    pub fn change_file(&mut self, new_log_filename: String) -> Result<(), ErrorStruct> {
+        match OpenOptions::new().append(true).create(true).open(new_log_filename) {
+            Ok(file) => {
+                self.lwriter = LineWriter::new(file);
+                Ok(())
+            }
+            Err(err) => Err(ErrorStruct::new(
+                "ERR_CONFIG".into(),
+                format!("Setting a new config failed. Detail: {}", err),
+            )),
+        }
     }
 
     /// Received name path of new file .config to generate a new configuration for server Redis
@@ -57,31 +76,7 @@ impl RedisConfig {
             .get("port")
             .unwrap_or(&Self::default().port())
             .to_string();
-
-        let log_filename = config
-            .get("logfile")
-            .unwrap_or(&Self::default().log_filename())
-            .to_string();
-
-        let timeout_secs = config
-            .get("timeout")
-            .unwrap_or(&Self::default().timeout().to_string())
-            .parse::<u64>()
-            .unwrap_or_else(|_| Self::default().timeout());
-
-        let verbose = config
-            .get("verbose")
-            .unwrap_or(&Self::default().verbose().to_string())
-            .parse::<usize>()
-            .unwrap_or_else(|_| *Self::default().verbose());
-
-        Ok(RedisConfig {
-            ip,
-            port,
-            log_filename,
-            verbose,
-            timeout_secs,
-        })
+        RedisConfig::new(ip, port, String::from("logs.txt"), 0)
     }
 
     pub fn ip(&self) -> String {
@@ -125,15 +120,8 @@ impl Default for RedisConfig {
         let ip = "127.0.0.1".into();
         let port = "6379".into();
         let log_filename = "logs.txt".to_string();
-        let verbose = 10;
-        let timeout_secs = 0;
-        RedisConfig {
-            ip,
-            port,
-            log_filename,
-            verbose,
-            timeout_secs,
-        }
+        let verbose = 0;
+        RedisConfig::new(ip, port, log_filename, verbose).unwrap()
     }
 }
 
