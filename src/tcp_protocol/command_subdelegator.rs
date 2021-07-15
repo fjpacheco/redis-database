@@ -1,7 +1,5 @@
 use crate::joinable::Joinable;
 use crate::messages::redis_messages;
-use crate::native_types::RError;
-use crate::native_types::RedisType;
 use crate::tcp_protocol::close_thread;
 use crate::tcp_protocol::BoxedCommand;
 use std::fmt::Display;
@@ -15,7 +13,7 @@ use crate::native_types::error_severity::ErrorSeverity;
 use crate::native_types::ErrorStruct;
 use crate::tcp_protocol::runnables_map::RunnablesMap;
 
-use super::{remove_command, RawCommand};
+use super::{remove_command, RawCommand, Response};
 pub struct CommandSubDelegator {
     join: Option<JoinHandle<Result<(), ErrorStruct>>>,
 }
@@ -77,7 +75,7 @@ impl CommandSubDelegator {
             } else {
                 let error = redis_messages::command_not_found(command_type, command_input_user);
                 sender_to_client
-                    .send(RError::encode(error))
+                    .send(Err(error))
                     .map_err(|x| ErrorStruct::new("ERR_SENDER".into(), x.to_string()))?;
             }
         }
@@ -88,25 +86,16 @@ impl CommandSubDelegator {
 fn run_command<T: 'static>(
     runnable_command: Arc<BoxedCommand<T>>,
     command_input_user: Vec<String>,
-    sender_to_client: Sender<String>,
+    sender_to_client: Sender<Response>,
     data: &mut T,
 ) -> Result<(), ErrorStruct> {
-    match runnable_command.run(command_input_user, data) {
-        Ok(encoded_resp) => {
-            sender_to_client.send(encoded_resp).map_err(|_| {
-                ErrorStruct::from(redis_messages::closed_sender(ErrorSeverity::Comunicate))
-            })?;
-            return Ok(());
-        }
-        Err(error) => {
-            sender_to_client
-                .send(RError::encode(error.clone()))
-                .map_err(|_| {
-                    ErrorStruct::from(redis_messages::closed_sender(ErrorSeverity::Comunicate))
-                })?;
-            return Err(error);
-        }
-    }
+    let result = runnable_command.run(command_input_user, data);
+
+    sender_to_client
+        .send(result.clone())
+        .map_err(|_| ErrorStruct::from(redis_messages::closed_sender(ErrorSeverity::Comunicate)))?;
+
+    result.map(|_| ())
 }
 
 fn is_critical(potential_error: Result<(), ErrorStruct>) -> Result<(), ErrorStruct> {
@@ -137,14 +126,16 @@ fn check_severity(error: ErrorStruct) -> Result<(), ErrorStruct> {
 
 #[cfg(test)]
 pub mod test_database_command_delegator {
-    use crate::commands::lists::llen::Llen;
     use crate::commands::lists::rpop::RPop;
     use crate::commands::lists::rpush::RPush;
     use crate::commands::strings::get::Get;
     use crate::commands::strings::set::Set;
     use crate::commands::strings::strlen::Strlen;
+    use crate::native_types::RError;
+    use crate::native_types::RedisType;
     use crate::tcp_protocol::client_atributes::client_fields::ClientFields;
     use crate::tcp_protocol::BoxedCommand;
+    use crate::{commands::lists::llen::Llen, tcp_protocol::Response};
     use std::sync::Arc;
     use std::sync::Mutex;
 
@@ -174,7 +165,7 @@ pub mod test_database_command_delegator {
         let _database_command_delegator_recv =
             CommandSubDelegator::start::<Database>(rx1, runnables_map, database);
 
-        let (tx2, rx2): (Sender<String>, Receiver<String>) = mpsc::channel();
+        let (tx2, rx2): (Sender<Response>, Receiver<Response>) = mpsc::channel();
         let buffer_mock = vec_strings!["set", "key", "value"];
         tx1.send((
             buffer_mock,
@@ -184,9 +175,9 @@ pub mod test_database_command_delegator {
         .unwrap();
 
         let response1 = rx2.recv().unwrap();
-        assert_eq!(response1, "+OK\r\n".to_string());
+        assert_eq!(response1.unwrap(), "+OK\r\n".to_string());
 
-        let (tx3, rx3): (Sender<String>, Receiver<String>) = mpsc::channel();
+        let (tx3, rx3): (Sender<Response>, Receiver<Response>) = mpsc::channel();
         let buffer_mock_get = vec!["get".to_string(), "key".to_string()];
         tx1.send((
             buffer_mock_get,
@@ -196,10 +187,10 @@ pub mod test_database_command_delegator {
         .unwrap();
 
         let response2 = rx3.recv().unwrap();
-        assert_eq!(response2, "$5\r\nvalue\r\n".to_string());
+        assert_eq!(response2.unwrap(), "$5\r\nvalue\r\n".to_string());
 
         let buffer_mock_strlen = vec_strings!["strlen", "key"];
-        let (tx4, rx4): (Sender<String>, Receiver<String>) = mpsc::channel();
+        let (tx4, rx4): (Sender<Response>, Receiver<Response>) = mpsc::channel();
         tx1.send((
             buffer_mock_strlen,
             tx4,
@@ -209,7 +200,7 @@ pub mod test_database_command_delegator {
 
         drop(tx1);
         let response3 = rx4.recv().unwrap();
-        assert_eq!(response3, ":5\r\n".to_string());
+        assert_eq!(response3.unwrap(), ":5\r\n".to_string());
     }
 
     #[test]
@@ -225,7 +216,7 @@ pub mod test_database_command_delegator {
         let _database_command_delegator_recv =
             CommandSubDelegator::start::<Database>(rx1, runnables_map, database);
 
-        let (tx2, rx2): (Sender<String>, Receiver<String>) = mpsc::channel();
+        let (tx2, rx2): (Sender<Response>, Receiver<Response>) = mpsc::channel();
         let buffer_mock = vec_strings!["set", "key", "value"];
         tx1.send((
             buffer_mock,
@@ -235,9 +226,9 @@ pub mod test_database_command_delegator {
         .unwrap();
 
         let response1 = rx2.recv().unwrap();
-        assert_eq!(response1, "+OK\r\n".to_string());
+        assert_eq!(response1.unwrap(), "+OK\r\n".to_string());
 
-        let (tx3, rx3): (Sender<String>, Receiver<String>) = mpsc::channel();
+        let (tx3, rx3): (Sender<Response>, Receiver<Response>) = mpsc::channel();
         let buffer_mock_get = vec_strings!["get", "key"];
         tx1.send((
             buffer_mock_get,
@@ -248,7 +239,7 @@ pub mod test_database_command_delegator {
 
         let response2 = rx3.recv().unwrap();
         assert_eq!(
-            response2,
+            RError::encode(response2.unwrap_err()),
             "-ERR unknown command \'get\', with args beginning with: \'key\', \r\n".to_string()
         );
         drop(tx1);
@@ -269,7 +260,7 @@ pub mod test_database_command_delegator {
         let _database_command_delegator_recv =
             CommandSubDelegator::start::<Database>(rx1, runnables_map, database);
 
-        let (tx2, rx2): (Sender<String>, Receiver<String>) = mpsc::channel();
+        let (tx2, rx2): (Sender<Response>, Receiver<Response>) = mpsc::channel();
         let buffer_mock = vec![
             "rpush".to_string(),
             "key".to_string(),
@@ -285,9 +276,9 @@ pub mod test_database_command_delegator {
         .unwrap();
 
         let response1 = rx2.recv().unwrap();
-        assert_eq!(response1, ":3\r\n".to_string());
+        assert_eq!(response1.unwrap(), ":3\r\n".to_string());
 
-        let (tx3, rx3): (Sender<String>, Receiver<String>) = mpsc::channel();
+        let (tx3, rx3): (Sender<Response>, Receiver<Response>) = mpsc::channel();
         let buffer_mock = vec_strings!["rpop", "key", "2"];
         tx1.send((
             buffer_mock,
@@ -298,11 +289,11 @@ pub mod test_database_command_delegator {
 
         let response1 = rx3.recv().unwrap();
         assert_eq!(
-            response1,
+            response1.unwrap(),
             "*2\r\n$6\r\nvalue3\r\n$6\r\nvalue2\r\n".to_string()
         );
 
-        let (tx4, rx4): (Sender<String>, Receiver<String>) = mpsc::channel();
+        let (tx4, rx4): (Sender<Response>, Receiver<Response>) = mpsc::channel();
         let buffer_mock = vec_strings!["llen", "value"];
         tx1.send((
             buffer_mock,
@@ -312,6 +303,6 @@ pub mod test_database_command_delegator {
         .unwrap();
         drop(tx1);
         let response1 = rx4.recv().unwrap();
-        assert_eq!(response1, ":0\r\n".to_string());
+        assert_eq!(response1.unwrap(), ":0\r\n".to_string());
     }
 }

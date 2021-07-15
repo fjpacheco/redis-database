@@ -13,7 +13,7 @@ use crate::native_types::error_severity::ErrorSeverity;
 use crate::native_types::{redis_type::encode_netcat_input, ErrorStruct, RArray, RedisType};
 use crate::tcp_protocol::client_atributes::status::Status;
 
-use super::{client_atributes::client_fields::ClientFields, notifiers::Notifiers};
+use super::{client_atributes::client_fields::ClientFields, notifiers::Notifiers, Response};
 
 pub struct ClientHandler {
     stream: TcpStream,
@@ -161,16 +161,21 @@ fn read_socket(
 
         //TODO: ANALISIS DE UNWRAPS. EL PRIMER UNWRAP ES DEMASIADO CRITICO => PREFIX POCO UTIL, DEBATIR IDEA DE
         let response_str;
+
         match response {
             Ok(item) => {
                 response_str = item;
+                send_response(response_str, &response_snd)?;
             }
-            Err(item) => {
-                response_str = item.print_it();
+            Err(error) => {
+                if let Some(severity) = error.severity() {
+                    if let ErrorSeverity::CloseClient = severity {
+                        // MUST NOTIFY LOG CENTER
+                        break;
+                    }
+                }
             }
         }
-
-        send_response(response_str, &response_snd)?;
     }
     notifiers.off_client(get_peer(&stream)?.to_string());
     println!("😢 UN CLIENTE SE FUE 😢 => LE PONGO STATUS DEAD :) ");
@@ -240,16 +245,30 @@ fn delegate_command(
     notifiers: &Notifiers,
 ) -> Result<String, ErrorStruct> {
     let command_received_initial = command_received.clone();
-    let (sender, receiver): (mpsc::Sender<String>, mpsc::Receiver<String>) = mpsc::channel();
+    let (sender, receiver): (mpsc::Sender<Response>, mpsc::Receiver<Response>) = mpsc::channel();
 
     notifiers.send_command_delegator((command_received, sender, Arc::clone(&client_fields)))?;
 
-    let response = receiver
+    match receiver
         .recv()
-        .map_err(|_| ErrorStruct::from(redis_messages::closed_sender(ErrorSeverity::Comunicate)))?;
+        .map_err(|_| ErrorStruct::from(redis_messages::closed_sender(ErrorSeverity::Comunicate)))?
+    {
+        Ok(good_string) => {
+            notifiers.notify_successful_shipment(client_fields, command_received_initial)?;
+            return Ok(good_string);
+        }
+        Err(error) => {
+            if let Some(severity) = error.severity() {
+                if let ErrorSeverity::ShutdownServer = severity {
+                    //NOTIFIER MUST SHUTDOWN THE SERVER
+                }
+            }
+            return Err(error);
+        }
+    }
 
-    notifiers.notify_successful_shipment(client_fields, command_received_initial)?;
-    Ok(response)
+    /*notifiers.notify_successful_shipment(client_fields, command_received_initial)?;
+    Ok(response)*/
 }
 
 pub fn get_peer(stream: &TcpStream) -> Result<SocketAddrV4, ErrorStruct> {

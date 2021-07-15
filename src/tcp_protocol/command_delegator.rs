@@ -6,13 +6,13 @@ use std::sync::Mutex;
 use std::thread::JoinHandle;
 use std::{collections::HashMap, thread};
 
-use super::RawCommand;
+use super::{RawCommand, Response};
 
 use crate::joinable::Joinable;
 use crate::messages::redis_messages;
 use crate::messages::redis_messages::command_not_found;
 use crate::native_types::error_severity::ErrorSeverity;
-use crate::native_types::{ErrorStruct, RError, RedisType};
+use crate::native_types::ErrorStruct;
 use crate::tcp_protocol::close_thread;
 
 pub struct CommandsMap {
@@ -137,7 +137,7 @@ impl CommandDelegator {
                     is_critical(delegate_jobs(raw_command, command_dest))?;
                 } else {
                     let error = command_not_found(command_type.to_string(), raw_command.0);
-                    is_critical(raw_command.1.send(RError::encode(error)).map_err(|_| {
+                    is_critical(raw_command.1.send(Err(error)).map_err(|_| {
                         ErrorStruct::from(redis_messages::closed_sender(ErrorSeverity::Comunicate))
                     }))?;
                 }
@@ -202,7 +202,7 @@ fn delegate_jobs(
 
 fn case_client_status(
     command_buffer: Vec<String>,
-    response_sender: Sender<String>,
+    response_sender: Sender<Response>,
     client_status: Arc<Mutex<ClientFields>>,
 ) -> Result<(), ErrorStruct> {
     let review = client_status
@@ -225,7 +225,7 @@ fn case_client_status(
             )?;
         }
         Err(error) => {
-            send_response(response_sender, RError::encode(error))?;
+            send_response(response_sender, Err(error))?;
             return Err(ErrorStruct::from(redis_messages::normal_error()));
         }
     }
@@ -236,26 +236,19 @@ fn case_client_status(
 fn run_command(
     allowed_command: Option<Arc<BoxedCommand<Arc<Mutex<ClientFields>>>>>,
     command_buffer: Vec<String>,
-    response_sender: Sender<String>,
+    response_sender: Sender<Response>,
     client_status: Arc<Mutex<ClientFields>>,
 ) -> Result<(), ErrorStruct> {
     if let Some(runnable) = allowed_command {
-        match runnable.run(command_buffer, &mut Arc::clone(&client_status)) {
-            Ok(response) => {
-                send_response(response_sender, response)?;
-                Ok(())
-            }
-            Err(error) => {
-                send_response(response_sender, RError::encode(error.clone()))?;
-                return Err(error);
-            }
-        }
+        let result = runnable.run(command_buffer, &mut Arc::clone(&client_status));
+        send_response(response_sender, result.clone())?;
+        result.map(|_| ())
     } else {
-        return Err(ErrorStruct::from(redis_messages::normal_error()));
+        Err(ErrorStruct::from(redis_messages::normal_error()))
     }
 }
 
-fn send_response(response_sender: Sender<String>, response: String) -> Result<(), ErrorStruct> {
+fn send_response(response_sender: Sender<Response>, response: Response) -> Result<(), ErrorStruct> {
     response_sender
         .send(response)
         .map_err(|_| ErrorStruct::from(redis_messages::closed_sender(ErrorSeverity::CloseClient)))
@@ -280,10 +273,13 @@ fn clone_command_vec(command_vec: &[String]) -> Vec<String> {
 #[cfg(test)]
 pub mod test_command_delegator {
 
-    use crate::database::Database;
     use crate::tcp_protocol::command_subdelegator::CommandSubDelegator;
     use crate::tcp_protocol::BoxedCommand;
     use crate::vec_strings;
+    use crate::{
+        database::Database,
+        native_types::{RError, RedisType},
+    };
     use std::sync::mpsc;
     use std::sync::Arc;
 
@@ -334,7 +330,7 @@ pub mod test_command_delegator {
 
         // ACT
 
-        let (snd_dat_test, rcv_dat_test): (Sender<String>, Receiver<String>) = mpsc::channel();
+        let (snd_dat_test, rcv_dat_test): (Sender<Response>, Receiver<Response>) = mpsc::channel();
         let buffer_mock = vec_strings!["lpush", "key", "delegator", "new", "my", "testing"];
         snd_test_cmd
             .send(Some((
@@ -347,11 +343,11 @@ pub mod test_command_delegator {
         // ASSERT
 
         let response1 = rcv_dat_test.recv().unwrap();
-        assert_eq!(response1, ":4\r\n".to_string());
+        assert_eq!(response1.unwrap(), ":4\r\n".to_string());
 
         // ACT
 
-        let (snd_dat_test, rcv_dat_test): (Sender<String>, Receiver<String>) = mpsc::channel();
+        let (snd_dat_test, rcv_dat_test): (Sender<Response>, Receiver<Response>) = mpsc::channel();
         let buffer_mock = vec![
             "lset".to_string(),
             "key".to_string(),
@@ -369,11 +365,11 @@ pub mod test_command_delegator {
         // ASSERT
 
         let response1 = rcv_dat_test.recv().unwrap();
-        assert_eq!(response1, "+OK\r\n".to_string());
+        assert_eq!(response1.unwrap(), "+OK\r\n".to_string());
 
         // ACT
 
-        let (snd_dat_test, rcv_dat_test): (Sender<String>, Receiver<String>) = mpsc::channel();
+        let (snd_dat_test, rcv_dat_test): (Sender<Response>, Receiver<Response>) = mpsc::channel();
         let buffer_mock = vec_strings!["lpop", "key", "4"];
         snd_test_cmd
             .send(Some((
@@ -387,7 +383,7 @@ pub mod test_command_delegator {
 
         let response1 = rcv_dat_test.recv().unwrap();
         assert_eq!(
-            response1,
+            response1.unwrap(),
             "*4\r\n$8\r\nbreaking\r\n$2\r\nmy\r\n$3\r\nnew\r\n$9\r\ndelegator\r\n".to_string()
         );
 
@@ -437,7 +433,7 @@ pub mod test_command_delegator {
 
         // ACT
 
-        let (snd_dat_test, rcv_dat_test): (Sender<String>, Receiver<String>) = mpsc::channel();
+        let (snd_dat_test, rcv_dat_test): (Sender<Response>, Receiver<Response>) = mpsc::channel();
         let buffer_mock = vec_strings!["lpush", "key", "delegator", "new", "my", "testing"];
         snd_test_cmd
             .send(Some((
@@ -450,7 +446,7 @@ pub mod test_command_delegator {
         // ASSERT
 
         let response1 = rcv_dat_test.recv().unwrap();
-        assert_eq!(response1, "-ERR unknown command \'lpush\', with args beginning with: \'lpush\', \'key\', \'delegator\', \'new\', \'my\', \'testing\', \r\n".to_string());
+        assert_eq!(RError::encode(response1.unwrap_err()), "-ERR unknown command \'lpush\', with args beginning with: \'lpush\', \'key\', \'delegator\', \'new\', \'my\', \'testing\', \r\n".to_string());
         c_commands_map.lock().unwrap().kill_senders();
         drop(snd_test_cmd);
         drop(snd_cmd_dat);

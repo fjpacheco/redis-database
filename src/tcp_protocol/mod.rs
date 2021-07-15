@@ -17,9 +17,10 @@ pub mod notifiers;
 pub mod runnables_map;
 pub mod server;
 
-type RawCommand = (Vec<String>, Sender<String>, Arc<Mutex<ClientFields>>);
-type RawCommandTwo = Option<Arc<BoxedCommand<Arc<Mutex<ClientFields>>>>>;
-type BoxedCommand<T> = Box<dyn Runnable<T> + Send + Sync>;
+pub type RawCommand = (Vec<String>, Sender<Response>, Arc<Mutex<ClientFields>>);
+pub type RawCommandTwo = Option<Arc<BoxedCommand<Arc<Mutex<ClientFields>>>>>;
+pub type BoxedCommand<T> = Box<dyn Runnable<T> + Send + Sync>;
+pub type Response = Result<String, ErrorStruct>;
 
 fn remove_command(command_input_user: &mut Vec<String>) -> String {
     if command_input_user[0].contains("config") & command_input_user.len().eq(&3) {

@@ -53,28 +53,17 @@ impl ExpireInfo {
 
     pub fn set_timeout_unix_timestamp(&mut self, duration: u64) -> Result<(), ErrorStruct> {
         self.last_touch = SystemTime::now();
-        match self.last_touch.duration_since(UNIX_EPOCH) {
-            Ok(duration_since_epoch) => {
+        self.last_touch
+            .duration_since(UNIX_EPOCH)
+            .map_err(|_| ErrorStruct::from(redis_messages::ttl_error()))
+            .and_then(|duration_since_epoch| {
                 self.timeout = Some(Duration::new(duration, 0) - duration_since_epoch);
                 Ok(())
-            }
-            Err(_) => {
-                let message = redis_messages::ttl_error();
-                Err(ErrorStruct::new(
-                    message.get_prefix(),
-                    message.get_message(),
-                ))
-            }
-        }
+            })
     }
 
     pub fn persist(&mut self) -> Option<u64> {
-        if let Some(ttl) = self.timeout {
-            self.timeout = None;
-            Some(ttl.as_secs())
-        } else {
-            None
-        }
+        self.timeout.take().map(|ttl| ttl.as_secs())
     }
 }
 
