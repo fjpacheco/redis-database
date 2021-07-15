@@ -1,6 +1,6 @@
-use crate::native_types::ErrorStruct;
 use crate::native_types::{RBulkString, RedisType};
 use crate::regex::super_regex::SuperRegex;
+use crate::{joinable::Joinable, native_types::ErrorStruct};
 use std::collections::HashMap;
 use std::sync::mpsc::{SendError, Sender};
 use std::time::SystemTime;
@@ -11,22 +11,33 @@ use crate::tcp_protocol::client_handler::ClientHandler;
 pub struct ClientList {
     list: Vec<Option<ClientHandler>>,
     channel_register: HashMap<String, usize>,
-    log_channel: Sender<LogMessage>,
+    log_channel: Sender<Option<LogMessage>>,
 }
 
 impl Drop for ClientList {
     fn drop(&mut self) {
         println!("😍😍 HEADSHOT CLIENTLIST 😍😍");
-        /*self.list.iter_mut().for_each(|client| {
-            drop(client); //clippy say:
-        });
-        println!("😍😍 IZI HEADSHOT CLIENTLSIT 😍😍");
-        */
+        let _ = self.join();
+    }
+}
+
+impl Joinable<()> for ClientList {
+    fn join(&mut self) -> Result<(), ErrorStruct> {
+        for packed_client in self.list.iter_mut() {
+            if let Some(mut client) = packed_client.take() {
+                if let Err(error) = client.join() {
+                    let _ = self
+                        .log_channel
+                        .send(Some(LogMessage::from_errorstruct(error)));
+                }
+            }
+        }
+        Ok(())
     }
 }
 
 impl ClientList {
-    pub fn new(log_channel: Sender<LogMessage>) -> ClientList {
+    pub fn new(log_channel: Sender<Option<LogMessage>>) -> ClientList {
         ClientList {
             list: Vec::new(),
             channel_register: HashMap::new(),
@@ -52,7 +63,7 @@ impl ClientList {
         self.print_detail_clients().unwrap();
     }
 
-    pub fn print_detail_clients(&mut self) -> Result<(), SendError<LogMessage>> {
+    pub fn print_detail_clients(&mut self) -> Result<(), SendError<Option<LogMessage>>> {
         let clients_detail = self
             .list
             .iter()
@@ -62,7 +73,7 @@ impl ClientList {
 
         if !clients_detail.len().eq(&0) {
             self.log_channel
-                .send(LogMessage::detail_clients(clients_detail))?
+                .send(Some(LogMessage::detail_clients(clients_detail)))?
         }
         Ok(())
     }

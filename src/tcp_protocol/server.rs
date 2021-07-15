@@ -107,7 +107,8 @@ impl ServerRedis {
         // ################## SYSTEM LOG CENTER ##################
         let writer = FileManager::new();
         let (sender_log, receiver) = mpsc::channel();
-        let _log_center = LogCenter::new(receiver, Arc::clone(&config), writer);
+        let _log_center =
+            LogCenter::new(sender_log.clone(), receiver, Arc::clone(&config), writer)?;
 
         // ################## CLIENTS ##################
         let clients = ClientList::new(sender_log.clone());
@@ -128,7 +129,11 @@ impl ServerRedis {
         // ################## Start the Four Threads with the important delegators and listener ##################
         let c_commands_map = Arc::new(Mutex::new(commands_map));
 
-        let a = CommandDelegator::start(command_delegator_recv, Arc::clone(&c_commands_map))?;
+        let a = CommandDelegator::start(
+            command_delegator_sender.clone(),
+            command_delegator_recv,
+            Arc::clone(&c_commands_map),
+        )?;
         let b = CommandSubDelegator::start::<Database>(rcv_cmd_dat, runnables_database, database)?;
         let c = CommandSubDelegator::start::<ServerRedisAtributes>(
             rcv_cmd_sv,
@@ -169,14 +174,14 @@ impl ServerRedis {
 
         let (sender_drop, recv_drop) = channel();
         command_delegator_sender
-            .send((
+            .send(Some((
                 vec_strings!["OK"],
                 sender_drop,
                 Arc::new(Mutex::new(ClientFields::new(SocketAddrV4::new(
                     Ipv4Addr::new(127, 0, 0, 1),
                     8080,
                 )))),
-            ))
+            )))
             .unwrap(); // NECESITO SI O SI LA STRUC PACKAGE_FOR_SEND
         println!("arranco a esperar a estos giles qls");
         std::thread::spawn(move || match recv_drop.recv() {
@@ -184,6 +189,7 @@ impl ServerRedis {
                 drop(drop_shared_clients);
 
                 c_commands_map.lock().unwrap().kill_senders();
+
                 drop(command_delegator_sender);
                 drop(sender_log);
                 drop(notifiers);

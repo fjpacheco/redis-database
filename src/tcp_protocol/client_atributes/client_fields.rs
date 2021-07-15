@@ -1,6 +1,9 @@
+use crate::messages::redis_messages::broken_state;
+use crate::messages::redis_messages::not_valid_executor;
 use crate::messages::redis_messages::not_valid_monitor;
 use crate::messages::redis_messages::not_valid_pubsub;
 use crate::messages::redis_messages::unexpected_behaviour;
+
 use crate::native_types::ErrorStruct;
 use crate::tcp_protocol::client_atributes::status::Status;
 use crate::tcp_protocol::runnables_map::RunnablesMap;
@@ -54,24 +57,18 @@ impl ClientFields {
     pub fn is_allowed_to(&self, command: &str) -> Result<(), ErrorStruct> {
         match self.status {
             Status::Executor => Ok(()),
-            Status::Subscriber => {
-                if self.map.as_ref().unwrap().contains_key(command) {
-                    Ok(())
-                } else {
-                    Err(ErrorStruct::new(
-                        not_valid_pubsub().get_prefix(),
-                        not_valid_pubsub().get_message(),
-                    ))
-                }
-            }
-            _ => Err(ErrorStruct::new(
-                not_valid_monitor().get_prefix(),
-                not_valid_monitor().get_message(),
-            )),
+            Status::Subscriber => self
+                .map
+                .as_ref()
+                .ok_or(ErrorStruct::from(broken_state()))?
+                .contains_key(command)
+                .then(|| ())
+                .ok_or(ErrorStruct::from(not_valid_pubsub())),
+            _ => Err(ErrorStruct::from(not_valid_monitor())),
         }
     }
 
-    pub fn review_command(&mut self, command: &[String]) -> Result<RawCommandTwo, ErrorStruct> {
+    pub fn review_command(&self, command: &[String]) -> Result<RawCommandTwo, ErrorStruct> {
         match self.status {
             Status::Executor => self.rc_case_executor(command),
             Status::Subscriber => self.rc_case_subscriber(command),
@@ -83,47 +80,47 @@ impl ClientFields {
         }
     }
 
-    pub fn is_monitor_notifiable(&self) -> bool {
+    pub fn is_monitor_notificable(&self) -> bool {
         self.status == Status::Monitor
     }
 
-    fn rc_case_subscriber(&mut self, command: &[String]) -> Result<RawCommandTwo, ErrorStruct> {
-        if let Some(runnable) = self.map.as_ref().unwrap().get(command.get(0).unwrap()) {
-            Ok(Some(runnable))
-        } else {
-            Err(ErrorStruct::new(
-                not_valid_pubsub().get_prefix(),
-                not_valid_pubsub().get_message(),
-            ))
-        }
+    fn rc_case_subscriber(&self, command: &[String]) -> Result<RawCommandTwo, ErrorStruct> {
+        Some(
+            self.map
+                .as_ref()
+                .ok_or(ErrorStruct::from(broken_state()))?
+                .get(command.get(0).unwrap()),
+        )
+        .ok_or(ErrorStruct::from(not_valid_pubsub()))
     }
 
-    fn rc_case_executor(&mut self, command: &[String]) -> Result<RawCommandTwo, ErrorStruct> {
-        Ok(self.map.as_ref().unwrap().get(command.get(0).unwrap()))
+    fn rc_case_executor(&self, command: &[String]) -> Result<RawCommandTwo, ErrorStruct> {
+        Some(
+            self.map
+                .as_ref()
+                .ok_or(ErrorStruct::from(broken_state()))?
+                .get(command.get(0).unwrap()),
+        )
+        .ok_or(ErrorStruct::from(not_valid_executor()))
     }
 
     fn update_map(&mut self) {
-        if let Some(new_map) = self.status.update_map() {
+        self.map = self.status.update_map();
+
+        /*if let Some(new_map) = self.status.update_map() {
             self.map.replace(new_map);
         } else {
             self.map.take();
-        }
+        }*/
     }
 
     pub fn add_subscriptions(&mut self, channels: Vec<String>) -> Result<isize, ErrorStruct> {
         match self.status {
             Status::Executor => self.as_case_executor(channels),
             Status::Subscriber => self.as_case_subscriber(channels),
-            _ => Err(ErrorStruct::new(
-                unexpected_behaviour(
-                    "Dead client (or monitor) is trying to execute invalid command",
-                )
-                .get_prefix(),
-                unexpected_behaviour(
-                    "Dead client (or monitor) is trying to execute invalid command",
-                )
-                .get_message(),
-            )),
+            _ => Err(ErrorStruct::from(unexpected_behaviour(
+                "Dead client (or monitor) is trying to execute invalid command",
+            ))),
         }
     }
 

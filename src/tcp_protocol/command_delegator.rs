@@ -8,8 +8,12 @@ use std::{collections::HashMap, thread};
 
 use super::RawCommand;
 
+use crate::joinable::Joinable;
+use crate::messages::redis_messages;
 use crate::messages::redis_messages::command_not_found;
+use crate::native_types::error_severity::ErrorSeverity;
 use crate::native_types::{ErrorStruct, RError, RedisType};
+use crate::tcp_protocol::close_thread;
 
 pub struct CommandsMap {
     channel_map: HashMap<String, Vec<Option<Sender<RawCommand>>>>,
@@ -77,100 +81,184 @@ impl CommandsMap {
 }
 
 pub struct CommandDelegator {
-    join: Option<JoinHandle<()>>,
+    join: Option<JoinHandle<Result<(), ErrorStruct>>>,
+    sender: Sender<Option<RawCommand>>,
 }
 
 /// Interprets commands and delegates tasks
-impl Drop for CommandDelegator {
-    fn drop(&mut self) {
-        println!(
-            "BYE COMMAND DELEGATOR! {:?}",
-            self.join.as_ref().unwrap().thread().name().unwrap()
-        );
-        if let Some(handle) = self.join.take() {
-            handle.join().unwrap();
-        }
+
+impl Joinable<()> for CommandDelegator {
+    fn join(&mut self) -> Result<(), ErrorStruct> {
+        println!("BYE COMMAND DELEGATOR!");
+
+        let _ = self.sender.send(None);
+
+        /*match self.sender.send(None) {
+            Ok(()) => { /* Delegator has been closed right now*/ }
+            Err(_) => { /* Delegator is already closed */ }
+        }*/
+
+        close_thread(self.join.take(), "Command Delegator")
     }
 }
 
 impl CommandDelegator {
     pub fn start(
-        command_delegator_recv: Receiver<RawCommand>,
+        sender: Sender<Option<RawCommand>>,
+        command_delegator_recv: Receiver<Option<RawCommand>>,
         commands_map: Arc<Mutex<CommandsMap>>,
     ) -> Result<Self, ErrorStruct> {
         let builder = thread::Builder::new().name("Command Delegator".into());
 
-        let command_delegator_handler = builder.spawn(move || {
-            for raw_command in command_delegator_recv.iter() {
-                let command_type = raw_command.0.get(0).unwrap();
+        let handler = builder
+            .spawn(move || CommandDelegator::init(command_delegator_recv, commands_map))
+            .map_err(|_| {
+                ErrorStruct::from(redis_messages::init_failed(
+                    "Command Delegator",
+                    ErrorSeverity::ShutdownServer,
+                ))
+            })?;
+
+        Ok(Self {
+            join: Some(handler),
+            sender,
+        })
+    }
+
+    fn init(
+        command_delegator_recv: Receiver<Option<RawCommand>>,
+        commands_map: Arc<Mutex<CommandsMap>>,
+    ) -> Result<(), ErrorStruct> {
+        for packed_raw_command in command_delegator_recv.iter() {
+            if let Some(raw_command) = packed_raw_command {
+                let default = String::from("UNKNOWN");
+                let command_type: &str = raw_command.0.get(0).clone().unwrap_or(&default);
                 if let Some(command_dest) = commands_map.lock().unwrap().get(command_type) {
-                    delegate_jobs(raw_command, command_dest);
+                    is_critical(delegate_jobs(raw_command, command_dest))?;
                 } else {
                     let error = command_not_found(command_type.to_string(), raw_command.0);
-                    raw_command.1.send(RError::encode(error)).unwrap();
+                    is_critical(raw_command.1.send(RError::encode(error)).map_err(|_| {
+                        ErrorStruct::from(redis_messages::closed_sender(ErrorSeverity::Comunicate))
+                    }))?;
                 }
+            } else {
+                break;
             }
-        });
-
-        match command_delegator_handler {
-            Ok(join) => Ok(Self { join: Some(join) }),
-            Err(item) => Err(ErrorStruct::new(
-                "ERR_THREAD_BUILDER".into(),
-                format!("{}", item),
-            )),
         }
+
+        Ok(())
     }
 }
 
-fn delegate_jobs(raw_command: RawCommand, sender_list: &[Option<Sender<RawCommand>>]) {
+fn is_critical(potential_error: Result<(), ErrorStruct>) -> Result<(), ErrorStruct> {
+    /*
+     * Lista de errores que lanza delegate_jobs():
+     * - closed subdelegator channel -> Shutdown server
+     * - closed client channel -> Nothing happens
+     * - poisoned lock -> Shutdown server
+     * - normal error -> Nothing happens
+     */
+
+    match potential_error {
+        Ok(()) => Ok(()),
+        Err(error) => check_severity(error),
+    }
+}
+
+fn check_severity(error: ErrorStruct) -> Result<(), ErrorStruct> {
+    if let Some(severity) = error.severity() {
+        match severity {
+            ErrorSeverity::ShutdownServer => Err(error),
+            _ => Ok(()),
+        }
+    } else {
+        Ok(())
+    }
+}
+
+fn delegate_jobs(
+    raw_command: RawCommand,
+    sender_list: &[Option<Sender<RawCommand>>],
+) -> Result<(), ErrorStruct> {
     for sender in sender_list.iter() {
         let raw_command_clone = clone_raw_command(&raw_command);
         if let Some(snd_struct) = sender.as_ref() {
             //Case SOME: El comando se envia al subdelegator indicado
-            snd_struct.send(raw_command_clone).unwrap();
+            snd_struct.send(raw_command_clone).map_err(|_| {
+                ErrorStruct::from(redis_messages::closed_sender(ErrorSeverity::ShutdownServer))
+            })?;
         } else {
             //Case NONE: El comando se ejecuta sobre el client status
-            let mut command_buffer = raw_command_clone.0;
-            let response_sender = raw_command_clone.1;
-            let client_status = raw_command_clone.2;
-
-            let review = client_status
-                .lock()
-                .unwrap()
-                .review_command(&command_buffer);
-            //FIXME
-            command_buffer.remove(0);
-            match review {
-                Ok(allowed_command) => {
-                    if let Some(runnable) = allowed_command {
-                        response_sender
-                            .send(run_command(runnable, command_buffer, client_status))
-                            .unwrap();
-                    } else {
-                        //error
-                        break;
-                        //FIXME :(
-                    }
-                }
-                Err(error) => {
-                    response_sender.send(RError::encode(error)).unwrap();
-                    break;
-                    //FIXME
-                }
-            }
+            case_client_status(
+                raw_command_clone.0,
+                raw_command_clone.1,
+                raw_command_clone.2,
+            )?;
         }
     }
+
+    Ok(())
+}
+
+fn case_client_status(
+    command_buffer: Vec<String>,
+    response_sender: Sender<String>,
+    client_status: Arc<Mutex<ClientFields>>,
+) -> Result<(), ErrorStruct> {
+    let review = client_status
+        .lock()
+        .map_err(|_| {
+            ErrorStruct::from(redis_messages::poisoned_lock(
+                "client_status",
+                ErrorSeverity::CloseClient,
+            ))
+        })?
+        .review_command(&command_buffer);
+
+    match review {
+        Ok(allowed_command) => {
+            run_command(
+                allowed_command,
+                command_buffer,
+                response_sender,
+                client_status,
+            )?;
+        }
+        Err(error) => {
+            send_response(response_sender, RError::encode(error))?;
+            return Err(ErrorStruct::from(redis_messages::normal_error()));
+        }
+    }
+
+    Ok(())
 }
 
 fn run_command(
-    runnable: Arc<BoxedCommand<Arc<Mutex<ClientFields>>>>,
+    allowed_command: Option<Arc<BoxedCommand<Arc<Mutex<ClientFields>>>>>,
     command_buffer: Vec<String>,
-    mut client: Arc<Mutex<ClientFields>>,
-) -> String {
-    match runnable.run(command_buffer, &mut client) {
-        Ok(response) => response,
-        Err(error) => RError::encode(error),
+    response_sender: Sender<String>,
+    client_status: Arc<Mutex<ClientFields>>,
+) -> Result<(), ErrorStruct> {
+    if let Some(runnable) = allowed_command {
+        match runnable.run(command_buffer, &mut Arc::clone(&client_status)) {
+            Ok(response) => {
+                send_response(response_sender, response)?;
+                Ok(())
+            }
+            Err(error) => {
+                send_response(response_sender, RError::encode(error.clone()))?;
+                return Err(error);
+            }
+        }
+    } else {
+        return Err(ErrorStruct::from(redis_messages::normal_error()));
     }
+}
+
+fn send_response(response_sender: Sender<String>, response: String) -> Result<(), ErrorStruct> {
+    response_sender
+        .send(response)
+        .map_err(|_| ErrorStruct::from(redis_messages::closed_sender(ErrorSeverity::CloseClient)))
 }
 
 fn clone_raw_command(raw_command: &RawCommand) -> RawCommand {
@@ -194,6 +282,7 @@ pub mod test_command_delegator {
 
     use crate::database::Database;
     use crate::tcp_protocol::command_subdelegator::CommandSubDelegator;
+    use crate::tcp_protocol::BoxedCommand;
     use crate::vec_strings;
     use std::sync::mpsc;
     use std::sync::Arc;
@@ -231,21 +320,28 @@ pub mod test_command_delegator {
         let commands_map = CommandsMap::new(channel_map);
         let c_commands_map = Arc::new(Mutex::new(commands_map));
 
-        let (snd_test_cmd, rcv_test_cmd): (Sender<RawCommand>, Receiver<RawCommand>) =
-            mpsc::channel();
+        let (snd_test_cmd, rcv_test_cmd): (
+            Sender<Option<RawCommand>>,
+            Receiver<Option<RawCommand>>,
+        ) = mpsc::channel();
 
-        let _command_delegator = CommandDelegator::start(rcv_test_cmd, Arc::clone(&c_commands_map));
+        let mut command_delegator = CommandDelegator::start(
+            snd_test_cmd.clone(),
+            rcv_test_cmd,
+            Arc::clone(&c_commands_map),
+        )
+        .unwrap();
 
         // ACT
 
         let (snd_dat_test, rcv_dat_test): (Sender<String>, Receiver<String>) = mpsc::channel();
         let buffer_mock = vec_strings!["lpush", "key", "delegator", "new", "my", "testing"];
         snd_test_cmd
-            .send((
+            .send(Some((
                 buffer_mock,
                 snd_dat_test,
                 Arc::new(Mutex::new(ClientFields::default())),
-            ))
+            )))
             .unwrap();
 
         // ASSERT
@@ -263,11 +359,11 @@ pub mod test_command_delegator {
             "breaking".to_string(),
         ];
         snd_test_cmd
-            .send((
+            .send(Some((
                 buffer_mock,
                 snd_dat_test,
                 Arc::new(Mutex::new(ClientFields::default())),
-            ))
+            )))
             .unwrap();
 
         // ASSERT
@@ -280,11 +376,11 @@ pub mod test_command_delegator {
         let (snd_dat_test, rcv_dat_test): (Sender<String>, Receiver<String>) = mpsc::channel();
         let buffer_mock = vec_strings!["lpop", "key", "4"];
         snd_test_cmd
-            .send((
+            .send(Some((
                 buffer_mock,
                 snd_dat_test,
                 Arc::new(Mutex::new(ClientFields::default())),
-            ))
+            )))
             .unwrap();
 
         // ASSERT
@@ -298,6 +394,8 @@ pub mod test_command_delegator {
         c_commands_map.lock().unwrap().kill_senders();
         drop(snd_test_cmd);
         drop(snd_cmd_dat);
+
+        command_delegator.join().unwrap();
     }
 
     #[test]
@@ -325,21 +423,28 @@ pub mod test_command_delegator {
         let commands_map = CommandsMap::new(channel_map);
         let c_commands_map = Arc::new(Mutex::new(commands_map));
 
-        let (snd_test_cmd, rcv_test_cmd): (Sender<RawCommand>, Receiver<RawCommand>) =
-            mpsc::channel();
+        let (snd_test_cmd, rcv_test_cmd): (
+            Sender<Option<RawCommand>>,
+            Receiver<Option<RawCommand>>,
+        ) = mpsc::channel();
 
-        let _command_delegator = CommandDelegator::start(rcv_test_cmd, Arc::clone(&c_commands_map));
+        let mut command_delegator = CommandDelegator::start(
+            snd_test_cmd.clone(),
+            rcv_test_cmd,
+            Arc::clone(&c_commands_map),
+        )
+        .unwrap();
 
         // ACT
 
         let (snd_dat_test, rcv_dat_test): (Sender<String>, Receiver<String>) = mpsc::channel();
         let buffer_mock = vec_strings!["lpush", "key", "delegator", "new", "my", "testing"];
         snd_test_cmd
-            .send((
+            .send(Some((
                 buffer_mock,
                 snd_dat_test,
                 Arc::new(Mutex::new(ClientFields::default())),
-            ))
+            )))
             .unwrap();
 
         // ASSERT
@@ -349,5 +454,6 @@ pub mod test_command_delegator {
         c_commands_map.lock().unwrap().kill_senders();
         drop(snd_test_cmd);
         drop(snd_cmd_dat);
+        command_delegator.join().unwrap();
     }
 }

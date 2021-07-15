@@ -2,6 +2,7 @@ pub mod commands;
 pub mod communication;
 pub mod database;
 pub mod file_manager;
+pub mod joinable;
 pub mod logs;
 pub mod memory_checker;
 pub mod messages;

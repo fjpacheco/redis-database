@@ -1,5 +1,6 @@
 use std::io::{BufRead, Lines};
 
+use super::error_severity::ErrorSeverity;
 use super::redis_type::RedisType;
 use crate::messages::MessageRedis;
 
@@ -7,17 +8,23 @@ use crate::messages::MessageRedis;
 pub struct ErrorStruct {
     prefix: String,
     message: String,
+    severity: ErrorSeverity,
 }
 
 impl ErrorStruct {
     pub fn new(prefix: String, message: String) -> Self {
-        ErrorStruct { prefix, message }
+        ErrorStruct {
+            prefix,
+            message,
+            severity: ErrorSeverity::Comunicate,
+        }
     }
 
     pub fn from(message: MessageRedis) -> Self {
         ErrorStruct {
             prefix: message.get_prefix(),
             message: message.get_message(),
+            severity: ErrorSeverity::Comunicate,
         }
     }
     #[allow(dead_code)]
@@ -26,6 +33,10 @@ impl ErrorStruct {
         printed.push(' ');
         printed.push_str(&self.message.to_string());
         printed
+    }
+
+    pub fn severity(&self) -> Option<&ErrorSeverity> {
+        Some(&self.severity)
     }
 
     // Para tests... investigar si existe una macro así: #[metodo_para_test]
@@ -59,6 +70,7 @@ impl RedisType<ErrorStruct> for RError {
             Ok(ErrorStruct {
                 prefix: first_lecture,
                 message: err_message,
+                severity: ErrorSeverity::Comunicate,
             })
         } else {
             Err(ErrorStruct::new(

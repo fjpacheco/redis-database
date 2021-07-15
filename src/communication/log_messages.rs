@@ -1,3 +1,4 @@
+use crate::native_types::ErrorStruct;
 use std::{
     error::Error,
     net::{TcpListener, TcpStream},
@@ -16,6 +17,13 @@ impl LogMessage {
         LogMessage {
             verbose_priority,
             message: Some(message),
+        }
+    }
+
+    pub fn from_errorstruct(error: ErrorStruct) -> LogMessage {
+        LogMessage {
+            verbose_priority: 1,
+            message: Some(error.print_it()),
         }
     }
 
@@ -67,6 +75,10 @@ impl LogMessage {
 
     pub fn error_to_connect_client(err: &dyn Error) -> LogMessage {
         LogMessage::new(2, format!("Error to connect client: {:?}", err))
+    }
+
+    pub fn log_stopped() -> LogMessage {
+        LogMessage::new(2, "Log center has stopped working.".to_string())
     }
 
     pub fn log_closed() -> LogMessage {

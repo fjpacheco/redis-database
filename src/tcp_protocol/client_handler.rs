@@ -1,3 +1,4 @@
+use crate::tcp_protocol::close_thread;
 use std::thread::JoinHandle;
 use std::{
     io::{BufRead, BufReader, Lines, Write},
@@ -6,9 +7,10 @@ use std::{
     thread,
 };
 
-use crate::native_types::{redis_type::encode_netcat_input, ErrorStruct, RArray, RedisType};
-
+use crate::joinable::Joinable;
 use crate::messages::redis_messages;
+use crate::native_types::error_severity::ErrorSeverity;
+use crate::native_types::{redis_type::encode_netcat_input, ErrorStruct, RArray, RedisType};
 use crate::tcp_protocol::client_atributes::status::Status;
 
 use super::{client_atributes::client_fields::ClientFields, notifiers::Notifiers};
@@ -23,15 +25,18 @@ pub struct ClientHandler {
 }
 
 impl ClientHandler {
-    pub fn is_dead(&self) -> bool {
-        self.fields.lock().unwrap().is_dead()
-    }
-
-    pub fn new(mut stream_received: TcpStream, notifiers: Notifiers) -> ClientHandler {
-        let in_stream = stream_received.try_clone().unwrap();
-        let out_stream = stream_received.try_clone().unwrap();
-        let address = get_peer(&mut stream_received).unwrap();
-        let addr = address;
+    pub fn new(
+        mut stream_received: TcpStream,
+        notifiers: Notifiers,
+    ) -> Result<ClientHandler, ErrorStruct> {
+        let in_stream = stream_received
+            .try_clone()
+            .map_err(|_| ErrorStruct::from(redis_messages::clone_socket()))?;
+        let out_stream = stream_received
+            .try_clone()
+            .map_err(|_| ErrorStruct::from(redis_messages::clone_socket()))?;
+        let address = get_peer(&mut stream_received)?;
+        let addr = address; /* Culpa de Martina */
         let fields = ClientFields::new(address);
         let shared_fields = Arc::new(Mutex::new(fields));
         let c_shared_fields = Arc::clone(&shared_fields);
@@ -47,26 +52,42 @@ impl ClientHandler {
 
         let out_thread = thread::spawn(move || write_socket(out_stream, response_recv));
 
-        ClientHandler {
+        Ok(ClientHandler {
             stream: stream_received,
             fields: shared_fields,
             in_thread: Some(in_thread),
             out_thread: Some(out_thread),
             response_snd,
             addr,
-        }
+        })
     }
 
     pub fn is_subscripted_to(&self, channel: &str) -> bool {
-        self.fields.lock().unwrap().is_subscripted_to(channel)
+        if let Ok(fields_guard) = self.fields.lock() {
+            return fields_guard.is_subscripted_to(channel);
+        }
+
+        false
     }
 
     pub fn is_monitor_notificable(&self) -> bool {
-        self.fields.lock().unwrap().is_monitor_notifiable()
+        if let Ok(fields_guard) = self.fields.lock() {
+            return fields_guard.is_monitor_notificable();
+        }
+
+        false
     }
 
-    pub fn get_peer(&mut self) -> Option<SocketAddrV4> {
-        get_peer(&mut self.stream)
+    pub fn is_dead(&self) -> bool {
+        if let Ok(fields_guard) = self.fields.lock() {
+            return fields_guard.is_dead();
+        }
+
+        true
+    }
+
+    pub fn get_peer(&self) -> Result<SocketAddrV4, ErrorStruct> {
+        get_peer(&self.stream)
     }
 
     pub fn get_addr(&self) -> String {
@@ -78,7 +99,10 @@ impl ClientHandler {
     }
 
     pub fn get_detail(&self) -> String {
-        self.fields.lock().unwrap().get_detail()
+        match self.fields.lock() {
+            Ok(fields_guard) => fields_guard.get_detail(),
+            Err(_) => String::from("(nil)"),
+        }
     }
 }
 
@@ -88,10 +112,9 @@ fn write_socket(
 ) -> Result<(), ErrorStruct> {
     for packed_response in response_recv.iter() {
         if let Some(response) = packed_response {
-            let result = stream.write_all(response.as_bytes());
-            if result.is_err() {
-                return Err(ErrorStruct::from(redis_messages::closed_socket()));
-            }
+            stream
+                .write_all(response.as_bytes())
+                .map_err(|_| ErrorStruct::from(redis_messages::closed_socket()))?;
         } else {
             return Ok(());
         }
@@ -106,7 +129,11 @@ fn read_socket(
     notifiers: Notifiers,
     response_snd: mpsc::Sender<Option<String>>,
 ) -> Result<(), ErrorStruct> {
-    let buf_reader_stream = BufReader::new(stream.try_clone().unwrap());
+    let buf_reader_stream = BufReader::new(
+        stream
+            .try_clone()
+            .map_err(|_| ErrorStruct::from(redis_messages::clone_socket()))?,
+    );
     let mut lines = buf_reader_stream.lines();
     let mut response;
     while let Some(received) = lines.next() {
@@ -123,10 +150,6 @@ fn read_socket(
                 match err.kind() {
                     std::io::ErrorKind::WouldBlock => break, // FOR TIMEOUT OF REDIS.CONF
                     _ => {
-                        /*response = Err(ErrorStruct::new(
-                            "ERR".to_string(),
-                            format!("Error received in next line.\nDetail: {:?}", err),
-                        ))*/
                         response = Err(ErrorStruct::new(
                             "ERR".to_string(),
                             format!("Error received in next line.\nDetail: {:?}", err),
@@ -146,12 +169,20 @@ fn read_socket(
                 response_str = item.print_it();
             }
         }
-        println!("asd");
-        send_response(response_str, &response_snd).unwrap();
+
+        send_response(response_str, &response_snd)?;
     }
-    println!("😢 UN CLENTE SE FUE 😢 => LE PONGO STATUS DEAD :) ");
-    c_shared_fields.lock().unwrap().replace_status(Status::Dead);
-    notifiers.off_client(stream.peer_addr().unwrap().to_string());
+    notifiers.off_client(get_peer(&stream)?.to_string());
+    println!("😢 UN CLIENTE SE FUE 😢 => LE PONGO STATUS DEAD :) ");
+    c_shared_fields
+        .lock()
+        .map_err(|_| {
+            ErrorStruct::from(redis_messages::poisoned_lock(
+                "client_status",
+                ErrorSeverity::CloseClient,
+            ))
+        })?
+        .replace_status(Status::Dead);
     Ok(())
 }
 
@@ -173,7 +204,11 @@ fn process_command_string(
     let mut input_encoded = encode_netcat_input(input);
     input_encoded.remove(0);
     let mut lines = BufReader::new(input_encoded.as_bytes()).lines();
-    let first_lecture = lines.next().unwrap().unwrap_or_else(|_| "-1".into());
+    let first_lecture = lines
+        .next()
+        .ok_or(ErrorStruct::from(redis_messages::empty_buffer()))?
+        .map_err(|_| ErrorStruct::from(redis_messages::normal_error()))?;
+
     process_command_general(first_lecture, &mut lines, client_status, &notifiers)
 }
 
@@ -189,7 +224,12 @@ where
     let command_vec = RArray::decode(first_lecture, lines_buffer_reader)?;
     client_status
         .lock()
-        .map_err(|err| ErrorStruct::new("ERR_POISSON_CLIENT_FIELDS".into(), err.to_string()))?
+        .map_err(|_| {
+            ErrorStruct::from(redis_messages::poisoned_lock(
+                "client_status",
+                ErrorSeverity::CloseClient,
+            ))
+        })?
         .is_allowed_to(&command_vec[0])?;
     delegate_command(command_vec, client_status, notifiers)
 }
@@ -204,50 +244,61 @@ fn delegate_command(
 
     notifiers.send_command_delegator((command_received, sender, Arc::clone(&client_fields)))?;
 
-    let response = receiver.recv().map_err(|err| {
-        ErrorStruct::new(
-            "ERR_RECV_ASOCIADO_AL_SENDER_ENVIADO_EN_EL_COMMAND_DELEGATOR".into(),
-            err.to_string(),
-        )
-    })?;
+    let response = receiver
+        .recv()
+        .map_err(|_| ErrorStruct::from(redis_messages::closed_sender(ErrorSeverity::Comunicate)))?;
 
     notifiers.notify_successful_shipment(client_fields, command_received_initial)?;
     Ok(response)
 }
 
-pub fn get_peer(stream: &mut TcpStream) -> Option<SocketAddrV4> {
-    match stream.peer_addr().unwrap() {
+pub fn get_peer(stream: &TcpStream) -> Result<SocketAddrV4, ErrorStruct> {
+    match stream.peer_addr().map_err(|_| {
+        ErrorStruct::from(redis_messages::init_failed(
+            "new client",
+            ErrorSeverity::CloseClient,
+        ))
+    })? {
         SocketAddr::V4(addr) => Some(addr),
         SocketAddr::V6(_) => None,
     }
+    .ok_or(ErrorStruct::from(redis_messages::init_failed(
+        "new client",
+        ErrorSeverity::CloseClient,
+    )))
 }
 
 fn send_response(
     response: String,
     sender: &mpsc::Sender<Option<String>>,
 ) -> Result<(), ErrorStruct> {
-    if sender.send(Some(response)).is_ok() {
-        Ok(())
-    } else {
-        Err(ErrorStruct::from(redis_messages::closed_sender()))
+    sender
+        .send(Some(response))
+        .map_err(|_| ErrorStruct::from(redis_messages::closed_sender(ErrorSeverity::CloseClient)))
+}
+
+impl Joinable<()> for ClientHandler {
+    fn join(&mut self) -> Result<(), ErrorStruct> {
+        match self.stream.shutdown(Shutdown::Both) {
+            Ok(()) => { /* Socket has been closed right now */ }
+            Err(_) => { /* Socket is already closed */ }
+        }
+
+        match self.response_snd.send(None) {
+            Ok(()) => { /* Channel has been closed right now */ }
+            Err(_) => { /* Channel is already closed */ }
+        }
+
+        let state = close_thread(self.out_thread.take(), "write socket")
+            .and(close_thread(self.in_thread.take(), "read socket"));
+
+        println!("ME ELIMINE -- DROP//JOIN SUCCESS");
+        state
     }
 }
 
 impl Drop for ClientHandler {
     fn drop(&mut self) {
-        self.stream
-            .shutdown(Shutdown::Both)
-            .expect("Error to close TcpStream");
-
-        if let Some(handle) = self.in_thread.take() {
-            handle.join().unwrap().unwrap();
-        }
-        self.response_snd.send(None).unwrap();
-
-        if let Some(handle) = self.out_thread.take() {
-            handle.join().unwrap().unwrap();
-        }
-
-        println!("ME ELIMINE -- DROP//JOIN SUCCESS");
+        let _ = self.join();
     }
 }

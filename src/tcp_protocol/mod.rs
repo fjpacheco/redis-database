@@ -1,8 +1,11 @@
 use crate::commands::Runnable;
+use crate::messages::redis_messages;
+use crate::native_types::ErrorStruct;
 use crate::tcp_protocol::client_atributes::client_fields::ClientFields;
 use std::sync::mpsc::Sender;
 use std::sync::Arc;
 use std::sync::Mutex;
+use std::thread::JoinHandle;
 
 pub mod client_atributes;
 pub mod client_handler;
@@ -44,4 +47,26 @@ fn get_command(command_input_user: &[String]) -> String {
         }
     }
     command_type
+}
+
+pub fn close_thread(
+    thread: Option<JoinHandle<Result<(), ErrorStruct>>>,
+    name: &str,
+) -> Result<(), ErrorStruct> {
+    if let Some(handle) = thread {
+        handle
+            .join()
+            .map_err(|_| {
+                ErrorStruct::from(
+                    //NOTIFY LOGS
+                    redis_messages::thread_panic(name),
+                )
+            })?
+            .and_then(|result| {
+                //NOTIFY LOGS
+                return Ok(result);
+            })
+    } else {
+        Ok(())
+    }
 }

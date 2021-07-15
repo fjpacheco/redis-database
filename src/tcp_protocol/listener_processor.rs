@@ -1,8 +1,11 @@
 use std::net::TcpListener;
 
 use crate::{
-    communication::log_messages::LogMessage, messages::redis_messages::redis_logo,
-    native_types::ErrorStruct, redis_config::RedisConfig,
+    communication::log_messages::LogMessage,
+    messages::redis_messages,
+    messages::redis_messages::redis_logo,
+    native_types::{error_severity::ErrorSeverity, ErrorStruct},
+    redis_config::RedisConfig,
     tcp_protocol::client_handler::ClientHandler,
 };
 
@@ -28,12 +31,19 @@ impl ListenerProcessor {
                 Ok(client) => {
                     server_redis.set_timeout(&client);
                     let _ = notifiers.send_log(LogMessage::new_conection(&client));
-                    let new_client = ClientHandler::new(client, notifiers.clone());
-                    server_redis
-                        .shared_clients
-                        .lock()
-                        .unwrap()
-                        .insert(new_client);
+                    if let Ok(new_client) = ClientHandler::new(client, notifiers.clone()) {
+                        if let Ok(mut client_list) = server_redis.shared_clients.lock() {
+                            client_list.insert(new_client);
+                        } else {
+                            let _ = notifiers.send_log(LogMessage::from_errorstruct(
+                                ErrorStruct::from(redis_messages::poisoned_lock(
+                                    "Client List",
+                                    ErrorSeverity::ShutdownServer,
+                                )),
+                            ));
+                            break;
+                        }
+                    }
                 }
                 Err(e) => {
                     let _ = notifiers.send_log(LogMessage::error_to_connect_client(&e));
