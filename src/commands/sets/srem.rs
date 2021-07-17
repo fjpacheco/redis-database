@@ -51,6 +51,7 @@ fn check_error_cases(buffer: &[String]) -> Result<(), ErrorStruct> {
 
 #[cfg(test)]
 mod test_srem_function {
+    use crate::commands::create_notifier;
     use std::collections::{HashSet, VecDeque};
 
     use crate::vec_strings;
@@ -69,7 +70,8 @@ mod test_srem_function {
         set.insert(String::from("m4")); // m4
         set.insert(String::from("m5")); // m5
         set.insert(String::from("m1"));
-        let mut database_mock = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database_mock = Database::new(notifier);
         database_mock.insert("key".to_string(), TypeSaved::Set(set));
         let buffer_mock_1 = vec_strings!["key", "m1"];
         let buffer_mock_2 = vec_strings!["key", "m2"];
@@ -95,7 +97,8 @@ mod test_srem_function {
         let mut set = HashSet::new();
         set.insert(String::from("m1")); // m1
         set.insert(String::from("m2")); // m2
-        let mut database_mock = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database_mock = Database::new(notifier);
         database_mock.insert("key".to_string(), TypeSaved::Set(set));
         let buffer_mock = vec_strings!["key", "m1901020", "m1", "m1", "m1", "m192192", "m1", "m1"];
 
@@ -115,7 +118,8 @@ mod test_srem_function {
         let mut set = HashSet::new();
         set.insert(String::from("m1")); // m1
         set.insert(String::from("m2")); // m2
-        let mut database_mock = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database_mock = Database::new(notifier);
         database_mock.insert("key".to_string(), TypeSaved::Set(set));
         let buffer_mock = vec_strings!["key", "m3", "m4"];
 
@@ -133,7 +137,8 @@ mod test_srem_function {
     #[test]
     fn test04_srem_return_zero_if_key_does_not_exist_in_database() {
         let set = HashSet::new();
-        let mut database_mock = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database_mock = Database::new(notifier);
         database_mock.insert("key".to_string(), TypeSaved::Set(set));
         let buffer_mock = vec_strings!["key_random", "m1"];
 
@@ -145,7 +150,8 @@ mod test_srem_function {
 
     #[test]
     fn test05_srem_return_error_wrongtype_if_execute_with_key_of_string() {
-        let mut database_mock = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database_mock = Database::new(notifier);
         database_mock.insert(
             "keyOfString".to_string(),
             TypeSaved::String("value".to_string()),
@@ -163,7 +169,8 @@ mod test_srem_function {
 
     #[test]
     fn test06_srem_return_error_wrongtype_if_execute_with_key_of_list() {
-        let mut database_mock = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database_mock = Database::new(notifier);
         let mut new_list = VecDeque::new();
         new_list.push_back("value1".to_string());
         new_list.push_back("value2".to_string());
@@ -183,7 +190,8 @@ mod test_srem_function {
     #[test]
     fn test07_srem_return_zero_if_set_is_empty() {
         let set = HashSet::new();
-        let mut database_mock = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database_mock = Database::new(notifier);
         database_mock.insert("key".to_string(), TypeSaved::Set(set));
         let buffer_mock = vec_strings!["key", "value1", "value2"];
 

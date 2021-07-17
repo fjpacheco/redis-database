@@ -31,6 +31,7 @@ impl Runnable<Database> for Getset {
 
 #[cfg(test)]
 pub mod test_getset {
+    use crate::commands::create_notifier;
 
     use super::*;
     use crate::{
@@ -39,7 +40,8 @@ pub mod test_getset {
     };
     #[test]
     fn test01_getset_of_an_existing_key() {
-        let mut data = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut data = Database::new(notifier);
         data.insert("key".to_string(), TypeSaved::String("value".to_string()));
 
         let buffer = vec_strings!["key", "other"];
@@ -54,7 +56,8 @@ pub mod test_getset {
 
     #[test]
     fn test02_getset_of_a_non_existing_key() {
-        let mut data = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut data = Database::new(notifier);
         let buffer = vec_strings!["key", "newValue"];
         let encoded = Getset.run(buffer, &mut data);
 
@@ -67,7 +70,8 @@ pub mod test_getset {
 
     #[test]
     fn test03_wrong_number_of_arguments() {
-        let mut data = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut data = Database::new(notifier);
 
         data.insert("key".to_string(), TypeSaved::String("value".to_string()));
 

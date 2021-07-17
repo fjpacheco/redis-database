@@ -69,6 +69,7 @@ pub fn replace_element_at(
 
 #[cfg(test)]
 pub mod test_lset {
+    use crate::commands::create_notifier;
 
     use crate::vec_strings;
 
@@ -77,7 +78,8 @@ pub mod test_lset {
 
     #[test]
     fn test01_lset_list_with_one_element_positive_indexing() {
-        let mut data = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut data = Database::new(notifier);
 
         let mut new_list = VecDeque::new();
         new_list.push_back("value".to_string());
@@ -104,7 +106,8 @@ pub mod test_lset {
 
     #[test]
     fn test02_lset_list_with_one_element_negative_indexing() {
-        let mut data = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut data = Database::new(notifier);
 
         let mut new_list = VecDeque::new();
         new_list.push_back("value".to_string());
@@ -130,7 +133,8 @@ pub mod test_lset {
     }
     #[test]
     fn test03_lset_list_with_out_of_range_positive_index() {
-        let mut data = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut data = Database::new(notifier);
 
         let mut new_list = VecDeque::new();
         new_list.push_back("value".to_string());
@@ -148,7 +152,8 @@ pub mod test_lset {
 
     #[test]
     fn test04_lset_list_with_out_of_range_negative_index() {
-        let mut data = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut data = Database::new(notifier);
 
         let mut new_list = VecDeque::new();
         new_list.push_back("value".to_string());
@@ -166,7 +171,8 @@ pub mod test_lset {
 
     #[test]
     fn test05_lset_list_non_existent_key() {
-        let mut data = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut data = Database::new(notifier);
 
         let mut new_list = VecDeque::new();
         new_list.push_back("value".to_string());
@@ -182,7 +188,8 @@ pub mod test_lset {
 
     #[test]
     fn test06_lset_non_list() {
-        let mut data = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut data = Database::new(notifier);
         // redis> SET mykey 10
         data.insert("key".to_string(), TypeSaved::String("value".to_string()));
 
@@ -196,7 +203,8 @@ pub mod test_lset {
 
     #[test]
     fn test07_lset_list_with_many_elements_at_top() {
-        let mut data = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut data = Database::new(notifier);
 
         let mut new_list = VecDeque::new();
         new_list.push_back("value1".to_string());
@@ -225,7 +233,8 @@ pub mod test_lset {
 
     #[test]
     fn test08_lset_list_with_many_elements_at_middle() {
-        let mut data = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut data = Database::new(notifier);
 
         let mut new_list = VecDeque::new();
         new_list.push_back("value1".to_string());
@@ -251,7 +260,8 @@ pub mod test_lset {
 
     #[test]
     fn test09_lset_list_with_many_elements_at_bottom() {
-        let mut data = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut data = Database::new(notifier);
 
         let mut new_list = VecDeque::new();
         new_list.push_back("value1".to_string());
@@ -278,7 +288,8 @@ pub mod test_lset {
 
     #[test]
     fn test11_lset_with_zero_arguments() {
-        let mut data = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut data = Database::new(notifier);
 
         let new_list = VecDeque::new();
 
@@ -295,7 +306,8 @@ pub mod test_lset {
 
     #[test]
     fn test12_lset_with_wrong_number_of_arguments() {
-        let mut data = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut data = Database::new(notifier);
 
         let new_list = VecDeque::new();
 
@@ -312,7 +324,8 @@ pub mod test_lset {
 
     #[test]
     fn test13_lset_with_wrong_number_of_arguments() {
-        let mut data = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut data = Database::new(notifier);
 
         let new_list = VecDeque::new();
 
@@ -329,7 +342,8 @@ pub mod test_lset {
 
     #[test]
     fn test14_lset_with_wrong_number_of_arguments() {
-        let mut data = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut data = Database::new(notifier);
 
         let new_list = VecDeque::new();
 

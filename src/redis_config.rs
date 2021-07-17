@@ -118,10 +118,6 @@ impl RedisConfig {
         self.ip.to_string() + ":" + &self.port
     }
 
-    pub fn update_port(&mut self, port: &str) {
-        self.port = port.to_string();
-    }
-
     pub fn log_filename(&self) -> String {
         String::from(&self.log_filename)
     }

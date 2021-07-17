@@ -13,7 +13,7 @@ use crate::native_types::error_severity::ErrorSeverity;
 use crate::native_types::{redis_type::encode_netcat_input, ErrorStruct, RArray, RedisType};
 use crate::tcp_protocol::client_atributes::status::Status;
 
-use super::{client_atributes::client_fields::ClientFields, notifiers::Notifiers, Response};
+use super::{client_atributes::client_fields::ClientFields, notifier::Notifier, Response};
 
 pub struct ClientHandler {
     stream: TcpStream,
@@ -27,7 +27,7 @@ pub struct ClientHandler {
 impl ClientHandler {
     pub fn new(
         mut stream_received: TcpStream,
-        notifiers: Notifiers,
+        notifier: Notifier,
     ) -> Result<ClientHandler, ErrorStruct> {
         let in_stream = stream_received
             .try_clone()
@@ -47,7 +47,7 @@ impl ClientHandler {
         ) = mpsc::channel();
         let response_snd_clone = response_snd.clone();
         let in_thread = thread::spawn(move || {
-            read_socket(in_stream, c_shared_fields, notifiers, response_snd_clone)
+            read_socket(in_stream, c_shared_fields, notifier, response_snd_clone)
         });
 
         let out_thread = thread::spawn(move || write_socket(out_stream, response_recv));
@@ -126,7 +126,7 @@ fn write_socket(
 fn read_socket(
     stream: TcpStream,
     c_shared_fields: Arc<Mutex<ClientFields>>,
-    notifiers: Notifiers,
+    notifier: Notifier,
     response_snd: mpsc::Sender<Option<String>>,
 ) -> Result<(), ErrorStruct> {
     let buf_reader_stream = BufReader::new(
@@ -141,9 +141,9 @@ fn read_socket(
             Ok(input) => {
                 let client_status = Arc::clone(&c_shared_fields);
                 if input.starts_with('*') {
-                    response = process_command_redis(input, &mut lines, client_status, &notifiers);
+                    response = process_command_redis(input, &mut lines, client_status, &notifier);
                 } else {
-                    response = process_command_string(input, client_status, &notifiers);
+                    response = process_command_string(input, client_status, &notifier);
                 }
             }
             Err(err) => {
@@ -177,7 +177,7 @@ fn read_socket(
             }
         }
     }
-    notifiers.off_client(get_peer(&stream)?.to_string());
+    notifier.off_client(get_peer(&stream)?.to_string());
     println!("😢 UN CLIENTE SE FUE 😢 => LE PONGO STATUS DEAD :) ");
     c_shared_fields
         .lock()
@@ -195,16 +195,16 @@ fn process_command_redis(
     mut input: String,
     mut lines_buffer_reader: &mut Lines<BufReader<TcpStream>>,
     client_status: Arc<Mutex<ClientFields>>,
-    notifiers: &Notifiers,
+    notifier: &Notifier,
 ) -> Result<String, ErrorStruct> {
     input.remove(0);
-    process_command_general(input, &mut lines_buffer_reader, client_status, notifiers)
+    process_command_general(input, &mut lines_buffer_reader, client_status, notifier)
 }
 
 fn process_command_string(
     input: String,
     client_status: Arc<Mutex<ClientFields>>,
-    notifiers: &Notifiers,
+    notifier: &Notifier,
 ) -> Result<String, ErrorStruct> {
     let mut input_encoded = encode_netcat_input(input);
     input_encoded.remove(0);
@@ -214,14 +214,14 @@ fn process_command_string(
         .ok_or(ErrorStruct::from(redis_messages::empty_buffer()))?
         .map_err(|_| ErrorStruct::from(redis_messages::normal_error()))?;
 
-    process_command_general(first_lecture, &mut lines, client_status, &notifiers)
+    process_command_general(first_lecture, &mut lines, client_status, &notifier)
 }
 
 fn process_command_general<G>(
     first_lecture: String,
     lines_buffer_reader: &mut Lines<G>,
     client_status: Arc<Mutex<ClientFields>>,
-    notifiers: &Notifiers,
+    notifier: &Notifier,
 ) -> Result<String, ErrorStruct>
 where
     G: BufRead,
@@ -236,25 +236,25 @@ where
             ))
         })?
         .is_allowed_to(&command_vec[0])?;
-    delegate_command(command_vec, client_status, notifiers)
+    delegate_command(command_vec, client_status, notifier)
 }
 
 fn delegate_command(
     command_received: Vec<String>,
     client_fields: Arc<Mutex<ClientFields>>,
-    notifiers: &Notifiers,
+    notifier: &Notifier,
 ) -> Result<String, ErrorStruct> {
     let command_received_initial = command_received.clone();
     let (sender, receiver): (mpsc::Sender<Response>, mpsc::Receiver<Response>) = mpsc::channel();
 
-    notifiers.send_command_delegator((command_received, sender, Arc::clone(&client_fields)))?;
+    notifier.send_command_delegator((command_received, sender, Arc::clone(&client_fields)))?;
 
     match receiver
         .recv()
         .map_err(|_| ErrorStruct::from(redis_messages::closed_sender(ErrorSeverity::Comunicate)))?
     {
         Ok(good_string) => {
-            notifiers.notify_successful_shipment(client_fields, command_received_initial)?;
+            notifier.notify_successful_shipment(client_fields, command_received_initial)?;
             return Ok(good_string);
         }
         Err(error) => {
@@ -267,7 +267,7 @@ fn delegate_command(
         }
     }
 
-    /*notifiers.notify_successful_shipment(client_fields, command_received_initial)?;
+    /*notifier.notify_successful_shipment(client_fields, command_received_initial)?;
     Ok(response)*/
 }
 

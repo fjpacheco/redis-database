@@ -27,7 +27,8 @@ mod test_keys {
     use crate::database::TypeSaved;
 
     fn default_database() -> Database {
-        let mut db = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+let mut db = Database::new(notifier);
 
         db.insert(String::from("Camo"), TypeSaved::String(String::from("a")));
         db.insert(String::from("Cemo"), TypeSaved::String(String::from("a")));

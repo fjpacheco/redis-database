@@ -19,6 +19,7 @@ impl Runnable<Database> for Touch {
 
 #[cfg(test)]
 pub mod test_touch {
+    use crate::commands::create_notifier;
 
     use crate::database::TypeSaved;
 
@@ -26,7 +27,8 @@ pub mod test_touch {
 
     #[test]
     fn test01_three_keys_touch_three() {
-        let mut db = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut db = Database::new(notifier);
 
         db.insert("key1".to_string(), TypeSaved::String("a".to_string()));
         db.insert("key2".to_string(), TypeSaved::String("b".to_string()));
@@ -42,7 +44,8 @@ pub mod test_touch {
 
     #[test]
     fn test02_three_keys_touch_two() {
-        let mut db = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut db = Database::new(notifier);
 
         db.insert("key1".to_string(), TypeSaved::String("a".to_string()));
         db.insert("key2".to_string(), TypeSaved::String("b".to_string()));
@@ -55,7 +58,8 @@ pub mod test_touch {
 
     #[test]
     fn test03_three_keys_touch_four() {
-        let mut db = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut db = Database::new(notifier);
 
         db.insert("key1".to_string(), TypeSaved::String("a".to_string()));
         db.insert("key2".to_string(), TypeSaved::String("b".to_string()));
@@ -76,7 +80,8 @@ pub mod test_touch {
 
     #[test]
     fn test04_three_keys_touch_zero() {
-        let mut db = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut db = Database::new(notifier);
 
         db.insert("key1".to_string(), TypeSaved::String("a".to_string()));
         db.insert("key2".to_string(), TypeSaved::String("b".to_string()));

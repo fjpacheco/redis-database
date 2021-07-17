@@ -48,6 +48,7 @@ fn touch_n_random_keys(n: &isize, database: &mut &mut Database) -> isize {
 
 #[cfg(test)]
 mod test_clean {
+    use crate::commands::create_notifier;
 
     use super::*;
     use crate::database::TypeSaved;
@@ -80,7 +81,8 @@ mod test_clean {
     #[test]
     //#[ignore]
     fn test01_cleaning_some_keys() {
-        let mut database = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database = Database::new(notifier);
 
         load_database(&mut database);
 

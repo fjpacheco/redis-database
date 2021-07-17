@@ -48,6 +48,7 @@ fn check_error_cases(buffer: &[String]) -> Result<(), ErrorStruct> {
 
 #[cfg(test)]
 mod test_sismember_function {
+    use crate::commands::create_notifier;
     use std::collections::{HashSet, VecDeque};
 
     use crate::vec_strings;
@@ -59,7 +60,8 @@ mod test_sismember_function {
         let mut set = HashSet::new();
         set.insert(String::from("m1"));
         set.insert(String::from("m2"));
-        let mut database_mock = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database_mock = Database::new(notifier);
         database_mock.insert("key".to_string(), TypeSaved::Set(set));
         let buffer_mock_1 = vec_strings!["key", "m1"];
         let buffer_mock_2 = vec_strings!["key", "m2"];
@@ -77,7 +79,8 @@ mod test_sismember_function {
     fn test02_sismember_return_number_zero_if_member_is_not_contained_in_set() {
         let mut set = HashSet::new();
         set.insert(String::from("m1"));
-        let mut database_mock = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database_mock = Database::new(notifier);
         database_mock.insert("key".to_string(), TypeSaved::Set(set));
         let buffer_mock = vec_strings!["key", "m_random"];
 
@@ -92,7 +95,8 @@ mod test_sismember_function {
         // TODO: revisar nombres de tests... "in database" ...
         let mut set = HashSet::new();
         set.insert(String::from("m1"));
-        let mut database_mock = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database_mock = Database::new(notifier);
         database_mock.insert("key".to_string(), TypeSaved::Set(set));
         let buffer_mock = vec_strings!["key_random", "m_random"];
 
@@ -104,7 +108,8 @@ mod test_sismember_function {
 
     #[test]
     fn test04_sismember_return_error_wrongtype_if_execute_with_key_of_string() {
-        let mut database_mock = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database_mock = Database::new(notifier);
         database_mock.insert(
             "keyOfString".to_string(),
             TypeSaved::String("value".to_string()),
@@ -122,7 +127,8 @@ mod test_sismember_function {
 
     #[test]
     fn test05_sismember_return_error_wrongtype_if_execute_with_key_of_list() {
-        let mut database_mock = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database_mock = Database::new(notifier);
         let mut new_list = VecDeque::new();
         new_list.push_back("value".to_string());
         new_list.push_back("value_other".to_string());
@@ -141,7 +147,8 @@ mod test_sismember_function {
 
     #[test]
     fn test06_sismember_return_error_arguments_invalid_ifbuffer_has_more_than_3_arguments() {
-        let mut database_mock = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database_mock = Database::new(notifier);
         let buffer_mock = vec_strings!["arg1", "arg2", "arg3"];
 
         let result_received = Sismember.run(buffer_mock, &mut database_mock);

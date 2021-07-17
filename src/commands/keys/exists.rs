@@ -21,13 +21,15 @@ impl Runnable<Database> for Exists {
 
 #[cfg(test)]
 mod test_exists {
+    use crate::commands::create_notifier;
 
     use super::*;
     use crate::database::TypeSaved;
 
     #[test]
     fn test01_exists_existing_key() {
-        let mut database = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database = Database::new(notifier);
         database.insert("key".to_string(), TypeSaved::String("value".to_string()));
         let buffer_mock = vec!["key".to_string()];
         let result_received = Exists.run(buffer_mock, &mut database);
@@ -36,7 +38,8 @@ mod test_exists {
 
     #[test]
     fn test02_exists_non_existing_key() {
-        let mut database = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database = Database::new(notifier);
         database.insert("key".to_string(), TypeSaved::String("value".to_string()));
         let buffer_mock = vec!["key1".to_string()];
         let result_received = Exists.run(buffer_mock, &mut database);

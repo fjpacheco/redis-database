@@ -1,9 +1,11 @@
 use crate::native_types::error::ErrorStruct;
+use crate::native_types::error_severity::ErrorSeverity;
 use crate::regex::super_regex::SuperRegex;
 use crate::time_expiration::expire_info::ExpireInfo;
-use crate::{messages::redis_messages, tcp_protocol::notifiers::Notifiers};
+use crate::{messages::redis_messages, tcp_protocol::notifier::Notifier};
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::fmt;
+use std::sync::{Arc, Mutex, MutexGuard};
 
 use regex;
 
@@ -12,6 +14,7 @@ use rand::seq::IteratorRandom;
 
 pub struct Database {
     elements: HashMap<String, (ExpireInfo, TypeSaved)>,
+    notifier: Arc<Mutex<Notifier>>, // https://stackoverflow.com/questions/40384274/rust-mpscsender-cannot-be-shared-between-threads
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -22,12 +25,16 @@ pub enum TypeSaved {
 }
 
 impl Database {
-    pub fn new() -> Self {
+    pub fn new(notifier: Notifier) -> Self {
         Database {
             elements: HashMap::new(),
+            notifier: Arc::new(Mutex::new(notifier)),
         }
     }
 
+    pub fn size(&self) -> usize {
+        self.elements.len()
+    }
     pub fn remove(&mut self, key: &str) -> Option<TypeSaved> {
         if let Some((_, value)) = self.elements.remove(key) {
             Some(value)
@@ -74,7 +81,7 @@ impl Database {
     fn private_touch(
         &mut self,
         key: &str,
-        notifier: Option<&Notifiers>,
+        notifier: Option<Arc<Mutex<Notifier>>>,
     ) -> Result<bool, ErrorStruct> {
         if let Some((info, _)) = self.elements.get_mut(key) {
             if info.is_expired(notifier, key) {
@@ -89,7 +96,10 @@ impl Database {
     }
 
     pub fn touch(&mut self, key: &str) -> Result<bool, ErrorStruct> {
-        self.private_touch(key, None /*HERE GOES THE NOTIFIER*/)
+        self.private_touch(
+            key,
+            Some(Arc::clone(&self.notifier)), /*HERE GOES THE NOTIFIER*/
+        )
     }
 
     pub fn ttl(&mut self, key: &str) -> Option<u64> {
@@ -105,6 +115,7 @@ impl Database {
         let _ = self.private_touch(key, None);
         if let Some((info, _)) = self.elements.get_mut(key) {
             info.set_timeout(timeout)?;
+            println!("asd");
             Ok(())
         } else {
             let message = redis_messages::key_not_found();
@@ -164,12 +175,14 @@ impl fmt::Display for Database {
 #[cfg(test)]
 mod test_database {
 
-    /*use super::*;
+    use crate::commands::create_notifier;
+
+    use super::*;
 
     #[test]
     fn test01_insert_a_key() {
-
-        let mut database = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database = Database::new(notifier);
         let value = TypeSaved::String(String::from("hola"));
         database.insert("key".to_string(), value);
         let got = database.get("key");
@@ -183,8 +196,8 @@ mod test_database {
 
     #[test]
     fn test02_remove_a_key() {
-
-        let mut database = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database = Database::new(notifier);
         let value = TypeSaved::String(String::from("hola"));
         database.insert("key".to_string(), value);
         database.remove("key");
@@ -194,8 +207,8 @@ mod test_database {
 
     #[test]
     fn test03_database_contains_key() {
-
-        let mut database = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database = Database::new(notifier);
         assert!(!database.contains_key("key"));
         let value = TypeSaved::String(String::from("hola"));
         database.insert("key".to_string(), value);
@@ -204,8 +217,8 @@ mod test_database {
 
     #[test]
     fn test04_set_timeout_for_existing_key() {
-
-        let mut database = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database = Database::new(notifier);
         let value = TypeSaved::String(String::from("hola"));
         database.insert("key".to_string(), value);
         database.set_ttl("key", 10).unwrap();
@@ -214,8 +227,8 @@ mod test_database {
 
     #[test]
     fn test05_set_timeout_for_non_existing_key() {
-
-        let mut database = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database = Database::new(notifier);
         match database.set_ttl("key", 10) {
             Err(should_throw_error) => assert_eq!(
                 should_throw_error.print_it(),
@@ -227,12 +240,12 @@ mod test_database {
 
     #[test]
     fn test06_set_timeout_for_key_and_let_it_persist() {
-
-        let mut database = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database = Database::new(notifier);
         let value = TypeSaved::String(String::from("hola"));
         database.insert("key".to_string(), value);
         database.set_ttl("key", 10).unwrap();
         assert_eq!(database.persist("key"), Some(9));
         assert_eq!(database.ttl("key"), None);
-    }*/
+    }
 }

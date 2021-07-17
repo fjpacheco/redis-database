@@ -22,6 +22,7 @@ fn incr(addend1: isize, addend2: isize) -> isize {
 
 #[cfg(test)]
 pub mod test_incrby {
+    use crate::commands::create_notifier;
 
     use crate::{
         database::{Database, TypeSaved},
@@ -32,7 +33,8 @@ pub mod test_incrby {
 
     #[test]
     fn test01_incrby_existing_key() {
-        let mut data = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut data = Database::new(notifier);
         // redis> SET mykey 10
         data.insert("mykey".to_string(), TypeSaved::String("10".to_string()));
         // redis> INCRBY mykey 3 ---> (integer) 13
@@ -48,7 +50,8 @@ pub mod test_incrby {
 
     #[test]
     fn test02_incrby_existing_key_by_negative_integer() {
-        let mut data = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut data = Database::new(notifier);
         // redis> SET mykey 10
         data.insert("mykey".to_string(), TypeSaved::String("10".to_string()));
         // redis> INCRBY mykey -3
@@ -61,7 +64,8 @@ pub mod test_incrby {
 
     #[test]
     fn test03_incrby_existing_key_with_negative_integer_value() {
-        let mut data = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut data = Database::new(notifier);
         // redis> SET mykey -10
         data.insert("mykey".to_string(), TypeSaved::String("-10".to_string()));
         // redis> INCRBY mykey 3
@@ -77,7 +81,8 @@ pub mod test_incrby {
 
     #[test]
     fn test04_incrby_existing_key_with_negative_integer_value_by_negative_integer() {
-        let mut data = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut data = Database::new(notifier);
         // redis> SET mykey -10
         data.insert("mykey".to_string(), TypeSaved::String("-10".to_string()));
         // redis> INCRBY mykey -3
@@ -93,7 +98,8 @@ pub mod test_incrby {
 
     #[test]
     fn test05_incrby_non_existing_key() {
-        let mut data = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut data = Database::new(notifier);
         let buffer = vec_strings!["mykey", "3"];
         let encoded = Incrby.run(buffer, &mut data);
 
@@ -103,7 +109,8 @@ pub mod test_incrby {
 
     #[test]
     fn test06_incrby_existing_key_with_non_decrementable_value() {
-        let mut data = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut data = Database::new(notifier);
         // redis> SET mykey value
         data.insert("mykey".to_string(), TypeSaved::String("value".to_string()));
         // redis> INCRBY mykey 1
@@ -118,7 +125,8 @@ pub mod test_incrby {
 
     #[test]
     fn test07_decrby_existing_key_by_non_integer() {
-        let mut data = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut data = Database::new(notifier);
         // redis> SET mykey 10
         data.insert("mykey".to_string(), TypeSaved::String("10".to_string()));
         // redis> INCRBY mykey a

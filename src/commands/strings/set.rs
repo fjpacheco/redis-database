@@ -46,6 +46,7 @@ fn check_error_cases(buffer: &[String]) -> Result<(), ErrorStruct> {
 
 #[cfg(test)]
 mod test_set_function {
+    use crate::commands::create_notifier;
 
     use crate::{native_types::RBulkString, vec_strings};
 
@@ -53,7 +54,8 @@ mod test_set_function {
     #[test]
     fn test01_set_key_and_value_return_ok() {
         let buffer_mock = vec_strings!["key", "value"];
-        let mut database_mock = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database_mock = Database::new(notifier);
 
         let result_received = Set.run(buffer_mock, &mut database_mock);
 
@@ -64,7 +66,8 @@ mod test_set_function {
     #[test]
     fn test02_set_key_and_value_save_correctly_in_database_mock() {
         let buffer_mock_set = vec_strings!["key", "value"];
-        let mut database_mock = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database_mock = Database::new(notifier);
 
         let _ = Set.run(buffer_mock_set, &mut database_mock);
         let mut get_received = String::new();
@@ -79,7 +82,8 @@ mod test_set_function {
     #[test]
     fn test03_set_key_and_value_but_get_another_key_return_none() {
         let buffer_mock = vec_strings!["key", "value"];
-        let mut database_mock = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database_mock = Database::new(notifier);
 
         let _ = Set.run(buffer_mock, &mut database_mock);
         let mut get_received = String::new();
@@ -97,7 +101,8 @@ mod test_set_function {
     #[test]
     fn test04_set_without_value_and_key_return_err_syntax() {
         let buffer_mock = vec_strings!["set", "set", "set", "set"];
-        let mut database_mock = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database_mock = Database::new(notifier);
 
         let result_received = Set.run(buffer_mock, &mut database_mock);
         let result_received_encoded = result_received.unwrap_err().get_encoded_message_complete();

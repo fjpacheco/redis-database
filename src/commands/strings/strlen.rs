@@ -29,13 +29,15 @@ impl Runnable<Database> for Strlen {
 #[cfg(test)]
 pub mod test_strlen {
 
+    use crate::commands::create_notifier;
     use crate::vec_strings;
 
     use super::*;
 
     #[test]
     fn test01_strlen_existing_key() {
-        let mut data = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut data = Database::new(notifier);
         // redis> SET mykey somevalue ---> "OK"
         data.insert(
             "mykey".to_string(),
@@ -50,7 +52,8 @@ pub mod test_strlen {
 
     #[test]
     fn test02_srlen_non_existing_key() {
-        let mut data = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut data = Database::new(notifier);
         // redis> STRLEN nonexisting ---> (integer) 0
         let buffer = vec_strings!["mykey"];
         let encoded = Strlen.run(buffer, &mut data);

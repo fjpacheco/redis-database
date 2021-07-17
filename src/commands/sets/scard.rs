@@ -41,6 +41,7 @@ fn check_error_cases(buffer: &mut Vec<String>) -> Result<(), ErrorStruct> {
 
 #[cfg(test)]
 mod test_scard_function {
+    use crate::commands::create_notifier;
     use std::collections::{HashSet, VecDeque};
 
     use crate::vec_strings;
@@ -53,7 +54,8 @@ mod test_scard_function {
         set.insert(String::from("m1"));
         set.insert(String::from("m2"));
         set.insert(String::from("m3"));
-        let mut database_mock = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database_mock = Database::new(notifier);
         database_mock.insert("key".to_string(), TypeSaved::Set(set));
         let buffer_mock = vec_strings!["key"];
 
@@ -78,7 +80,8 @@ mod test_scard_function {
         set.insert(String::from("m3"));
         set.insert(String::from("m3"));
         set.insert(String::from("m3"));
-        let mut database_mock = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database_mock = Database::new(notifier);
         database_mock.insert("key".to_string(), TypeSaved::Set(set));
         let buffer_mock = vec_strings!["key"];
 
@@ -91,7 +94,8 @@ mod test_scard_function {
     #[test]
     fn test03_scard_return_zero_if_the_set_is_empty() {
         let set: HashSet<String> = HashSet::new();
-        let mut database_mock = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database_mock = Database::new(notifier);
         database_mock.insert("key".to_string(), TypeSaved::Set(set));
         let buffer_mock = vec_strings!["key"];
 
@@ -104,7 +108,8 @@ mod test_scard_function {
     #[test]
     fn test04_scard_return_zero_if_the_set_dont_exist() {
         let set: HashSet<String> = HashSet::new();
-        let mut database_mock = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database_mock = Database::new(notifier);
         database_mock.insert("key".to_string(), TypeSaved::Set(set));
         let buffer_mock = vec_strings!["key_random"];
 
@@ -116,7 +121,8 @@ mod test_scard_function {
 
     #[test]
     fn test05_scard_return_error_wrongtype_if_execute_with_key_of_string() {
-        let mut database_mock = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database_mock = Database::new(notifier);
         database_mock.insert(
             "keyOfString".to_string(),
             TypeSaved::String("value".to_string()),
@@ -134,7 +140,8 @@ mod test_scard_function {
 
     #[test]
     fn test06_scard_return_error_wrongtype_if_execute_with_key_of_lists() {
-        let mut database_mock = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database_mock = Database::new(notifier);
         let mut new_list = VecDeque::new();
         new_list.push_back("value1".to_string());
         new_list.push_back("value2".to_string());
@@ -152,7 +159,8 @@ mod test_scard_function {
 
     #[test]
     fn test07_scard_return_error_arguments_invalid_ifbuffer_has_many_one_key() {
-        let mut database_mock = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database_mock = Database::new(notifier);
         let buffer_mock = vec_strings!["key1", "key2", "key3"];
 
         let result_received = Scard.run(buffer_mock, &mut database_mock);

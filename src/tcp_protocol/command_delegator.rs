@@ -273,7 +273,8 @@ fn clone_command_vec(command_vec: &[String]) -> Vec<String> {
 #[cfg(test)]
 pub mod test_command_delegator {
 
-    /*use crate::tcp_protocol::command_subdelegator::CommandSubDelegator;
+    use crate::commands::create_notifier;
+    use crate::tcp_protocol::command_subdelegator::CommandSubDelegator;
     use crate::tcp_protocol::BoxedCommand;
     use crate::vec_strings;
     use crate::{
@@ -300,7 +301,8 @@ pub mod test_command_delegator {
 
         let runnables_map = RunnablesMap::new(map);
 
-        let database = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let database = Database::new(notifier);
 
         let (snd_cmd_dat, rcv_cmd_dat): (Sender<RawCommand>, Receiver<RawCommand>) =
             mpsc::channel();
@@ -404,7 +406,8 @@ pub mod test_command_delegator {
 
         let runnables_map = RunnablesMap::new(map);
 
-        let database = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let database = Database::new(notifier);
 
         let (snd_cmd_dat, rcv_cmd_dat): (Sender<RawCommand>, Receiver<RawCommand>) =
             mpsc::channel();
@@ -451,5 +454,5 @@ pub mod test_command_delegator {
         drop(snd_test_cmd);
         drop(snd_cmd_dat);
         command_delegator.join().unwrap();
-    }*/
+    }
 }

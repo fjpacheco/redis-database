@@ -9,18 +9,14 @@ use crate::{
     tcp_protocol::client_handler::ClientHandler,
 };
 
-use super::{notifiers::Notifiers, server::ServerRedisAtributes};
+use super::{notifier::Notifier, server::ServerRedisAtributes};
 
 pub struct ListenerProcessor;
 
 impl ListenerProcessor {
-    pub fn incoming(
-        listener: TcpListener,
-        server_redis: ServerRedisAtributes,
-        notifiers: Notifiers,
-    ) {
+    pub fn incoming(listener: TcpListener, server_redis: ServerRedisAtributes, notifier: Notifier) {
         print!("{}", redis_logo(&server_redis.get_port()));
-        let _ = notifiers.send_log(LogMessage::start_up(&listener));
+        let _ = notifier.send_log(LogMessage::start_up(&listener));
 
         for stream in listener.incoming() {
             if server_redis.is_listener_off() {
@@ -30,12 +26,12 @@ impl ListenerProcessor {
             match stream {
                 Ok(client) => {
                     server_redis.set_timeout(&client);
-                    let _ = notifiers.send_log(LogMessage::new_conection(&client));
-                    if let Ok(new_client) = ClientHandler::new(client, notifiers.clone()) {
+                    let _ = notifier.send_log(LogMessage::new_conection(&client));
+                    if let Ok(new_client) = ClientHandler::new(client, notifier.clone()) {
                         if let Ok(mut client_list) = server_redis.shared_clients.lock() {
                             client_list.insert(new_client);
                         } else {
-                            let _ = notifiers.send_log(LogMessage::from_errorstruct(
+                            let _ = notifier.send_log(LogMessage::from_errorstruct(
                                 ErrorStruct::from(redis_messages::poisoned_lock(
                                     "Client List",
                                     ErrorSeverity::ShutdownServer,
@@ -46,11 +42,11 @@ impl ListenerProcessor {
                     }
                 }
                 Err(e) => {
-                    let _ = notifiers.send_log(LogMessage::error_to_connect_client(&e));
+                    let _ = notifier.send_log(LogMessage::error_to_connect_client(&e));
                 }
             }
         }
-        let _ = notifiers.send_log(LogMessage::off_server(&listener));
+        let _ = notifier.send_log(LogMessage::off_server(&listener));
     }
 
     pub fn new_tcp_listener(config: &RedisConfig) -> Result<TcpListener, ErrorStruct> {

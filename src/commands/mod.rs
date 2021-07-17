@@ -4,7 +4,7 @@ use crate::{
     communication::log_messages::LogMessage,
     messages::redis_messages,
     native_types::ErrorStruct,
-    tcp_protocol::{notifiers::Notifiers, RawCommand},
+    tcp_protocol::{notifier::Notifier, RawCommand},
 };
 
 pub mod keys;
@@ -52,6 +52,7 @@ pub trait Runnable<T> {
     /// use redis_rust::commands::strings::set::Set;
     /// use redis_rust::native_types::ErrorStruct;
     /// use redis_rust::commands::Runnable;
+    /// use redis_rust::commands::create_notifier;
     /// use redis_rust::vec_strings;
     ///
     /// fn execute<Database>(command: &dyn Runnable<Database>,
@@ -62,7 +63,8 @@ pub trait Runnable<T> {
     ///     command.run(buffer, database)
     /// }
     ///
-    /// let mut database = Database::new();
+    /// let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+    /// let mut database = Database::new(notifier);
     /// let buffer = vec_strings!["key", "value"];
     /// let object_commmand = Set;
     /// let result_received = execute(&object_commmand, buffer, &mut database);
@@ -111,12 +113,19 @@ pub fn check_empty_2(buffer: &[String]) -> Result<(), ErrorStruct> {
 }
 
 pub fn create_notifier() -> (
-    Notifiers,
+    Notifier,
     Receiver<Option<LogMessage>>,
     Receiver<Option<RawCommand>>,
 ) {
     let (log_snd, log_rcv) = mpsc::channel();
     let (cmd_snd, cmd_rcv) = mpsc::channel();
 
-    (Notifiers::new(log_snd, cmd_snd), log_rcv, cmd_rcv)
+    (Notifier::new(log_snd, cmd_snd), log_rcv, cmd_rcv)
 }
+
+/*
+let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+let mut db = Database::new(notifier);
+30,22:         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+let mut db = Database::new(notifier);
+*/

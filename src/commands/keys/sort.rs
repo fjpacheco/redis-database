@@ -49,6 +49,7 @@ fn sort_set(set: &HashSet<String>) -> Vec<String> {
 
 #[cfg(test)]
 pub mod test_llen {
+    use crate::commands::create_notifier;
 
     use crate::commands::lists::lpush::LPush;
 
@@ -56,7 +57,8 @@ pub mod test_llen {
 
     #[test]
     fn test01_sorting_a_list() {
-        let mut db = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut db = Database::new(notifier);
         let _ = LPush.run(
             vec![
                 "key".to_string(),

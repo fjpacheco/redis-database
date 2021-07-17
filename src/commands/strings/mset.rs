@@ -44,7 +44,7 @@ fn is_odd(buffer: &[String]) -> bool {
 
 #[cfg(test)]
 mod test_mset_function {
-
+    use crate::commands::create_notifier;
     use crate::{native_types::RBulkString, vec_strings};
 
     use super::*;
@@ -52,7 +52,8 @@ mod test_mset_function {
     #[test]
     fn test01_mset_reemplace_value_old_of_key_and_insert_more_elements() {
         let buffer_mock2 = vec_strings!["key1", "value1_new", "key2", "value2"];
-        let mut database_mock = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database_mock = Database::new(notifier);
         database_mock.insert("key1".to_string(), TypeSaved::String("value1".to_string()));
 
         let _ = Mset.run(buffer_mock2, &mut database_mock);
@@ -76,7 +77,8 @@ mod test_mset_function {
     #[test]
     fn test02_mset_with_bad_args_return_err() {
         let buffer_mock = vec_strings!["key1", "value1_new", "key2"];
-        let mut database_mock = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database_mock = Database::new(notifier);
 
         let result_received = Mset.run(buffer_mock, &mut database_mock);
         let result_received_encoded = result_received.unwrap_err().get_encoded_message_complete();

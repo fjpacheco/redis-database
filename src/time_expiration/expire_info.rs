@@ -1,6 +1,8 @@
 use crate::messages::redis_messages;
 use crate::native_types::error::ErrorStruct;
-use crate::{communication::log_messages::LogMessage, tcp_protocol::notifiers::Notifiers};
+use crate::native_types::error_severity::ErrorSeverity;
+use crate::{communication::log_messages::LogMessage, tcp_protocol::notifier::Notifier};
+use std::sync::{Arc, Mutex, MutexGuard};
 use std::time::Duration;
 use std::time::SystemTime;
 use std::time::UNIX_EPOCH;
@@ -23,7 +25,7 @@ impl ExpireInfo {
         }
     }
 
-    pub fn is_expired(&mut self, notifier: Option<&Notifiers>, key_name: &str) -> bool {
+    pub fn is_expired(&mut self, notifier: Option<Arc<Mutex<Notifier>>>, key_name: &str) -> bool {
         if self.timeout.is_some() {
             let _ = self.update(notifier, key_name);
             !matches!(self.timeout, Some(_))
@@ -34,18 +36,27 @@ impl ExpireInfo {
 
     pub fn update(
         &mut self,
-        wrapped_notifier: Option<&Notifiers>,
+        wrapped_notifier: Option<Arc<Mutex<Notifier>>>,
         key_name: &str,
     ) -> Result<(), ErrorStruct> {
         let previous_touch = self.last_touch;
         self.last_touch = SystemTime::now();
         if let Some(ttl) = self.timeout {
-            let difference = duration_since_unix_epoch(&self.last_touch)?;
+            let difference = duration_since(&self.last_touch, previous_touch)?;
+            //let difference =  self.last_touch.duration_since(previous_touch).unwrap();
             self.timeout = ttl.checked_sub(difference);
         }
         if let Some(notifier) = wrapped_notifier {
-            let from_epoch = duration_since_unix_epoch(&previous_touch)?;
-            notifier.send_log(LogMessage::key_touched(key_name, from_epoch.as_secs()))?;
+            let from_epoch = duration_since(&previous_touch, UNIX_EPOCH)?;
+            notifier
+                .lock()
+                .map_err(|_| {
+                    ErrorStruct::from(redis_messages::poisoned_lock(
+                        "Notifier",
+                        ErrorSeverity::ShutdownServer,
+                    ))
+                })?
+                .send_log(LogMessage::key_touched(key_name, from_epoch.as_secs()))?;
         }
         Ok(())
     }
@@ -62,7 +73,7 @@ impl ExpireInfo {
 
     pub fn set_timeout_unix_timestamp(&mut self, duration: u64) -> Result<(), ErrorStruct> {
         self.last_touch = SystemTime::now();
-        duration_since_unix_epoch(&self.last_touch).and_then(|duration_since_epoch| {
+        duration_since(&self.last_touch, UNIX_EPOCH).and_then(|duration_since_epoch| {
             self.timeout = Some(Duration::new(duration, 0) - duration_since_epoch);
             Ok(())
         })
@@ -75,8 +86,8 @@ impl ExpireInfo {
 
 // DESHABILITENLO PARA NO COMERSE PRUEBAS QUE DURAN BANDA (O SEA 5 PRECIOSOS SEGUNDOS)
 
-fn duration_since_unix_epoch(time: &SystemTime) -> Result<Duration, ErrorStruct> {
-    time.duration_since(UNIX_EPOCH)
+fn duration_since(time: &SystemTime, previous_time: SystemTime) -> Result<Duration, ErrorStruct> {
+    time.duration_since(previous_time)
         .map_err(|_| ErrorStruct::from(redis_messages::ttl_epoch_error()))
 }
 

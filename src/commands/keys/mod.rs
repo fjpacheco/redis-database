@@ -12,7 +12,6 @@ pub mod rename;
 pub mod sort;
 pub mod touch;
 pub mod ttl;
-
 pub fn pop_value(buffer: &mut Vec<String>, name: &str) -> Result<String, ErrorStruct> {
     if let Some(value) = buffer.pop() {
         Ok(value)

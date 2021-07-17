@@ -44,6 +44,7 @@ fn check_error_cases(buffer: &[String]) -> Result<(), ErrorStruct> {
 
 #[cfg(test)]
 mod test_get {
+    use crate::commands::create_notifier;
 
     use crate::vec_strings;
 
@@ -52,7 +53,8 @@ mod test_get {
     #[test]
     fn test01_mget_value_of_key_correct_is_success() {
         let buffer_mock_get = vec_strings!["key2", "asd", "key1"];
-        let mut database_mock = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database_mock = Database::new(notifier);
 
         database_mock.insert("key1".to_string(), TypeSaved::String("value1".to_string()));
         database_mock.insert("key2".to_string(), TypeSaved::String("value2".to_string()));
@@ -73,7 +75,8 @@ mod test_get {
         let buffer_mock_get1 = vec_strings!["key2", "asd", "key1"];
         let buffer_mock_get2 = vec_strings!["asd", "key2", "key1"];
         let buffer_mock_get3 = vec_strings!["key1", "key2", "asd"];
-        let mut database_mock = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database_mock = Database::new(notifier);
 
         database_mock.insert("key1".to_string(), TypeSaved::String("value1".to_string()));
         database_mock.insert("key2".to_string(), TypeSaved::String("value2".to_string()));

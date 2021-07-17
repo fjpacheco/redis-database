@@ -13,12 +13,12 @@ use super::{client_atributes::client_fields::ClientFields, RawCommand};
 
 // TODO: Hablar de lo poderoso que es Derive cuando tenes Senders que implementan Clone :'D
 #[derive(Clone)]
-pub struct Notifiers {
+pub struct Notifier {
     sender_log: Sender<Option<LogMessage>>,
     command_delegator_sender: Sender<Option<RawCommand>>,
 }
 
-impl Notifiers {
+impl Notifier {
     pub fn new(
         sender_log: Sender<Option<LogMessage>>,
         command_delegator_sender: Sender<Option<RawCommand>>,

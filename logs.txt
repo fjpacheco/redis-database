@@ -1,1387 +1,161 @@
 $27
 Server ON in 127.0.0.1:6379
 $30
-New conection: 127.0.0.1:46356
+New conection: 127.0.0.1:55139
+$102
+List of clients:
+               -> Client: "127.0.0.1:55139" -- Status: Executor -- Subscriptions: {}
 $30
-New conection: 127.0.0.1:46358
+New conection: 127.0.0.1:55140
+$188
+List of clients:
+               -> Client: "127.0.0.1:55139" -- Status: Executor -- Subscriptions: {}
+               -> Client: "127.0.0.1:55140" -- Status: Executor -- Subscriptions: {}
 $37
-Client disconected: "127.0.0.1:46356"
+Client disconected: "127.0.0.1:55139"
 $41
-[127.0.0.1:46358] ["set", "key", "value"]
+[127.0.0.1:55140] ["set", "key", "value"]
 $30
-New conection: 127.0.0.1:46360
+New conection: 127.0.0.1:55141
+$188
+List of clients:
+               -> Client: "127.0.0.1:55140" -- Status: Executor -- Subscriptions: {}
+               -> Client: "127.0.0.1:55141" -- Status: Executor -- Subscriptions: {}
 $28
 Server OFF in 127.0.0.1:6379
 $30
-[127.0.0.1:46360] ["shutdown"]
+[127.0.0.1:55141] ["shutdown"]
 $37
-Client disconected: "127.0.0.1:46360"
+Client disconected: "127.0.0.1:55141"
 $37
-Client disconected: "127.0.0.1:46358"
-f clients:
-               -> Client: "127.0.0.1:59434" -- Status: Executor -- Subscriptions: {}
-$37
-Client disconected: "127.0.0.1:59432"
-s:
-               -> Client: "127.0.0.1:57982" -- Status: Executor -- Subscriptions: {}
-               -> Client: "127.0.0.1:57984" -- Status: Executor -- Subscriptions: {}
-               -> Client: "127.0.0.1:57988" -- Status: Executor -- Subscriptions: {}
-$37
-Client disconected: "127.0.0.1:57984"
-ecutor -- Subscriptions: {}
-               -> Client: "127.0.0.1:40622" -- Status: Monitor -- Subscriptions: {}
-$37
-Client disconected: "127.0.0.1:40620"
+Client disconected: "127.0.0.1:55140"
+$21
+Log center is closed.
+$27
+Server ON in 127.0.0.1:6379
 $30
-New conection: 127.0.0.1:40626
-$56
-[127.0.0.1:40618] ["subscribe", "agus", "pach", "marti"]
-$212
+New conection: 127.0.0.1:52412
+$102
 List of clients:
-               -> Client: "127.0.0.1:40618" -- Status: Subscriber -- Subscriptions: {"pach", "marti", "agus"}
-               -> Client: "127.0.0.1:40622" -- Status: Monitor -- Subscriptions: {}
-$37
-Client disconected: "127.0.0.1:40626"
-$39
-[127.0.0.1:40618] ["subscribe", "pach"]
+               -> Client: "127.0.0.1:52412" -- Status: Executor -- Subscriptions: {}
 $30
-New conection: 127.0.0.1:40628
-$212
-List of clients:
-               -> Client: "127.0.0.1:40618" -- Status: Subscriber -- Subscriptions: {"pach", "marti", "agus"}
-               -> Client: "127.0.0.1:40622" -- Status: Monitor -- Subscriptions: {}
+New conection: 127.0.0.1:52413
 $37
-Client disconected: "127.0.0.1:40628"
+Client disconected: "127.0.0.1:52412"
+$102
+List of clients:
+               -> Client: "127.0.0.1:52413" -- Status: Executor -- Subscriptions: {}
 $41
-[127.0.0.1:40618] ["unsubscribe", "pach"]
+[127.0.0.1:52413] ["set", "key", "value"]
 $30
-New conection: 127.0.0.1:40632
-$204
+New conection: 127.0.0.1:52414
+$188
 List of clients:
-               -> Client: "127.0.0.1:40618" -- Status: Subscriber -- Subscriptions: {"marti", "agus"}
-               -> Client: "127.0.0.1:40622" -- Status: Monitor -- Subscriptions: {}
-$37
-Client disconected: "127.0.0.1:40632"
-$33
-[127.0.0.1:40618] ["unsubscribe"]
+               -> Client: "127.0.0.1:52413" -- Status: Executor -- Subscriptions: {}
+               -> Client: "127.0.0.1:52414" -- Status: Executor -- Subscriptions: {}
+$28
+Server OFF in 127.0.0.1:6379
 $30
-New conection: 127.0.0.1:40634
-$187
-List of clients:
-               -> Client: "127.0.0.1:40618" -- Status: Executor -- Subscriptions: {}
-               -> Client: "127.0.0.1:40622" -- Status: Monitor -- Subscriptions: {}
+[127.0.0.1:52414] ["shutdown"]
 $37
-Client disconected: "127.0.0.1:40634"
+Client disconected: "127.0.0.1:52414"
+$37
+Client disconected: "127.0.0.1:52413"
+$21
+Log center is closed.
 $27
 Server ON in 127.0.0.1:6379
 $30
-New conection: 127.0.0.1:62048
+New conection: 127.0.0.1:61157
+$102
+List of clients:
+               -> Client: "127.0.0.1:61157" -- Status: Executor -- Subscriptions: {}
 $30
-New conection: 127.0.0.1:62049
+New conection: 127.0.0.1:61158
 $37
-Client disconected: "127.0.0.1:62048"
+Client disconected: "127.0.0.1:61157"
+$102
+List of clients:
+               -> Client: "127.0.0.1:61158" -- Status: Executor -- Subscriptions: {}
 $41
-[127.0.0.1:62049] ["set", "key", "value"]
+[127.0.0.1:61158] ["set", "key", "value"]
 $30
-New conection: 127.0.0.1:62050
+New conection: 127.0.0.1:61159
+$188
+List of clients:
+               -> Client: "127.0.0.1:61158" -- Status: Executor -- Subscriptions: {}
+               -> Client: "127.0.0.1:61159" -- Status: Executor -- Subscriptions: {}
 $28
 Server OFF in 127.0.0.1:6379
 $30
-[127.0.0.1:62050] ["shutdown"]
+[127.0.0.1:61159] ["shutdown"]
 $37
-Client disconected: "127.0.0.1:62050"
+Client disconected: "127.0.0.1:61159"
 $37
-Client disconected: "127.0.0.1:62049"
+Client disconected: "127.0.0.1:61158"
 $21
 Log center is closed.
 $27
 Server ON in 127.0.0.1:6379
 $30
-New conection: 127.0.0.1:50219
-$23
-[127.0.0.1:50219] ["s"]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$22
-[127.0.0.1:50219] [""]
-$27
-Server ON in 127.0.0.1:6379
-$30
-New conection: 127.0.0.1:53716
+New conection: 127.0.0.1:64382
 $37
-Client disconected: "127.0.0.1:53716"
+Client disconected: "127.0.0.1:64382"
+$102
+List of clients:
+               -> Client: "127.0.0.1:64382" -- Status: Executor -- Subscriptions: {}
 $30
-New conection: 127.0.0.1:53717
-$23
-[127.0.0.1:53717] ["a"]
-$23
-[127.0.0.1:53717] ["a"]
-$23
-[127.0.0.1:53717] ["a"]
-$22
-[127.0.0.1:53717] [""]
-$23
-[127.0.0.1:53717] ["a"]
-$24
-[127.0.0.1:53717] ["as"]
-$23
-[127.0.0.1:53717] ["d"]
-$23
-[127.0.0.1:53717] ["a"]
-$24
-[127.0.0.1:53717] ["sd"]
-$25
-[127.0.0.1:53717] ["asd"]
-$23
-[127.0.0.1:53717] ["a"]
-$23
-[127.0.0.1:53717] ["s"]
-$27
-Server ON in 127.0.0.1:6379
-$30
-New conection: 127.0.0.1:53723
-$23
-[127.0.0.1:53723] ["a"]
-$23
-[127.0.0.1:53723] ["a"]
-$23
-[127.0.0.1:53723] ["a"]
-$23
-[127.0.0.1:53723] ["a"]
-$22
-[127.0.0.1:53723] [""]
-$24
-[127.0.0.1:53723] ["sd"]
-$25
-[127.0.0.1:53723] ["asd"]
-$25
-[127.0.0.1:53723] ["asd"]
-$24
-[127.0.0.1:53723] ["as"]
-$22
-[127.0.0.1:53723] [""]
+New conection: 127.0.0.1:64383
+$102
+List of clients:
+               -> Client: "127.0.0.1:64383" -- Status: Executor -- Subscriptions: {}
 $41
-[127.0.0.1:53723] ["sek", "key", "value"]
-$24
-[127.0.0.1:53723] ["ka"]
-$24
-[127.0.0.1:53723] ["as"]
-$23
-[127.0.0.1:53723] ["d"]
-$25
-[127.0.0.1:53723] ["asd"]
-$23
-[127.0.0.1:53723] ["a"]
-$24
-[127.0.0.1:53723] ["sd"]
-$27
-[127.0.0.1:53723] ["adfas"]
-$24
-[127.0.0.1:53723] ["df"]
-$24
-[127.0.0.1:53723] ["as"]
-$24
-[127.0.0.1:53723] ["df"]
-$23
-[127.0.0.1:53723] ["a"]
-$23
-[127.0.0.1:53723] ["f"]
-$23
-[127.0.0.1:53723] ["a"]
-$33
-[127.0.0.1:53723] ["faaaaaaaaaa"]
-$22
-[127.0.0.1:53723] [""]
-$37
-Client disconected: "127.0.0.1:53723"
+[127.0.0.1:64383] ["set", "key", "value"]
 $30
-New conection: 127.0.0.1:53726
-$27
-Server ON in 127.0.0.1:6379
-$30
-New conection: 127.0.0.1:57013
-$27
-Server ON in 127.0.0.1:6379
-$30
-New conection: 127.0.0.1:57037
-$27
-Server ON in 127.0.0.1:6379
-$27
-Server ON in 127.0.0.1:6379
-$30
-New conection: 127.0.0.1:65502
-$102
-List of clients:
-               -> Client: "127.0.0.1:65502" -- Status: Executor -- Subscriptions: {}
-$37
-Client disconected: "127.0.0.1:65502"
-$30
-New conection: 127.0.0.1:63450
+New conection: 127.0.0.1:64384
 $188
 List of clients:
-               -> Client: "127.0.0.1:65502" -- Status: Executor -- Subscriptions: {}
-               -> Client: "127.0.0.1:63450" -- Status: Executor -- Subscriptions: {}
-$37
-Client disconected: "127.0.0.1:63450"
-$30
-New conection: 127.0.0.1:63451
-$274
-List of clients:
-               -> Client: "127.0.0.1:65502" -- Status: Executor -- Subscriptions: {}
-               -> Client: "127.0.0.1:63450" -- Status: Executor -- Subscriptions: {}
-               -> Client: "127.0.0.1:63451" -- Status: Executor -- Subscriptions: {}
-$37
-Client disconected: "127.0.0.1:63451"
-$27
-Server ON in 127.0.0.1:6379
-$30
-New conection: 127.0.0.1:52535
-$102
-List of clients:
-               -> Client: "127.0.0.1:52535" -- Status: Executor -- Subscriptions: {}
-$37
-Client disconected: "127.0.0.1:52535"
-$27
-Server ON in 127.0.0.1:6379
-$30
-New conection: 127.0.0.1:52542
-$102
-List of clients:
-               -> Client: "127.0.0.1:52542" -- Status: Executor -- Subscriptions: {}
-$37
-Client disconected: "127.0.0.1:52542"
-$30
-New conection: 127.0.0.1:52543
-$102
-List of clients:
-               -> Client: "127.0.0.1:52543" -- Status: Executor -- Subscriptions: {}
-$37
-Client disconected: "127.0.0.1:52543"
-$30
-New conection: 127.0.0.1:50625
-$102
-List of clients:
-               -> Client: "127.0.0.1:50625" -- Status: Executor -- Subscriptions: {}
-$37
-Client disconected: "127.0.0.1:50625"
-$30
-New conection: 127.0.0.1:50626
-$102
-List of clients:
-               -> Client: "127.0.0.1:50626" -- Status: Executor -- Subscriptions: {}
-$37
-Client disconected: "127.0.0.1:50626"
-$30
-New conection: 127.0.0.1:50630
-$102
-List of clients:
-               -> Client: "127.0.0.1:50630" -- Status: Executor -- Subscriptions: {}
-$30
-New conection: 127.0.0.1:50631
-$188
-List of clients:
-               -> Client: "127.0.0.1:50630" -- Status: Executor -- Subscriptions: {}
-               -> Client: "127.0.0.1:50631" -- Status: Executor -- Subscriptions: {}
-$37
-Client disconected: "127.0.0.1:50631"
-$37
-Client disconected: "127.0.0.1:50630"
-$30
-New conection: 127.0.0.1:50641
-$102
-List of clients:
-               -> Client: "127.0.0.1:50641" -- Status: Executor -- Subscriptions: {}
-$37
-Client disconected: "127.0.0.1:50641"
-$30
-New conection: 127.0.0.1:50642
-$102
-List of clients:
-               -> Client: "127.0.0.1:50642" -- Status: Executor -- Subscriptions: {}
+               -> Client: "127.0.0.1:64383" -- Status: Executor -- Subscriptions: {}
+               -> Client: "127.0.0.1:64384" -- Status: Executor -- Subscriptions: {}
 $28
 Server OFF in 127.0.0.1:6379
+$30
+[127.0.0.1:64384] ["shutdown"]
+$37
+Client disconected: "127.0.0.1:64384"
+$37
+Client disconected: "127.0.0.1:64383"
 $21
 Log center is closed.
 $27
 Server ON in 127.0.0.1:6379
 $30
-New conection: 127.0.0.1:64146
+New conection: 127.0.0.1:52519
 $102
 List of clients:
-               -> Client: "127.0.0.1:64146" -- Status: Executor -- Subscriptions: {}
+               -> Client: "127.0.0.1:52519" -- Status: Executor -- Subscriptions: {}
 $30
-New conection: 127.0.0.1:64152
-$188
-List of clients:
-               -> Client: "127.0.0.1:64146" -- Status: Executor -- Subscriptions: {}
-               -> Client: "127.0.0.1:64152" -- Status: Executor -- Subscriptions: {}
-$28
-Server OFF in 127.0.0.1:6379
+New conection: 127.0.0.1:52520
 $37
-Client disconected: "127.0.0.1:64146"
-$37
-Client disconected: "127.0.0.1:64152"
-$21
-Log center is closed.
-$27
-Server ON in 127.0.0.1:6379
-$30
-New conection: 127.0.0.1:64161
+Client disconected: "127.0.0.1:52519"
 $102
 List of clients:
-               -> Client: "127.0.0.1:64161" -- Status: Executor -- Subscriptions: {}
-$28
-Server OFF in 127.0.0.1:6379
-$37
-Client disconected: "127.0.0.1:64161"
-$27
-Server ON in 127.0.0.1:6379
-$30
-New conection: 127.0.0.1:50171
-$102
-List of clients:
-               -> Client: "127.0.0.1:50171" -- Status: Executor -- Subscriptions: {}
-$37
-Client disconected: "127.0.0.1:50171"
-$30
-New conection: 127.0.0.1:56463
-$102
-List of clients:
-               -> Client: "127.0.0.1:56463" -- Status: Executor -- Subscriptions: {}
-$28
-Server OFF in 127.0.0.1:6379
-$30
-[127.0.0.1:56463] ["shutdown"]
-$37
-Client disconected: "127.0.0.1:56463"
-$27
-Server ON in 127.0.0.1:6379
-$30
-New conection: 127.0.0.1:56075
-$102
-List of clients:
-               -> Client: "127.0.0.1:56075" -- Status: Executor -- Subscriptions: {}
-$28
-Server OFF in 127.0.0.1:6379
-$30
-[127.0.0.1:56075] ["shutdown"]
-$37
-Client disconected: "127.0.0.1:56075"
-$21
-Log center is closed.
-$27
-Server ON in 127.0.0.1:6379
-$30
-New conection: 127.0.0.1:57007
-$102
-List of clients:
-               -> Client: "127.0.0.1:57007" -- Status: Executor -- Subscriptions: {}
-$28
-Server OFF in 127.0.0.1:6379
-$30
-[127.0.0.1:57007] ["shutdown"]
-$37
-Client disconected: "127.0.0.1:57007"
-$21
-Log center is closed.
-$27
-Server ON in 127.0.0.1:6379
-$30
-New conection: 127.0.0.1:50370
-$102
-List of clients:
-               -> Client: "127.0.0.1:50370" -- Status: Executor -- Subscriptions: {}
-$28
-Server OFF in 127.0.0.1:6379
-$30
-[127.0.0.1:50370] ["shutdown"]
-$37
-Client disconected: "127.0.0.1:50370"
-$21
-Log center is closed.
-$27
-Server ON in 127.0.0.1:6379
-$30
-New conection: 127.0.0.1:56841
-$102
-List of clients:
-               -> Client: "127.0.0.1:56841" -- Status: Executor -- Subscriptions: {}
-$30
-New conection: 127.0.0.1:59141
-$188
-List of clients:
-               -> Client: "127.0.0.1:56841" -- Status: Executor -- Subscriptions: {}
-               -> Client: "127.0.0.1:59141" -- Status: Executor -- Subscriptions: {}
-$28
-Server OFF in 127.0.0.1:6379
-$37
-Client disconected: "127.0.0.1:56841"
-$37
-Client disconected: "127.0.0.1:59141"
-$21
-Log center is closed.
-$27
-Server ON in 127.0.0.1:6379
-$30
-New conection: 127.0.0.1:60251
-$102
-List of clients:
-               -> Client: "127.0.0.1:60251" -- Status: Executor -- Subscriptions: {}
-$30
-New conection: 127.0.0.1:60252
-$188
-List of clients:
-               -> Client: "127.0.0.1:60251" -- Status: Executor -- Subscriptions: {}
-               -> Client: "127.0.0.1:60252" -- Status: Executor -- Subscriptions: {}
-$28
-Server OFF in 127.0.0.1:6379
-$30
-[127.0.0.1:60252] ["shutdown"]
-$37
-Client disconected: "127.0.0.1:60251"
-$37
-Client disconected: "127.0.0.1:60252"
-$21
-Log center is closed.
-$27
-Server ON in 127.0.0.1:6379
-$30
-New conection: 127.0.0.1:65052
-$102
-List of clients:
-               -> Client: "127.0.0.1:65052" -- Status: Executor -- Subscriptions: {}
-$30
-New conection: 127.0.0.1:65053
-$188
-List of clients:
-               -> Client: "127.0.0.1:65052" -- Status: Executor -- Subscriptions: {}
-               -> Client: "127.0.0.1:65053" -- Status: Executor -- Subscriptions: {}
-$28
-Server OFF in 127.0.0.1:6379
-$37
-Client disconected: "127.0.0.1:65052"
-$37
-Client disconected: "127.0.0.1:65053"
-$21
-Log center is closed.
-$27
-Server ON in 127.0.0.1:6379
-$30
-New conection: 127.0.0.1:56542
-$102
-List of clients:
-               -> Client: "127.0.0.1:56542" -- Status: Executor -- Subscriptions: {}
-$30
-New conection: 127.0.0.1:56543
-$188
-List of clients:
-               -> Client: "127.0.0.1:56542" -- Status: Executor -- Subscriptions: {}
-               -> Client: "127.0.0.1:56543" -- Status: Executor -- Subscriptions: {}
-$28
-Server OFF in 127.0.0.1:6379
-$37
-Client disconected: "127.0.0.1:56542"
-$37
-Client disconected: "127.0.0.1:56543"
-$21
-Log center is closed.
-$27
-Server ON in 127.0.0.1:6379
-$30
-New conection: 127.0.0.1:50207
-$102
-List of clients:
-               -> Client: "127.0.0.1:50207" -- Status: Executor -- Subscriptions: {}
-$30
-New conection: 127.0.0.1:50208
-$188
-List of clients:
-               -> Client: "127.0.0.1:50207" -- Status: Executor -- Subscriptions: {}
-               -> Client: "127.0.0.1:50208" -- Status: Executor -- Subscriptions: {}
-$28
-Server OFF in 127.0.0.1:6379
-$30
-[127.0.0.1:50208] ["shutdown"]
-$37
-Client disconected: "127.0.0.1:50207"
-$37
-Client disconected: "127.0.0.1:50208"
-$21
-Log center is closed.
-$27
-Server ON in 127.0.0.1:6379
-$27
-Server ON in 127.0.0.1:6379
-$30
-New conection: 127.0.0.1:60759
-$102
-List of clients:
-               -> Client: "127.0.0.1:60759" -- Status: Executor -- Subscriptions: {}
-$37
-Client disconected: "127.0.0.1:60759"
-$30
-New conection: 127.0.0.1:60760
-$102
-List of clients:
-               -> Client: "127.0.0.1:60760" -- Status: Executor -- Subscriptions: {}
+               -> Client: "127.0.0.1:52520" -- Status: Executor -- Subscriptions: {}
 $41
-[127.0.0.1:60760] ["set", "key", "value"]
+[127.0.0.1:52520] ["set", "key", "value"]
 $30
-New conection: 127.0.0.1:60761
+New conection: 127.0.0.1:52521
 $188
 List of clients:
-               -> Client: "127.0.0.1:60760" -- Status: Executor -- Subscriptions: {}
-               -> Client: "127.0.0.1:60761" -- Status: Executor -- Subscriptions: {}
-$30
-[127.0.0.1:60761] ["shutdown"]
-$28
-Server OFF in 127.0.0.1:6379
-$37
-Client disconected: "127.0.0.1:60761"
-$37
-Client disconected: "127.0.0.1:60760"
-$21
-Log center is closed.
-$27
-Server ON in 127.0.0.1:6379
-$30
-New conection: 127.0.0.1:58283
-$102
-List of clients:
-               -> Client: "127.0.0.1:58283" -- Status: Executor -- Subscriptions: {}
-$30
-New conection: 127.0.0.1:58284
-$37
-Client disconected: "127.0.0.1:58283"
-$102
-List of clients:
-               -> Client: "127.0.0.1:58284" -- Status: Executor -- Subscriptions: {}
-$41
-[127.0.0.1:58284] ["set", "key", "value"]
-$30
-New conection: 127.0.0.1:58285
-$188
-List of clients:
-               -> Client: "127.0.0.1:58284" -- Status: Executor -- Subscriptions: {}
-               -> Client: "127.0.0.1:58285" -- Status: Executor -- Subscriptions: {}
+               -> Client: "127.0.0.1:52520" -- Status: Executor -- Subscriptions: {}
+               -> Client: "127.0.0.1:52521" -- Status: Executor -- Subscriptions: {}
 $28
 Server OFF in 127.0.0.1:6379
 $30
-[127.0.0.1:58285] ["shutdown"]
+[127.0.0.1:52521] ["shutdown"]
 $37
-Client disconected: "127.0.0.1:58285"
+Client disconected: "127.0.0.1:52520"
 $37
-Client disconected: "127.0.0.1:58284"
-$21
-Log center is closed.
-$27
-Server ON in 127.0.0.1:6379
-$27
-Server ON in 127.0.0.1:6379
-$30
-New conection: 127.0.0.1:56749
-$102
-List of clients:
-               -> Client: "127.0.0.1:56749" -- Status: Executor -- Subscriptions: {}
-$30
-New conection: 127.0.0.1:56750
-$188
-List of clients:
-               -> Client: "127.0.0.1:56749" -- Status: Executor -- Subscriptions: {}
-               -> Client: "127.0.0.1:56750" -- Status: Executor -- Subscriptions: {}
-$28
-Server OFF in 127.0.0.1:6379
-$30
-[127.0.0.1:56750] ["shutdown"]
-$37
-Client disconected: "127.0.0.1:56749"
-$37
-Client disconected: "127.0.0.1:56750"
-$21
-Log center is closed.
-$27
-Server ON in 127.0.0.1:6379
-$30
-New conection: 127.0.0.1:61963
-$102
-List of clients:
-               -> Client: "127.0.0.1:61963" -- Status: Executor -- Subscriptions: {}
-$37
-Client disconected: "127.0.0.1:61963"
-$30
-New conection: 127.0.0.1:61964
-$102
-List of clients:
-               -> Client: "127.0.0.1:61964" -- Status: Executor -- Subscriptions: {}
-$41
-[127.0.0.1:61964] ["set", "key", "value"]
-$30
-New conection: 127.0.0.1:61965
-$188
-List of clients:
-               -> Client: "127.0.0.1:61964" -- Status: Executor -- Subscriptions: {}
-               -> Client: "127.0.0.1:61965" -- Status: Executor -- Subscriptions: {}
-$28
-Server OFF in 127.0.0.1:6379
-$30
-[127.0.0.1:61965] ["shutdown"]
-$37
-Client disconected: "127.0.0.1:61965"
-$37
-Client disconected: "127.0.0.1:61964"
-$21
-Log center is closed.
-$27
-Server ON in 127.0.0.1:6379
-$30
-New conection: 127.0.0.1:56465
-$102
-List of clients:
-               -> Client: "127.0.0.1:56465" -- Status: Executor -- Subscriptions: {}
-$30
-New conection: 127.0.0.1:56466
-$37
-Client disconected: "127.0.0.1:56465"
-$102
-List of clients:
-               -> Client: "127.0.0.1:56466" -- Status: Executor -- Subscriptions: {}
-$41
-[127.0.0.1:56466] ["set", "key", "value"]
-$30
-New conection: 127.0.0.1:56467
-$188
-List of clients:
-               -> Client: "127.0.0.1:56466" -- Status: Executor -- Subscriptions: {}
-               -> Client: "127.0.0.1:56467" -- Status: Executor -- Subscriptions: {}
-$28
-Server OFF in 127.0.0.1:6379
-$30
-[127.0.0.1:56467] ["shutdown"]
-$37
-Client disconected: "127.0.0.1:56467"
-$37
-Client disconected: "127.0.0.1:56466"
-$21
-Log center is closed.
-$27
-Server ON in 127.0.0.1:6379
-$30
-New conection: 127.0.0.1:59664
-$102
-List of clients:
-               -> Client: "127.0.0.1:59664" -- Status: Executor -- Subscriptions: {}
-$30
-New conection: 127.0.0.1:59665
-$188
-List of clients:
-               -> Client: "127.0.0.1:59664" -- Status: Executor -- Subscriptions: {}
-               -> Client: "127.0.0.1:59665" -- Status: Executor -- Subscriptions: {}
-$28
-Server OFF in 127.0.0.1:6379
-$30
-[127.0.0.1:59665] ["shutdown"]
-$37
-Client disconected: "127.0.0.1:59664"
-$37
-Client disconected: "127.0.0.1:59665"
-$21
-Log center is closed.
-$27
-Server ON in 127.0.0.1:6379
-$30
-New conection: 127.0.0.1:56547
-$102
-List of clients:
-               -> Client: "127.0.0.1:56547" -- Status: Executor -- Subscriptions: {}
-$30
-New conection: 127.0.0.1:56548
-$188
-List of clients:
-               -> Client: "127.0.0.1:56547" -- Status: Executor -- Subscriptions: {}
-               -> Client: "127.0.0.1:56548" -- Status: Executor -- Subscriptions: {}
-$37
-Client disconected: "127.0.0.1:56547"
-$41
-[127.0.0.1:56548] ["set", "key", "value"]
-$30
-New conection: 127.0.0.1:56549
-$188
-List of clients:
-               -> Client: "127.0.0.1:56548" -- Status: Executor -- Subscriptions: {}
-               -> Client: "127.0.0.1:56549" -- Status: Executor -- Subscriptions: {}
-$28
-Server OFF in 127.0.0.1:6379
-$30
-[127.0.0.1:56549] ["shutdown"]
-$37
-Client disconected: "127.0.0.1:56549"
-$37
-Client disconected: "127.0.0.1:56548"
-$21
-Log center is closed.
-$27
-Server ON in 127.0.0.1:6379
-$30
-New conection: 127.0.0.1:37758
-$102
-List of clients:
-               -> Client: "127.0.0.1:37758" -- Status: Executor -- Subscriptions: {}
-$30
-New conection: 127.0.0.1:37760
-$188
-List of clients:
-               -> Client: "127.0.0.1:37758" -- Status: Executor -- Subscriptions: {}
-               -> Client: "127.0.0.1:37760" -- Status: Executor -- Subscriptions: {}
-$37
-Client disconected: "127.0.0.1:37758"
-$41
-[127.0.0.1:37760] ["set", "key", "value"]
-$30
-New conection: 127.0.0.1:37762
-$188
-List of clients:
-               -> Client: "127.0.0.1:37760" -- Status: Executor -- Subscriptions: {}
-               -> Client: "127.0.0.1:37762" -- Status: Executor -- Subscriptions: {}
-$28
-Server OFF in 127.0.0.1:6379
-$30
-[127.0.0.1:37762] ["shutdown"]
-$37
-Client disconected: "127.0.0.1:37762"
-$37
-Client disconected: "127.0.0.1:37760"
-$21
-Log center is closed.
-$27
-Server ON in 127.0.0.1:6379
-$30
-New conection: 127.0.0.1:38812
-$102
-List of clients:
-               -> Client: "127.0.0.1:38812" -- Status: Executor -- Subscriptions: {}
-$37
-Client disconected: "127.0.0.1:38812"
-$30
-New conection: 127.0.0.1:38814
-$102
-List of clients:
-               -> Client: "127.0.0.1:38814" -- Status: Executor -- Subscriptions: {}
-$41
-[127.0.0.1:38814] ["set", "key", "value"]
-$30
-New conection: 127.0.0.1:38816
-$188
-List of clients:
-               -> Client: "127.0.0.1:38814" -- Status: Executor -- Subscriptions: {}
-               -> Client: "127.0.0.1:38816" -- Status: Executor -- Subscriptions: {}
-$28
-Server OFF in 127.0.0.1:6379
-$30
-[127.0.0.1:38816] ["shutdown"]
-$37
-Client disconected: "127.0.0.1:38814"
-$37
-Client disconected: "127.0.0.1:38816"
-$21
-Log center is closed.
-$27
-Server ON in 127.0.0.1:6379
-$30
-New conection: 127.0.0.1:44078
-$102
-List of clients:
-               -> Client: "127.0.0.1:44078" -- Status: Executor -- Subscriptions: {}
-$30
-New conection: 127.0.0.1:44080
-$188
-List of clients:
-               -> Client: "127.0.0.1:44078" -- Status: Executor -- Subscriptions: {}
-               -> Client: "127.0.0.1:44080" -- Status: Executor -- Subscriptions: {}
-$37
-Client disconected: "127.0.0.1:44078"
-$41
-[127.0.0.1:44080] ["set", "key", "value"]
-$30
-New conection: 127.0.0.1:44082
-$188
-List of clients:
-               -> Client: "127.0.0.1:44080" -- Status: Executor -- Subscriptions: {}
-               -> Client: "127.0.0.1:44082" -- Status: Executor -- Subscriptions: {}
-$28
-Server OFF in 127.0.0.1:6379
-$37
-Client disconected: "127.0.0.1:44080"
-$27
-Server ON in 127.0.0.1:6379
-$30
-New conection: 127.0.0.1:44680
-$102
-List of clients:
-               -> Client: "127.0.0.1:44680" -- Status: Executor -- Subscriptions: {}
-$30
-New conection: 127.0.0.1:44682
-$37
-Client disconected: "127.0.0.1:44680"
-$102
-List of clients:
-               -> Client: "127.0.0.1:44682" -- Status: Executor -- Subscriptions: {}
-$41
-[127.0.0.1:44682] ["set", "key", "value"]
-$30
-New conection: 127.0.0.1:44684
-$188
-List of clients:
-               -> Client: "127.0.0.1:44682" -- Status: Executor -- Subscriptions: {}
-               -> Client: "127.0.0.1:44684" -- Status: Executor -- Subscriptions: {}
-$28
-Server OFF in 127.0.0.1:6379
-$30
-[127.0.0.1:44684] ["shutdown"]
-$37
-Client disconected: "127.0.0.1:44684"
-$37
-Client disconected: "127.0.0.1:44682"
-$27
-Server ON in 127.0.0.1:6379
-$30
-New conection: 127.0.0.1:45050
-$102
-List of clients:
-               -> Client: "127.0.0.1:45050" -- Status: Executor -- Subscriptions: {}
-$30
-New conection: 127.0.0.1:45052
-$188
-List of clients:
-               -> Client: "127.0.0.1:45050" -- Status: Executor -- Subscriptions: {}
-               -> Client: "127.0.0.1:45052" -- Status: Executor -- Subscriptions: {}
-$30
-New conection: 127.0.0.1:45054
-$274
-List of clients:
-               -> Client: "127.0.0.1:45050" -- Status: Executor -- Subscriptions: {}
-               -> Client: "127.0.0.1:45052" -- Status: Executor -- Subscriptions: {}
-               -> Client: "127.0.0.1:45054" -- Status: Executor -- Subscriptions: {}
-$30
-New conection: 127.0.0.1:45056
-$360
-List of clients:
-               -> Client: "127.0.0.1:45050" -- Status: Executor -- Subscriptions: {}
-               -> Client: "127.0.0.1:45052" -- Status: Executor -- Subscriptions: {}
-               -> Client: "127.0.0.1:45054" -- Status: Executor -- Subscriptions: {}
-               -> Client: "127.0.0.1:45056" -- Status: Executor -- Subscriptions: {}
-$28
-Server OFF in 127.0.0.1:6379
-$30
-[127.0.0.1:45056] ["shutdown"]
-$27
-Server ON in 127.0.0.1:6379
-$30
-New conection: 127.0.0.1:45100
-$102
-List of clients:
-               -> Client: "127.0.0.1:45100" -- Status: Executor -- Subscriptions: {}
-$30
-New conection: 127.0.0.1:45102
-$188
-List of clients:
-               -> Client: "127.0.0.1:45100" -- Status: Executor -- Subscriptions: {}
-               -> Client: "127.0.0.1:45102" -- Status: Executor -- Subscriptions: {}
-$30
-New conection: 127.0.0.1:45104
-$274
-List of clients:
-               -> Client: "127.0.0.1:45100" -- Status: Executor -- Subscriptions: {}
-               -> Client: "127.0.0.1:45102" -- Status: Executor -- Subscriptions: {}
-               -> Client: "127.0.0.1:45104" -- Status: Executor -- Subscriptions: {}
-$30
-New conection: 127.0.0.1:45106
-$360
-List of clients:
-               -> Client: "127.0.0.1:45100" -- Status: Executor -- Subscriptions: {}
-               -> Client: "127.0.0.1:45102" -- Status: Executor -- Subscriptions: {}
-               -> Client: "127.0.0.1:45104" -- Status: Executor -- Subscriptions: {}
-               -> Client: "127.0.0.1:45106" -- Status: Executor -- Subscriptions: {}
-$28
-Server OFF in 127.0.0.1:6379
-$30
-[127.0.0.1:45106] ["shutdown"]
-$37
-Client disconected: "127.0.0.1:45100"
-$37
-Client disconected: "127.0.0.1:45102"
-$37
-Client disconected: "127.0.0.1:45104"
-$37
-Client disconected: "127.0.0.1:45106"
-$21
-Log center is closed.
-$27
-Server ON in 127.0.0.1:6379
-$30
-New conection: 127.0.0.1:45298
-$102
-List of clients:
-               -> Client: "127.0.0.1:45298" -- Status: Executor -- Subscriptions: {}
-$37
-Client disconected: "127.0.0.1:45298"
-$30
-New conection: 127.0.0.1:45300
-$102
-List of clients:
-               -> Client: "127.0.0.1:45300" -- Status: Executor -- Subscriptions: {}
-$41
-[127.0.0.1:45300] ["set", "key", "value"]
-$30
-New conection: 127.0.0.1:45302
-$188
-List of clients:
-               -> Client: "127.0.0.1:45300" -- Status: Executor -- Subscriptions: {}
-               -> Client: "127.0.0.1:45302" -- Status: Executor -- Subscriptions: {}
-$28
-Server OFF in 127.0.0.1:6379
-$30
-[127.0.0.1:45302] ["shutdown"]
-$37
-Client disconected: "127.0.0.1:45300"
-$37
-Client disconected: "127.0.0.1:45302"
-$21
-Log center is closed.
-$27
-Server ON in 127.0.0.1:6379
-$27
-Server ON in 127.0.0.1:6379
-$27
-Server ON in 127.0.0.1:6379
-$30
-New conection: 127.0.0.1:46642
-$102
-List of clients:
-               -> Client: "127.0.0.1:46642" -- Status: Executor -- Subscriptions: {}
-$37
-Client disconected: "127.0.0.1:46642"
-$30
-New conection: 127.0.0.1:46644
-$102
-List of clients:
-               -> Client: "127.0.0.1:46644" -- Status: Executor -- Subscriptions: {}
-$41
-[127.0.0.1:46644] ["set", "key", "value"]
-$30
-New conection: 127.0.0.1:46646
-$188
-List of clients:
-               -> Client: "127.0.0.1:46644" -- Status: Executor -- Subscriptions: {}
-               -> Client: "127.0.0.1:46646" -- Status: Executor -- Subscriptions: {}
-$28
-Server OFF in 127.0.0.1:6379
-$37
-Client disconected: "127.0.0.1:46644"
-$21
-Log center is closed.
-$27
-Server ON in 127.0.0.1:6379
-$30
-New conection: 127.0.0.1:46650
-$102
-List of clients:
-               -> Client: "127.0.0.1:46650" -- Status: Executor -- Subscriptions: {}
-$30
-New conection: 127.0.0.1:46652
-$188
-List of clients:
-               -> Client: "127.0.0.1:46650" -- Status: Executor -- Subscriptions: {}
-               -> Client: "127.0.0.1:46652" -- Status: Executor -- Subscriptions: {}
-$41
-[127.0.0.1:46652] ["set", "key", "value"]
-$32
-[127.0.0.1:46650] ["get", "key"]
-$40
-[127.0.0.1:46652] ["set", "key", "hola"]
-$32
-[127.0.0.1:46650] ["get", "key"]
-$27
-Server ON in 127.0.0.1:6379
-$30
-New conection: 127.0.0.1:46656
-$102
-List of clients:
-               -> Client: "127.0.0.1:46656" -- Status: Executor -- Subscriptions: {}
-$30
-New conection: 127.0.0.1:46658
-$188
-List of clients:
-               -> Client: "127.0.0.1:46656" -- Status: Executor -- Subscriptions: {}
-               -> Client: "127.0.0.1:46658" -- Status: Executor -- Subscriptions: {}
-$30
-New conection: 127.0.0.1:46660
-$274
-List of clients:
-               -> Client: "127.0.0.1:46656" -- Status: Executor -- Subscriptions: {}
-               -> Client: "127.0.0.1:46658" -- Status: Executor -- Subscriptions: {}
-               -> Client: "127.0.0.1:46660" -- Status: Executor -- Subscriptions: {}
-$28
-Server OFF in 127.0.0.1:6379
-$30
-[127.0.0.1:46660] ["shutdown"]
-$37
-Client disconected: "127.0.0.1:46656"
-$37
-Client disconected: "127.0.0.1:46658"
-$37
-Client disconected: "127.0.0.1:46660"
-$21
-Log center is closed.
-$27
-Server ON in 127.0.0.1:6379
-$30
-New conection: 127.0.0.1:46672
-$102
-List of clients:
-               -> Client: "127.0.0.1:46672" -- Status: Executor -- Subscriptions: {}
-$27
-Server ON in 127.0.0.1:6379
-$30
-New conection: 127.0.0.1:46690
-$102
-List of clients:
-               -> Client: "127.0.0.1:46690" -- Status: Executor -- Subscriptions: {}
-$27
-Server ON in 127.0.0.1:6379
-$30
-New conection: 127.0.0.1:46732
-$102
-List of clients:
-               -> Client: "127.0.0.1:46732" -- Status: Executor -- Subscriptions: {}
-$29
-[127.0.0.1:46732] ["monitor"]
-$37
-Client disconected: "127.0.0.1:46732"
-$27
-Server ON in 127.0.0.1:6379
-$30
-New conection: 127.0.0.1:46738
-$102
-List of clients:
-               -> Client: "127.0.0.1:46738" -- Status: Executor -- Subscriptions: {}
-$30
-New conection: 127.0.0.1:46742
-$188
-List of clients:
-               -> Client: "127.0.0.1:46738" -- Status: Executor -- Subscriptions: {}
-               -> Client: "127.0.0.1:46742" -- Status: Executor -- Subscriptions: {}
-$30
-New conection: 127.0.0.1:46744
-$274
-List of clients:
-               -> Client: "127.0.0.1:46738" -- Status: Executor -- Subscriptions: {}
-               -> Client: "127.0.0.1:46742" -- Status: Executor -- Subscriptions: {}
-               -> Client: "127.0.0.1:46744" -- Status: Executor -- Subscriptions: {}
-$28
-Server OFF in 127.0.0.1:6379
-$30
-[127.0.0.1:46744] ["shutdown"]
-$37
-Client disconected: "127.0.0.1:46738"
-$37
-Client disconected: "127.0.0.1:46742"
-$37
-Client disconected: "127.0.0.1:46744"
-$21
-Log center is closed.
-$27
-Server ON in 127.0.0.1:6379
-$30
-New conection: 127.0.0.1:46966
-$102
-List of clients:
-               -> Client: "127.0.0.1:46966" -- Status: Executor -- Subscriptions: {}
-$30
-New conection: 127.0.0.1:46968
-$188
-List of clients:
-               -> Client: "127.0.0.1:46966" -- Status: Executor -- Subscriptions: {}
-               -> Client: "127.0.0.1:46968" -- Status: Executor -- Subscriptions: {}
-$39
-[127.0.0.1:46968] ["subscribe", "hola"]
-$41
-[127.0.0.1:46966] ["publish", "hola", ""]
-$47
-[127.0.0.1:46966] ["publish", "hola", "asdsad"]
-$28
-Server OFF in 127.0.0.1:6379
-$30
-[127.0.0.1:46966] ["shutdown"]
-$37
-Client disconected: "127.0.0.1:46966"
-$37
-Client disconected: "127.0.0.1:46968"
-$21
-Log center is closed.
-$27
-Server ON in 127.0.0.1:6379
-$30
-New conection: 127.0.0.1:47248
-$102
-List of clients:
-               -> Client: "127.0.0.1:47248" -- Status: Executor -- Subscriptions: {}
-$28
-Server OFF in 127.0.0.1:6379
-$30
-[127.0.0.1:47248] ["shutdown"]
-$21
-Log center is closed.
-$27
-Server ON in 127.0.0.1:6379
-$30
-New conection: 127.0.0.1:47252
-$102
-List of clients:
-               -> Client: "127.0.0.1:47252" -- Status: Executor -- Subscriptions: {}
-$28
-Server OFF in 127.0.0.1:6379
-$30
-[127.0.0.1:47252] ["shutdown"]
-$37
-Client disconected: "127.0.0.1:47252"
-$21
-Log center is closed.
-$27
-Server ON in 127.0.0.1:6379
-$30
-New conection: 127.0.0.1:36610
-$102
-List of clients:
-               -> Client: "127.0.0.1:36610" -- Status: Executor -- Subscriptions: {}
-$37
-Client disconected: "127.0.0.1:36610"
-$30
-New conection: 127.0.0.1:36612
-$102
-List of clients:
-               -> Client: "127.0.0.1:36612" -- Status: Executor -- Subscriptions: {}
-$41
-[127.0.0.1:36612] ["set", "key", "value"]
-$30
-New conection: 127.0.0.1:36614
-$188
-List of clients:
-               -> Client: "127.0.0.1:36612" -- Status: Executor -- Subscriptions: {}
-               -> Client: "127.0.0.1:36614" -- Status: Executor -- Subscriptions: {}
-$28
-Server OFF in 127.0.0.1:6379
-$37
-Client disconected: "127.0.0.1:36612"
-$44
-SOCKET Attempted to write to a closed socket
-$21
-Log center is closed.
-$27
-Server ON in 127.0.0.1:6379
-$30
-New conection: 127.0.0.1:58360
-$102
-List of clients:
-               -> Client: "127.0.0.1:58360" -- Status: Executor -- Subscriptions: {}
-$30
-New conection: 127.0.0.1:58362
-$188
-List of clients:
-               -> Client: "127.0.0.1:58360" -- Status: Executor -- Subscriptions: {}
-               -> Client: "127.0.0.1:58362" -- Status: Executor -- Subscriptions: {}
-$37
-Client disconected: "127.0.0.1:58360"
-$41
-[127.0.0.1:58362] ["set", "key", "value"]
-$30
-New conection: 127.0.0.1:58364
-$188
-List of clients:
-               -> Client: "127.0.0.1:58362" -- Status: Executor -- Subscriptions: {}
-               -> Client: "127.0.0.1:58364" -- Status: Executor -- Subscriptions: {}
-$28
-Server OFF in 127.0.0.1:6379
-$30
-[127.0.0.1:58364] ["shutdown"]
-$37
-Client disconected: "127.0.0.1:58364"
-$37
-Client disconected: "127.0.0.1:58362"
-$21
-Log center is closed.
-$27
-Server ON in 127.0.0.1:6379
-$30
-New conection: 127.0.0.1:56744
-$102
-List of clients:
-               -> Client: "127.0.0.1:56744" -- Status: Executor -- Subscriptions: {}
-$30
-New conection: 127.0.0.1:56746
-$37
-Client disconected: "127.0.0.1:56744"
-$102
-List of clients:
-               -> Client: "127.0.0.1:56746" -- Status: Executor -- Subscriptions: {}
-$41
-[127.0.0.1:56746] ["set", "key", "value"]
-$30
-New conection: 127.0.0.1:56748
-$188
-List of clients:
-               -> Client: "127.0.0.1:56746" -- Status: Executor -- Subscriptions: {}
-               -> Client: "127.0.0.1:56748" -- Status: Executor -- Subscriptions: {}
-$28
-Server OFF in 127.0.0.1:6379
-$30
-[127.0.0.1:56748] ["shutdown"]
-$37
-Client disconected: "127.0.0.1:56748"
-$37
-Client disconected: "127.0.0.1:56746"
+Client disconected: "127.0.0.1:52521"
 $21
 Log center is closed.

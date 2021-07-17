@@ -15,6 +15,7 @@ impl Runnable<Database> for RPush {
 
 #[cfg(test)]
 pub mod test_rpush {
+    use crate::commands::create_notifier;
 
     use std::collections::VecDeque;
 
@@ -24,7 +25,8 @@ pub mod test_rpush {
 
     #[test]
     fn test01_rpush_values_on_an_existing_list() {
-        let mut data = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut data = Database::new(notifier);
         let mut new_list = VecDeque::new();
         new_list.push_back("this".to_string());
         new_list.push_back("is".to_string());
@@ -51,7 +53,8 @@ pub mod test_rpush {
 
     #[test]
     fn test02_rpush_values_on_a_non_existing_list() {
-        let mut data = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut data = Database::new(notifier);
         let buffer = vec_strings!["key", "this", "is", "a", "list"];
         let encode = RPush.run(buffer, &mut data);
         assert_eq!(encode.unwrap(), ":4\r\n".to_string());

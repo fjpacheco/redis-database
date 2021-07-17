@@ -21,13 +21,15 @@ impl Runnable<Database> for Del {
 
 #[cfg(test)]
 mod test_del {
+    use crate::commands::create_notifier;
 
     use super::*;
     use crate::{database::TypeSaved, vec_strings};
 
     #[test]
     fn test01_del_existing_key() {
-        let mut database = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database = Database::new(notifier);
         database.insert("key".to_string(), TypeSaved::String("value".to_string()));
         let buffer_mock_del = vec_strings!["key"];
         let result_received = Del.run(buffer_mock_del, &mut database);
@@ -36,7 +38,8 @@ mod test_del {
 
     #[test]
     fn test02_del_non_existing_key() {
-        let mut database = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database = Database::new(notifier);
         database.insert("key".to_string(), TypeSaved::String("value".to_string()));
         let buffer_mock_del = vec_strings!["key1"];
         let result_received = Del.run(buffer_mock_del, &mut database);
@@ -45,7 +48,8 @@ mod test_del {
 
     #[test]
     fn test01_del_key_just_deleted() {
-        let mut database = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database = Database::new(notifier);
         database.insert("key".to_string(), TypeSaved::String("value".to_string()));
         let buffer_mock_del_1 = vec_strings!["key"];
         let result1 = Del.run(buffer_mock_del_1, &mut database);

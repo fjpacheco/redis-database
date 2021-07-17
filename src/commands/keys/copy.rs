@@ -41,6 +41,7 @@ fn check_error_cases(buffer: &[String]) -> Result<(), ErrorStruct> {
 
 #[cfg(test)]
 mod test_copy_function {
+    use crate::commands::create_notifier;
 
     use std::collections::{HashSet, VecDeque};
 
@@ -51,7 +52,8 @@ mod test_copy_function {
     #[test]
     fn test01_copy_value_string_of_key_source_existent_into_key_destiny_non_existent_return_success_one(
     ) {
-        let mut database_mock = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database_mock = Database::new(notifier);
         database_mock.insert("key".to_string(), TypeSaved::String("value".to_string()));
         let buffer_mock_get = vec_strings!["key", "key_new"];
 
@@ -72,7 +74,8 @@ mod test_copy_function {
     #[test]
     fn test02_copy_value_string_of_key_source_existent_into_key_destiny_existent_return_error_zero()
     {
-        let mut database_mock = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database_mock = Database::new(notifier);
         database_mock.insert("key".to_string(), TypeSaved::String("value".to_string()));
         database_mock.insert(
             "key_new".to_string(),
@@ -89,7 +92,8 @@ mod test_copy_function {
     #[test]
     fn test03_copy_value_string_of_key_source_non_existent_into_key_destiny_non_existent_return_error_zero(
     ) {
-        let mut database_mock = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database_mock = Database::new(notifier);
         database_mock.insert("key".to_string(), TypeSaved::String("value".to_string()));
         let buffer_mock_get = vec_strings!["key_random", "key_new"];
 
@@ -105,7 +109,8 @@ mod test_copy_function {
         let mut set = HashSet::new();
         set.insert(String::from("m1"));
         set.insert(String::from("m2"));
-        let mut database_mock = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database_mock = Database::new(notifier);
         database_mock.insert("key".to_string(), TypeSaved::Set(set));
 
         let buffer_mock_get = vec_strings!["key", "key_new"];
@@ -131,7 +136,8 @@ mod test_copy_function {
     #[test]
     fn test06_copy_value_list_of_key_source_existent_into_key_destiny_non_existent_return_success_one(
     ) {
-        let mut database_mock = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database_mock = Database::new(notifier);
         let mut new_list = VecDeque::new();
         new_list.push_back("value1".to_string());
         new_list.push_back("value2".to_string());

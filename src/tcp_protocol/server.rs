@@ -3,27 +3,28 @@ use std::{
     net::{Ipv4Addr, SocketAddrV4, TcpStream},
     sync::{
         atomic::{AtomicBool, Ordering},
-        mpsc::{self, channel},
+        mpsc::{self, channel, Sender},
         Arc, Mutex,
     },
     time::Duration,
 };
 
 use crate::{
+    communication::log_messages::LogMessage,
     file_manager::FileManager,
     logs::log_center::LogCenter,
     native_types::ErrorStruct,
     redis_config::RedisConfig,
     tcp_protocol::{
         client_atributes::client_fields::ClientFields, command_delegator::CommandDelegator,
-        listener_processor::ListenerProcessor, runnables_map::RunnablesMap,
+        listener_processor::ListenerProcessor, notifier::Notifier, runnables_map::RunnablesMap,
     },
     vec_strings, Database,
 };
 
 use super::{
     client_list::ClientList, command_delegator::CommandsMap,
-    command_subdelegator::CommandSubDelegator, notifiers::Notifiers,
+    command_subdelegator::CommandSubDelegator,
 };
 #[derive(Clone)]
 pub struct ServerRedisAtributes {
@@ -94,7 +95,6 @@ impl ServerRedis {
         // ################## 1° Initialization structures ##################
         let config = RedisConfig::parse_config(argv)?;
         let listener = ListenerProcessor::new_tcp_listener(&config)?;
-        let database = Database::new();
 
         // ################## 2° Initialization structures ##################
         let (command_delegator_sender, command_delegator_recv) = channel();
@@ -121,6 +121,8 @@ impl ServerRedis {
             shared_clients,
         };
 
+        let notifier = Notifier::new(sender_log.clone(), command_delegator_sender.clone());
+        let database = Database::new(notifier.clone());
         let runnables_database = RunnablesMap::<Database>::database();
         let runnables_server = RunnablesMap::<ServerRedisAtributes>::server();
 
@@ -153,10 +155,10 @@ impl ServerRedis {
         ctrlc::set_handler(move ||  {
             let client = redis::Client::open(
                 "redis://".to_owned()
-                    + &c_config.ip()
-                    + ":"
-                    + &c_config.port()
-                    + "/",
+                + &c_config.ip()
+                + ":"
+                + &c_config.port()
+                + "/",
             )
             .unwrap();
             let mut conection_client = client.get_connection().unwrap();
@@ -169,8 +171,7 @@ impl ServerRedis {
         */
 
         // TODO: EN CONSTRUCCIÓN.. ESTO ESTA MUY FEO! Hay que tener en cuenta el análisis de unwraps!!!!!!!!!!!!
-        let notifiers = Notifiers::new(sender_log.clone(), command_delegator_sender.clone());
-        ListenerProcessor::incoming(listener, server_redis.clone(), notifiers.clone());
+        ListenerProcessor::incoming(listener, server_redis.clone(), notifier.clone());
 
         let (sender_drop, recv_drop) = channel();
         command_delegator_sender
@@ -192,7 +193,7 @@ impl ServerRedis {
 
                 drop(command_delegator_sender);
                 drop(sender_log);
-                drop(notifiers);
+                drop(notifier);
                 drop(server_redis);
                 drop(a);
                 drop(b);
@@ -207,7 +208,7 @@ impl ServerRedis {
         c_commands_map.lock().unwrap().kill_senders();
         drop(command_delegator_sender);
         drop(sender_log);
-        drop(notifiers);
+        drop(notifier);
         drop(server_redis);
         drop(a);
         drop(b);

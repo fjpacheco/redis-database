@@ -13,7 +13,7 @@ pub mod client_list;
 pub mod command_delegator;
 pub mod command_subdelegator;
 pub mod listener_processor;
-pub mod notifiers;
+pub mod notifier;
 pub mod runnables_map;
 pub mod server;
 

@@ -126,7 +126,8 @@ fn check_severity(error: ErrorStruct) -> Result<(), ErrorStruct> {
 
 #[cfg(test)]
 pub mod test_database_command_delegator {
-    /*use crate::commands::lists::rpop::RPop;
+    use crate::commands::create_notifier;
+    use crate::commands::lists::rpop::RPop;
     use crate::commands::lists::rpush::RPush;
     use crate::commands::strings::get::Get;
     use crate::commands::strings::set::Set;
@@ -158,7 +159,8 @@ pub mod test_database_command_delegator {
 
         let runnables_map = RunnablesMap::new(map);
 
-        let database = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let database = Database::new(notifier);
 
         let (tx1, rx1): (Sender<RawCommand>, Receiver<RawCommand>) = mpsc::channel();
 
@@ -209,7 +211,8 @@ pub mod test_database_command_delegator {
         map.insert(String::from("set"), Arc::new(Box::new(Set)));
         let runnables_map = RunnablesMap::new(map);
 
-        let database = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let database = Database::new(notifier);
 
         let (tx1, rx1): (Sender<RawCommand>, Receiver<RawCommand>) = mpsc::channel();
 
@@ -253,7 +256,8 @@ pub mod test_database_command_delegator {
         map.insert(String::from("llen"), Arc::new(Box::new(Llen)));
         let runnables_map = RunnablesMap::new(map);
 
-        let database = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let database = Database::new(notifier);
 
         let (tx1, rx1): (Sender<RawCommand>, Receiver<RawCommand>) = mpsc::channel();
 
@@ -304,5 +308,5 @@ pub mod test_database_command_delegator {
         drop(tx1);
         let response1 = rx4.recv().unwrap();
         assert_eq!(response1.unwrap(), ":0\r\n".to_string());
-    }*/
+    }
 }
