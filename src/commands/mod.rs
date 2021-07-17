@@ -1,4 +1,11 @@
-use crate::{messages::redis_messages, native_types::ErrorStruct};
+use std::sync::mpsc::{self, Receiver};
+
+use crate::{
+    communication::log_messages::LogMessage,
+    messages::redis_messages,
+    native_types::ErrorStruct,
+    tcp_protocol::{notifiers::Notifiers, RawCommand},
+};
 
 pub mod keys;
 pub mod lists;
@@ -101,4 +108,15 @@ pub fn check_empty_2(buffer: &[String]) -> Result<(), ErrorStruct> {
     } else {
         Ok(())
     }
+}
+
+pub fn create_notifier() -> (
+    Notifiers,
+    Receiver<Option<LogMessage>>,
+    Receiver<Option<RawCommand>>,
+) {
+    let (log_snd, log_rcv) = mpsc::channel();
+    let (cmd_snd, cmd_rcv) = mpsc::channel();
+
+    (Notifiers::new(log_snd, cmd_snd), log_rcv, cmd_rcv)
 }

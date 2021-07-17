@@ -69,8 +69,8 @@ pub mod test_llen {
         );
         let sorted = Sort.run(vec!["key".to_string()], &mut db);
         assert_eq!(
-            sorted.unwrap(),
-            "*4\r\n$1\r\na\r\n$1\r\nd\r\n$1\r\ns\r\n$1\r\nw\r\n".to_string()
+            &sorted.unwrap(),
+            "*4\r\n$1\r\na\r\n$1\r\nd\r\n$1\r\ns\r\n$1\r\nw\r\n"
         );
     }
 }

@@ -104,6 +104,13 @@ impl LogMessage {
         )
     }
 
+    pub fn key_touched(key: &str, time: u64) -> LogMessage {
+        LogMessage::new(
+            2,
+            format!("Key {} has been updated. Last access: {}", key, time),
+        )
+    }
+
     pub fn detail_clients(clients_detail: Vec<String>) -> LogMessage {
         let mut message = String::from("List of clients:\r\n");
         for (index, client) in clients_detail.iter().enumerate() {

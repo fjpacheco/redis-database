@@ -126,7 +126,7 @@ fn check_severity(error: ErrorStruct) -> Result<(), ErrorStruct> {
 
 #[cfg(test)]
 pub mod test_database_command_delegator {
-    use crate::commands::lists::rpop::RPop;
+    /*use crate::commands::lists::rpop::RPop;
     use crate::commands::lists::rpush::RPush;
     use crate::commands::strings::get::Get;
     use crate::commands::strings::set::Set;
@@ -304,5 +304,5 @@ pub mod test_database_command_delegator {
         drop(tx1);
         let response1 = rx4.recv().unwrap();
         assert_eq!(response1.unwrap(), ":0\r\n".to_string());
-    }
+    }*/
 }

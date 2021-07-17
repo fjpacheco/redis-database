@@ -273,7 +273,7 @@ fn clone_command_vec(command_vec: &[String]) -> Vec<String> {
 #[cfg(test)]
 pub mod test_command_delegator {
 
-    use crate::tcp_protocol::command_subdelegator::CommandSubDelegator;
+    /*use crate::tcp_protocol::command_subdelegator::CommandSubDelegator;
     use crate::tcp_protocol::BoxedCommand;
     use crate::vec_strings;
     use crate::{
@@ -451,5 +451,5 @@ pub mod test_command_delegator {
         drop(snd_test_cmd);
         drop(snd_cmd_dat);
         command_delegator.join().unwrap();
-    }
+    }*/
 }

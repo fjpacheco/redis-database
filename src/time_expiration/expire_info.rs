@@ -1,8 +1,8 @@
-use std::time::Duration;
-use std::time::SystemTime;
-//use std::time::Instant;
 use crate::messages::redis_messages;
 use crate::native_types::error::ErrorStruct;
+use crate::{communication::log_messages::LogMessage, tcp_protocol::notifiers::Notifiers};
+use std::time::Duration;
+use std::time::SystemTime;
 use std::time::UNIX_EPOCH;
 
 pub struct ExpireInfo {
@@ -23,22 +23,31 @@ impl ExpireInfo {
         }
     }
 
-    pub fn is_expired(&mut self) -> bool {
+    pub fn is_expired(&mut self, notifier: Option<&Notifiers>, key_name: &str) -> bool {
         if self.timeout.is_some() {
-            self.update();
+            let _ = self.update(notifier, key_name);
             !matches!(self.timeout, Some(_))
         } else {
             false
         }
     }
 
-    pub fn update(&mut self) {
+    pub fn update(
+        &mut self,
+        wrapped_notifier: Option<&Notifiers>,
+        key_name: &str,
+    ) -> Result<(), ErrorStruct> {
         let previous_touch = self.last_touch;
         self.last_touch = SystemTime::now();
         if let Some(ttl) = self.timeout {
-            let difference = self.last_touch.duration_since(previous_touch).unwrap();
+            let difference = duration_since_unix_epoch(&self.last_touch)?;
             self.timeout = ttl.checked_sub(difference);
         }
+        if let Some(notifier) = wrapped_notifier {
+            let from_epoch = duration_since_unix_epoch(&previous_touch)?;
+            notifier.send_log(LogMessage::key_touched(key_name, from_epoch.as_secs()))?;
+        }
+        Ok(())
     }
 
     pub fn ttl(&self) -> Option<u64> {
@@ -53,13 +62,10 @@ impl ExpireInfo {
 
     pub fn set_timeout_unix_timestamp(&mut self, duration: u64) -> Result<(), ErrorStruct> {
         self.last_touch = SystemTime::now();
-        self.last_touch
-            .duration_since(UNIX_EPOCH)
-            .map_err(|_| ErrorStruct::from(redis_messages::ttl_epoch_error()))
-            .and_then(|duration_since_epoch| {
-                self.timeout = Some(Duration::new(duration, 0) - duration_since_epoch);
-                Ok(())
-            })
+        duration_since_unix_epoch(&self.last_touch).and_then(|duration_since_epoch| {
+            self.timeout = Some(Duration::new(duration, 0) - duration_since_epoch);
+            Ok(())
+        })
     }
 
     pub fn persist(&mut self) -> Option<u64> {
@@ -68,6 +74,11 @@ impl ExpireInfo {
 }
 
 // DESHABILITENLO PARA NO COMERSE PRUEBAS QUE DURAN BANDA (O SEA 5 PRECIOSOS SEGUNDOS)
+
+fn duration_since_unix_epoch(time: &SystemTime) -> Result<Duration, ErrorStruct> {
+    time.duration_since(UNIX_EPOCH)
+        .map_err(|_| ErrorStruct::from(redis_messages::ttl_epoch_error()))
+}
 
 #[cfg(test)]
 mod test_clock {
@@ -79,7 +90,7 @@ mod test_clock {
     #[ignore]
     fn test01_new_expireinfo_does_not_have_timeout() {
         let mut info = ExpireInfo::new();
-        assert!(!info.is_expired());
+        assert!(!info.is_expired(None, "key"));
         assert_eq!(info.ttl(), None);
     }
 
@@ -90,10 +101,10 @@ mod test_clock {
         info.set_timeout(10).unwrap();
         assert_eq!(info.ttl(), Some(10));
         sleep(Duration::new(5, 0));
-        assert!(!info.is_expired());
+        assert!(!info.is_expired(None, "key"));
         assert_eq!(info.ttl(), Some(4));
         sleep(Duration::new(6, 0));
-        assert!(info.is_expired());
+        assert!(info.is_expired(None, "key"));
         assert_eq!(info.ttl(), None);
     }
 
@@ -107,7 +118,7 @@ mod test_clock {
         }
         assert_eq!(info.ttl(), Some(4));
         sleep(Duration::new(2, 0));
-        info.update();
+        assert!(info.update(None, "key").is_ok());
         assert_eq!(info.ttl(), Some(2));
     }
 }

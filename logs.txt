@@ -1353,3 +1353,35 @@ $37
 Client disconected: "127.0.0.1:58362"
 $21
 Log center is closed.
+$27
+Server ON in 127.0.0.1:6379
+$30
+New conection: 127.0.0.1:56744
+$102
+List of clients:
+               -> Client: "127.0.0.1:56744" -- Status: Executor -- Subscriptions: {}
+$30
+New conection: 127.0.0.1:56746
+$37
+Client disconected: "127.0.0.1:56744"
+$102
+List of clients:
+               -> Client: "127.0.0.1:56746" -- Status: Executor -- Subscriptions: {}
+$41
+[127.0.0.1:56746] ["set", "key", "value"]
+$30
+New conection: 127.0.0.1:56748
+$188
+List of clients:
+               -> Client: "127.0.0.1:56746" -- Status: Executor -- Subscriptions: {}
+               -> Client: "127.0.0.1:56748" -- Status: Executor -- Subscriptions: {}
+$28
+Server OFF in 127.0.0.1:6379
+$30
+[127.0.0.1:56748] ["shutdown"]
+$37
+Client disconected: "127.0.0.1:56748"
+$37
+Client disconected: "127.0.0.1:56746"
+$21
+Log center is closed.
