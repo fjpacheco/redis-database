@@ -40,43 +40,15 @@ impl FileHandler {
 
 pub struct LogCenter {
     handler: Option<JoinHandle<Result<(), ErrorStruct>>>,
-    sender: Sender<Option<LogMessage>>,
+    sender_log: Sender<Option<LogMessage>>,
     redis_config: Arc<Mutex<RedisConfig>>,
-}
-
-/*impl Drop for LogCenter {
-    fn drop(&mut self) {
-        println!("LOG CENTER: PODER DECIR ADIÓS ES CRECER");
-
-        match self.sender.send(None) {
-            Ok(()) => { /* Log has been closed */ }
-            Err(_) => { /* Log is already closed */ }
-        }
-
-        if let Some(handle) = self.handler.take() {
-            match handle.join() {
-                Ok(result) => self.notify_result(result).unwrap(),
-                Err(_) => self
-                    .notify_result(Err(ErrorStruct::from(redis_messages::thread_panic(
-                        "log center",
-                    ))))
-                    .unwrap(),
-            }
-        }
-    }
-}*/
-
-impl Drop for LogCenter {
-    fn drop(&mut self) {
-        let _ = self.join();
-    }
 }
 
 impl Joinable<()> for LogCenter {
     fn join(&mut self) -> Result<(), ErrorStruct> {
         println!("LOG CENTER: PODER DECIR ADIÓS ES CRECER");
 
-        let _ = self.sender.send(None);
+        let _ = self.sender_log.send(None);
 
         /*match self.sender.send(None) {
             Ok(()) => { /* Log Center has been closed right now */ }
@@ -108,7 +80,7 @@ impl LogCenter {
 
         Ok(LogCenter {
             handler: Some(log_handler),
-            sender,
+            sender_log: sender,
             redis_config,
         })
     }
@@ -193,7 +165,7 @@ impl LogCenter {
             self.print_and_write_notification(LogMessage::from_errorstruct(error))?;
         }
 
-        self.print_and_write_notification(LogMessage::log_closed())?;
+        self.print_and_write_notification(LogMessage::log_closed_success())?;
         Ok(())
     }
 

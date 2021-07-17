@@ -102,6 +102,14 @@ pub mod redis_messages {
         }
     }
 
+    pub fn client_timeout_expired() -> MessageRedis {
+        MessageRedis {
+            prefix: "CLIENT_OFF".to_string(),
+            message: "timeout expired".to_string(),
+            severity: ErrorSeverity::CloseClient,
+        }
+    }
+
     pub fn not_valid_executor() -> MessageRedis {
         MessageRedis {
             prefix: "ERR".to_string(),
@@ -184,10 +192,10 @@ pub mod redis_messages {
         }
     }
 
-    pub fn thread_panic(thread: &str) -> MessageRedis {
+    pub fn thread_panic(name_thread: &str) -> MessageRedis {
         MessageRedis {
             prefix: "THREADPANIC".to_string(),
-            message: format!("Thread '{}' has panicked", thread),
+            message: format!("Thread '{}' has panicked", name_thread),
             severity: ErrorSeverity::ShutdownServer,
         }
     }
@@ -212,6 +220,17 @@ pub mod redis_messages {
         MessageRedis {
             prefix: "ERR".to_string(),
             message: "Some command could not be run".to_string(),
+            severity: ErrorSeverity::Comunicate,
+        }
+    }
+
+    pub fn maximum_amount_exceeded(max: usize) -> MessageRedis {
+        MessageRedis {
+            prefix: "ERR".to_string(),
+            message: format!(
+                "There is no command which name has more than {} characters\r\n",
+                max
+            ),
             severity: ErrorSeverity::Comunicate,
         }
     }

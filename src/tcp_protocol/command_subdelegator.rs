@@ -1,3 +1,4 @@
+use crate::communication::log_messages::LogMessage;
 use crate::joinable::Joinable;
 use crate::messages::redis_messages;
 use crate::tcp_protocol::close_thread;
@@ -13,21 +14,21 @@ use crate::native_types::error_severity::ErrorSeverity;
 use crate::native_types::ErrorStruct;
 use crate::tcp_protocol::runnables_map::RunnablesMap;
 
+use super::notifiers::Notifiers;
 use super::{remove_command, RawCommand, Response};
 pub struct CommandSubDelegator {
     join: Option<JoinHandle<Result<(), ErrorStruct>>>,
+    notifier: Notifiers,
 }
 /// Interprets commands and delegates tasks
 
-impl Drop for CommandSubDelegator {
-    fn drop(&mut self) {
-        let _ = self.join();
-    }
-}
-
 impl Joinable<()> for CommandSubDelegator {
     fn join(&mut self) -> Result<(), ErrorStruct> {
-        close_thread(self.join.take(), "Command Subdelegator")
+        close_thread(
+            self.join.take(),
+            "Command Subdelegator",
+            self.notifier.clone(),
+        )
     }
 }
 impl CommandSubDelegator {
@@ -35,14 +36,15 @@ impl CommandSubDelegator {
         rcv_cmd: Receiver<RawCommand>,
         runnables_map: RunnablesMap<T>,
         data: T,
+        notifier: Notifiers,
     ) -> Result<Self, ErrorStruct>
     where
         T: Send + Sync + Display,
     {
         let builder = thread::Builder::new().name(format!("Command Sub-Delegator for {}", data));
-
+        let c_notifier = notifier.clone();
         let command_sub_delegator_handler = builder
-            .spawn(move || CommandSubDelegator::init(rcv_cmd, runnables_map, data))
+            .spawn(move || CommandSubDelegator::init(rcv_cmd, runnables_map, data, c_notifier))
             .map_err(|_| {
                 ErrorStruct::from(redis_messages::init_failed(
                     "Command Subdelegator",
@@ -52,6 +54,7 @@ impl CommandSubDelegator {
 
         Ok(Self {
             join: Some(command_sub_delegator_handler),
+            notifier,
         })
     }
 
@@ -59,6 +62,7 @@ impl CommandSubDelegator {
         rcv_cmd: Receiver<RawCommand>,
         runnables_map: RunnablesMap<T>,
         mut data: T,
+        notifier: Notifiers,
     ) -> Result<(), ErrorStruct>
     where
         T: Send + Sync + Display,
@@ -66,17 +70,23 @@ impl CommandSubDelegator {
         for (mut command_input_user, sender_to_client, _) in rcv_cmd.iter() {
             let command_type = remove_command(&mut command_input_user);
             if let Some(runnable_command) = runnables_map.get(&command_type) {
-                is_critical(run_command(
+                let err_critical = is_critical(run_command(
                     runnable_command,
                     command_input_user,
                     sender_to_client,
                     &mut data,
-                ))?;
+                ));
+                if let Err(err) = err_critical {
+                    if err.severity().eq(&Some(&ErrorSeverity::ShutdownServer)) {
+                        notifier.force_shutdown_server(err.print_it());
+                        return Err(err);
+                    }
+                }
             } else {
                 let error = redis_messages::command_not_found(command_type, command_input_user);
-                sender_to_client
-                    .send(Err(error))
-                    .map_err(|x| ErrorStruct::new("ERR_SENDER".into(), x.to_string()))?;
+                if sender_to_client.send(Err(error)).is_err() {
+                    notifier.send_log(LogMessage::channel_client_off())?;
+                }
             }
         }
         Ok(())
@@ -131,11 +141,13 @@ pub mod test_database_command_delegator {
     use crate::commands::strings::get::Get;
     use crate::commands::strings::set::Set;
     use crate::commands::strings::strlen::Strlen;
+    use crate::communication::log_messages::LogMessage;
     use crate::native_types::RError;
     use crate::native_types::RedisType;
     use crate::tcp_protocol::client_atributes::client_fields::ClientFields;
     use crate::tcp_protocol::BoxedCommand;
     use crate::{commands::lists::llen::Llen, tcp_protocol::Response};
+    use std::sync::atomic::AtomicBool;
     use std::sync::Arc;
     use std::sync::Mutex;
 
@@ -162,8 +174,20 @@ pub mod test_database_command_delegator {
 
         let (tx1, rx1): (Sender<RawCommand>, Receiver<RawCommand>) = mpsc::channel();
 
+        let (snd_log_test, _b): (Sender<Option<LogMessage>>, Receiver<Option<LogMessage>>) =
+            mpsc::channel();
+
+        let (snd_cmd_del_test, _c): (Sender<Option<RawCommand>>, Receiver<Option<RawCommand>>) =
+            mpsc::channel();
+        let notifiers = Notifiers::new(
+            snd_log_test,
+            snd_cmd_del_test,
+            Arc::new(AtomicBool::new(false)),
+            "test_addr".into(),
+        );
+
         let _database_command_delegator_recv =
-            CommandSubDelegator::start::<Database>(rx1, runnables_map, database);
+            CommandSubDelegator::start::<Database>(rx1, runnables_map, database, notifiers.clone());
 
         let (tx2, rx2): (Sender<Response>, Receiver<Response>) = mpsc::channel();
         let buffer_mock = vec_strings!["set", "key", "value"];
@@ -198,9 +222,10 @@ pub mod test_database_command_delegator {
         ))
         .unwrap();
 
-        drop(tx1);
         let response3 = rx4.recv().unwrap();
         assert_eq!(response3.unwrap(), ":5\r\n".to_string());
+        drop(notifiers);
+        drop(tx1);
     }
 
     #[test]
@@ -213,8 +238,20 @@ pub mod test_database_command_delegator {
 
         let (tx1, rx1): (Sender<RawCommand>, Receiver<RawCommand>) = mpsc::channel();
 
+        let (snd_log_test, _b): (Sender<Option<LogMessage>>, Receiver<Option<LogMessage>>) =
+            mpsc::channel();
+
+        let (snd_cmd_del_test, _c): (Sender<Option<RawCommand>>, Receiver<Option<RawCommand>>) =
+            mpsc::channel();
+        let notifiers = Notifiers::new(
+            snd_log_test,
+            snd_cmd_del_test,
+            Arc::new(AtomicBool::new(false)),
+            "test_addr".into(),
+        );
+
         let _database_command_delegator_recv =
-            CommandSubDelegator::start::<Database>(rx1, runnables_map, database);
+            CommandSubDelegator::start::<Database>(rx1, runnables_map, database, notifiers.clone());
 
         let (tx2, rx2): (Sender<Response>, Receiver<Response>) = mpsc::channel();
         let buffer_mock = vec_strings!["set", "key", "value"];
@@ -242,6 +279,7 @@ pub mod test_database_command_delegator {
             RError::encode(response2.unwrap_err()),
             "-ERR unknown command \'get\', with args beginning with: \'key\', \r\n".to_string()
         );
+        drop(notifiers);
         drop(tx1);
     }
 
@@ -256,10 +294,20 @@ pub mod test_database_command_delegator {
         let database = Database::new();
 
         let (tx1, rx1): (Sender<RawCommand>, Receiver<RawCommand>) = mpsc::channel();
+        let (snd_log_test, _b): (Sender<Option<LogMessage>>, Receiver<Option<LogMessage>>) =
+            mpsc::channel();
+
+        let (snd_cmd_del_test, _c): (Sender<Option<RawCommand>>, Receiver<Option<RawCommand>>) =
+            mpsc::channel();
+        let notifiers = Notifiers::new(
+            snd_log_test,
+            snd_cmd_del_test,
+            Arc::new(AtomicBool::new(false)),
+            "test_addr".into(),
+        );
 
         let _database_command_delegator_recv =
-            CommandSubDelegator::start::<Database>(rx1, runnables_map, database);
-
+            CommandSubDelegator::start::<Database>(rx1, runnables_map, database, notifiers.clone());
         let (tx2, rx2): (Sender<Response>, Receiver<Response>) = mpsc::channel();
         let buffer_mock = vec![
             "rpush".to_string(),
@@ -301,8 +349,10 @@ pub mod test_database_command_delegator {
             Arc::new(Mutex::new(ClientFields::default())),
         ))
         .unwrap();
-        drop(tx1);
         let response1 = rx4.recv().unwrap();
         assert_eq!(response1.unwrap(), ":0\r\n".to_string());
+
+        drop(notifiers);
+        drop(tx1);
     }
 }

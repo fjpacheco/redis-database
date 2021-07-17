@@ -81,13 +81,20 @@ impl LogMessage {
         LogMessage::new(2, "Log center has stopped working.".to_string())
     }
 
-    pub fn log_closed() -> LogMessage {
+    pub fn forced_shutdown(reason: String) -> LogMessage {
+        LogMessage::new(
+            2,
+            format!("Server is shutdown in a forced way. DETAIL: {}", reason),
+        )
+    }
+
+    pub fn log_closed_success() -> LogMessage {
         LogMessage::new(2, "Log center is closed.".to_string())
     }
 
     pub fn command_send_by_client(
         command: &[String],
-        client_fields: Arc<Mutex<ClientFields>>,
+        client_fields: &Arc<Mutex<ClientFields>>,
     ) -> LogMessage {
         let addr = client_fields.lock().unwrap().get_addr();
         LogMessage::new(2, format!("[{}] {:?}", addr, command))
@@ -102,6 +109,21 @@ impl LogMessage {
             2,
             format!("New conection: {:?}", client.peer_addr().unwrap()),
         )
+    }
+
+    pub fn theard_panic(name_thread: &str) -> LogMessage {
+        LogMessage::new(2, format!("Thread '{}' has panicked", name_thread))
+    }
+
+    pub fn channel_client_off() -> LogMessage {
+        LogMessage::new(
+            2,
+            "Error to send message a client. The channel of client is disconected.".to_string(),
+        )
+    }
+
+    pub fn theard_closed(name_thread: &str) -> LogMessage {
+        LogMessage::new(2, format!("Thread '{}' is closed.", name_thread))
     }
 
     pub fn detail_clients(clients_detail: Vec<String>) -> LogMessage {

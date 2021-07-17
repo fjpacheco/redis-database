@@ -1,7 +1,7 @@
 use std::io::{BufRead, Lines};
 
 use super::{error::ErrorStruct, RArray};
-use crate::native_types::bulk_string::RBulkString;
+use crate::{messages::redis_messages, native_types::bulk_string::RBulkString};
 
 pub trait RedisType<T> {
     fn encode(t: T) -> String;
@@ -162,12 +162,25 @@ fn verify_b_string_size(size: isize, sliced_b_string: String) -> Result<String, 
 /// in
 ///
 /// "*3\r\n$3\r\nset\r\n$3\r\nkey\r\n$5\r\nvalue\r\n"
-pub fn encode_netcat_input(line: String) -> String {
-    RArray::encode(
-        line.split(' ')
-            .collect::<Vec<&str>>()
-            .iter()
-            .map(|s| s.to_string())
-            .collect::<Vec<String>>(),
-    )
+pub fn encode_netcat_input(line: String) -> Result<String, ErrorStruct> {
+    let vector_words = line
+        .split(' ')
+        .collect::<Vec<&str>>()
+        .iter()
+        .map(|s| s.to_string())
+        .collect::<Vec<String>>();
+
+    let max_chars_in_command = 30;
+    if vector_words
+        .get(0)
+        .unwrap_or(&"Empty".to_string())
+        .len()
+        .ge(&max_chars_in_command)
+    {
+        return Err(ErrorStruct::from(redis_messages::maximum_amount_exceeded(
+            max_chars_in_command,
+        )));
+    }
+
+    Ok(RArray::encode(vector_words))
 }

@@ -24,7 +24,7 @@ impl ErrorStruct {
         ErrorStruct {
             prefix: message.get_prefix(),
             message: message.get_message(),
-            severity: ErrorSeverity::Comunicate,
+            severity: message.get_severity(),
         }
     }
     #[allow(dead_code)]

@@ -1,9 +1,9 @@
 use std::{
     fmt,
-    net::{Ipv4Addr, SocketAddrV4, TcpStream},
+    net::TcpStream,
     sync::{
         atomic::{AtomicBool, Ordering},
-        mpsc::{self, channel},
+        mpsc::channel,
         Arc, Mutex,
     },
     time::Duration,
@@ -11,14 +11,16 @@ use std::{
 
 use crate::{
     file_manager::FileManager,
+    joinable::Joinable,
     logs::log_center::LogCenter,
+    memory_checker::garbage_collector::GarbageCollector,
     native_types::ErrorStruct,
     redis_config::RedisConfig,
     tcp_protocol::{
-        client_atributes::client_fields::ClientFields, command_delegator::CommandDelegator,
-        listener_processor::ListenerProcessor, runnables_map::RunnablesMap,
+        command_delegator::CommandDelegator, listener_processor::ListenerProcessor,
+        runnables_map::RunnablesMap,
     },
-    vec_strings, Database,
+    Database,
 };
 
 use super::{
@@ -80,10 +82,6 @@ impl ServerRedisAtributes {
         self.status_listener
             .load(std::sync::atomic::Ordering::SeqCst)
     }
-
-    /*pub fn insert_client(&mut self, new_client: ClientHandler) {
-        self.clients.insert(new_client);
-    }*/
 }
 
 #[derive(Clone)]
@@ -91,127 +89,82 @@ pub struct ServerRedis;
 
 impl ServerRedis {
     pub fn start(argv: Vec<String>) -> Result<(), ErrorStruct> {
-        // ################## 1° Initialization structures ##################
+        // ################## 1° Initialization structures: BASIC ELEMENTS ##################
         let config = RedisConfig::parse_config(argv)?;
         let listener = ListenerProcessor::new_tcp_listener(&config)?;
         let database = Database::new();
 
-        // ################## 2° Initialization structures ##################
+        // ################## 2° Initialization structures: CHANNELS and COMMANDS MAP ##################
         let (command_delegator_sender, command_delegator_recv) = channel();
-        let (commands_map, rcv_cmd_dat, rcv_cmd_sv) = CommandsMap::default();
+        let (sender_log, receiver) = channel();
+        let (commands_map, rcv_cmd_dat, rcv_cmd_sv, snd_cmd_dat_garbage) = CommandsMap::default();
 
-        // ################## 3° Initialization structures ##################
+        // ################## 3° Initialization structures: SOME PACHMUTEX ##################
         let config = Arc::new(Mutex::new(config));
         let status_listener = Arc::new(AtomicBool::new(false));
 
-        // ################## SYSTEM LOG CENTER ##################
-        let writer = FileManager::new();
-        let (sender_log, receiver) = mpsc::channel();
-        let _log_center =
-            LogCenter::new(sender_log.clone(), receiver, Arc::clone(&config), writer)?;
-
-        // ################## CLIENTS ##################
+        // ################## 4° Initialization structures: CLIENT LIST AND MORE PACHMUTEX ##################
         let clients = ClientList::new(sender_log.clone());
         let shared_clients = Arc::new(Mutex::new(clients));
         let drop_shared_clients = Arc::clone(&shared_clients);
 
+        // ################## 5° Initialization structures: SERVER REDIS ATRIBUTES AND RUNNABLES MAP ##################
+
         let server_redis = ServerRedisAtributes {
             config: Arc::clone(&config),
-            status_listener,
+            status_listener: status_listener.clone(),
             shared_clients,
         };
 
         let runnables_database = RunnablesMap::<Database>::database();
         let runnables_server = RunnablesMap::<ServerRedisAtributes>::server();
 
-        // ################## SYSTEM LIST CLIENTS ##################
+        // ################## 6° Initialization structures: NOTIFIERS ##################
 
-        // ################## Start the Four Threads with the important delegators and listener ##################
-        let c_commands_map = Arc::new(Mutex::new(commands_map));
+        let notifiers = Notifiers::new(
+            sender_log.clone(),
+            command_delegator_sender,
+            status_listener,
+            server_redis.get_addr(),
+        );
 
-        let a = CommandDelegator::start(
-            command_delegator_sender.clone(),
-            command_delegator_recv,
-            Arc::clone(&c_commands_map),
+        // ################## 7° Initialization structures: STRUCTS WITH THREADS ##################
+        let mut log_center = LogCenter::new(
+            sender_log,
+            receiver,
+            Arc::clone(&config),
+            FileManager::new(),
         )?;
-        let b = CommandSubDelegator::start::<Database>(rcv_cmd_dat, runnables_database, database)?;
-        let c = CommandSubDelegator::start::<ServerRedisAtributes>(
-            rcv_cmd_sv,
-            runnables_server,
-            server_redis.clone(),
+
+        let mut command_delegator =
+            CommandDelegator::start(command_delegator_recv, commands_map, notifiers.clone())?;
+        let mut command_sub_delegator_databse = CommandSubDelegator::start::<Database>(
+            rcv_cmd_dat,
+            runnables_database,
+            database,
+            notifiers.clone(),
         )?;
+        let mut command_sub_delegator_server_atributes =
+            CommandSubDelegator::start::<ServerRedisAtributes>(
+                rcv_cmd_sv,
+                runnables_server,
+                server_redis.clone(),
+                notifiers.clone(),
+            )?;
 
-        /*
-        ¡CRATE EXTERNO!
-        CONTROLAS EL SIGINT CRTL+C
+        let mut collector = GarbageCollector::start(snd_cmd_dat_garbage, 4, 20, notifiers.clone());
 
+        // ################## ListenerProcessor ##################
 
-        [dependencies]
-        ctrlc = { version = "3.0", features = ["termination"] }
+        ListenerProcessor::incoming(listener, server_redis, notifiers);
 
-
-        ctrlc::set_handler(move ||  {
-            let client = redis::Client::open(
-                "redis://".to_owned()
-                    + &c_config.ip()
-                    + ":"
-                    + &c_config.port()
-                    + "/",
-            )
-            .unwrap();
-            let mut conection_client = client.get_connection().unwrap();
-
-            let _received_3: Result<String, RedisError> = redis::cmd("shutdown")
-                .query(&mut conection_client);
-
-        })
-        .expect("Error setting Ctrl-C handler");
-        */
-
-        // TODO: EN CONSTRUCCIÓN.. ESTO ESTA MUY FEO! Hay que tener en cuenta el análisis de unwraps!!!!!!!!!!!!
-        let notifiers = Notifiers::new(sender_log.clone(), command_delegator_sender.clone());
-        ListenerProcessor::incoming(listener, server_redis.clone(), notifiers.clone());
-
-        let (sender_drop, recv_drop) = channel();
-        command_delegator_sender
-            .send(Some((
-                vec_strings!["OK"],
-                sender_drop,
-                Arc::new(Mutex::new(ClientFields::new(SocketAddrV4::new(
-                    Ipv4Addr::new(127, 0, 0, 1),
-                    8080,
-                )))),
-            )))
-            .unwrap(); // NECESITO SI O SI LA STRUC PACKAGE_FOR_SEND
-        println!("arranco a esperar a estos giles qls");
-        std::thread::spawn(move || match recv_drop.recv() {
-            Ok(_) => {
-                drop(drop_shared_clients);
-
-                c_commands_map.lock().unwrap().kill_senders();
-
-                drop(command_delegator_sender);
-                drop(sender_log);
-                drop(notifiers);
-                drop(server_redis);
-                drop(a);
-                drop(b);
-                drop(c);
-            }
-            Err(_) => todo!("Help me! Se cerró el server con errores..."),
-        })
-        .join()
-        .unwrap();
-
-        /*drop(drop_shared_clients);
-        c_commands_map.lock().unwrap().kill_senders();
-        drop(command_delegator_sender);
-        drop(sender_log);
-        drop(notifiers);
-        drop(server_redis);
-        drop(a);
-        drop(b);
-        drop(c);*/
+        // ################## FINISH SERVER ##################
+        command_delegator.join()?;
+        collector.join()?;
+        command_sub_delegator_databse.join()?;
+        command_sub_delegator_server_atributes.join()?;
+        drop_shared_clients.lock().unwrap().join()?;
+        log_center.join()?;
         Ok(())
     }
 }
@@ -219,11 +172,5 @@ impl ServerRedis {
 impl fmt::Display for ServerRedisAtributes {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Server Redis Atributes")
-    }
-}
-
-impl Drop for ServerRedis {
-    fn drop(&mut self) {
-        println!("Dropping ServerRedis 😜");
     }
 }

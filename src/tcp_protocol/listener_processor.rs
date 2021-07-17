@@ -20,7 +20,9 @@ impl ListenerProcessor {
         notifiers: Notifiers,
     ) {
         print!("{}", redis_logo(&server_redis.get_port()));
-        let _ = notifiers.send_log(LogMessage::start_up(&listener));
+        if notifiers.send_log(LogMessage::start_up(&listener)).is_err() {
+            return; // I retired with the forced Shutdown!
+        }
 
         for stream in listener.incoming() {
             if server_redis.is_listener_off() {
@@ -30,12 +32,18 @@ impl ListenerProcessor {
             match stream {
                 Ok(client) => {
                     server_redis.set_timeout(&client);
-                    let _ = notifiers.send_log(LogMessage::new_conection(&client));
+                    if notifiers
+                        .send_log(LogMessage::new_conection(&client))
+                        .is_err()
+                    {
+                        return; // I retired with the forced Shutdown!
+                    }
                     if let Ok(new_client) = ClientHandler::new(client, notifiers.clone()) {
                         if let Ok(mut client_list) = server_redis.shared_clients.lock() {
                             client_list.insert(new_client);
                         } else {
                             let _ = notifiers.send_log(LogMessage::from_errorstruct(
+                                // I'm not interested ... I retired with the forced Shutdown!
                                 ErrorStruct::from(redis_messages::poisoned_lock(
                                     "Client List",
                                     ErrorSeverity::ShutdownServer,
@@ -46,11 +54,16 @@ impl ListenerProcessor {
                     }
                 }
                 Err(e) => {
-                    let _ = notifiers.send_log(LogMessage::error_to_connect_client(&e));
+                    if notifiers
+                        .send_log(LogMessage::error_to_connect_client(&e))
+                        .is_err()
+                    {
+                        return; // I retired with the forced Shutdown!
+                    }
                 }
             }
         }
-        let _ = notifiers.send_log(LogMessage::off_server(&listener));
+        let _ = notifiers.send_log(LogMessage::off_server(&listener)); // I'm not interested ... I retired with the forced Shutdown!
     }
 
     pub fn new_tcp_listener(config: &RedisConfig) -> Result<TcpListener, ErrorStruct> {

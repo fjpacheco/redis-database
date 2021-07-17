@@ -14,13 +14,6 @@ pub struct ClientList {
     log_channel: Sender<Option<LogMessage>>,
 }
 
-impl Drop for ClientList {
-    fn drop(&mut self) {
-        println!("😍😍 HEADSHOT CLIENTLIST 😍😍");
-        let _ = self.join();
-    }
-}
-
 impl Joinable<()> for ClientList {
     fn join(&mut self) -> Result<(), ErrorStruct> {
         for packed_client in self.list.iter_mut() {

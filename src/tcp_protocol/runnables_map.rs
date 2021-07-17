@@ -36,6 +36,10 @@ impl<T> RunnablesMap<T> {
     pub fn database() -> RunnablesMap<Database> {
         let mut map: HashMap<String, Arc<BoxedCommand<Database>>> = HashMap::new();
         map.insert(String::from("set"), Arc::new(Box::new(strings::set::Set)));
+        map.insert(
+            String::from("clean"),
+            Arc::new(Box::new(keys::clean::Clean)),
+        );
         map.insert(String::from("get"), Arc::new(Box::new(strings::get::Get)));
         map.insert(
             String::from("strlen"),

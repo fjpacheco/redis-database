@@ -60,10 +60,10 @@ impl ClientFields {
             Status::Subscriber => self
                 .map
                 .as_ref()
-                .ok_or(ErrorStruct::from(broken_state()))?
+                .ok_or_else(|| ErrorStruct::from(broken_state()))?
                 .contains_key(command)
                 .then(|| ())
-                .ok_or(ErrorStruct::from(not_valid_pubsub())),
+                .ok_or_else(|| ErrorStruct::from(not_valid_pubsub())),
             _ => Err(ErrorStruct::from(not_valid_monitor())),
         }
     }
@@ -88,20 +88,20 @@ impl ClientFields {
         Some(
             self.map
                 .as_ref()
-                .ok_or(ErrorStruct::from(broken_state()))?
+                .ok_or_else(|| ErrorStruct::from(broken_state()))?
                 .get(command.get(0).unwrap()),
         )
-        .ok_or(ErrorStruct::from(not_valid_pubsub()))
+        .ok_or_else(|| ErrorStruct::from(not_valid_pubsub()))
     }
 
     fn rc_case_executor(&self, command: &[String]) -> Result<RawCommandTwo, ErrorStruct> {
         Some(
             self.map
                 .as_ref()
-                .ok_or(ErrorStruct::from(broken_state()))?
+                .ok_or_else(|| ErrorStruct::from(broken_state()))?
                 .get(command.get(0).unwrap()),
         )
-        .ok_or(ErrorStruct::from(not_valid_executor()))
+        .ok_or_else(|| ErrorStruct::from(not_valid_executor()))
     }
 
     fn update_map(&mut self) {

@@ -1,4 +1,5 @@
 use crate::commands::Runnable;
+use crate::communication::log_messages::LogMessage;
 use crate::messages::redis_messages;
 use crate::native_types::ErrorStruct;
 use crate::tcp_protocol::client_atributes::client_fields::ClientFields;
@@ -6,6 +7,8 @@ use std::sync::mpsc::Sender;
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::thread::JoinHandle;
+
+use self::notifiers::Notifiers;
 
 pub mod client_atributes;
 pub mod client_handler;
@@ -53,19 +56,18 @@ fn get_command(command_input_user: &[String]) -> String {
 pub fn close_thread(
     thread: Option<JoinHandle<Result<(), ErrorStruct>>>,
     name: &str,
+    notifer: Notifiers,
 ) -> Result<(), ErrorStruct> {
     if let Some(handle) = thread {
         handle
             .join()
             .map_err(|_| {
-                ErrorStruct::from(
-                    //NOTIFY LOGS
-                    redis_messages::thread_panic(name),
-                )
+                let _ = notifer.send_log(LogMessage::theard_panic(name)); // I'm not interested ... I retired with the forced Shutdown!
+                ErrorStruct::from(redis_messages::thread_panic(name))
             })?
             .and_then(|result| {
-                //NOTIFY LOGS
-                return Ok(result);
+                notifer.send_log(LogMessage::theard_closed(name))?;
+                Ok(result)
             })
     } else {
         Ok(())
