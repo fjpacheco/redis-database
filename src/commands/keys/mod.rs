@@ -6,6 +6,11 @@ pub mod del;
 pub mod rename;
 //pub mod exists;
 pub mod clean;
+pub mod expire;
+pub mod expireat;
+pub mod persist;
+pub mod sort;
+pub mod ttl;
 
 pub fn pop_value(buffer: &mut Vec<String>, name: &str) -> Result<String, ErrorStruct> {
     if let Some(value) = buffer.pop() {

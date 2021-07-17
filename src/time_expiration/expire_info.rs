@@ -55,7 +55,7 @@ impl ExpireInfo {
         self.last_touch = SystemTime::now();
         self.last_touch
             .duration_since(UNIX_EPOCH)
-            .map_err(|_| ErrorStruct::from(redis_messages::ttl_error()))
+            .map_err(|_| ErrorStruct::from(redis_messages::ttl_epoch_error()))
             .and_then(|duration_since_epoch| {
                 self.timeout = Some(Duration::new(duration, 0) - duration_since_epoch);
                 Ok(())

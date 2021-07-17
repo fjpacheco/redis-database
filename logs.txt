@@ -1320,3 +1320,36 @@ $44
 SOCKET Attempted to write to a closed socket
 $21
 Log center is closed.
+$27
+Server ON in 127.0.0.1:6379
+$30
+New conection: 127.0.0.1:58360
+$102
+List of clients:
+               -> Client: "127.0.0.1:58360" -- Status: Executor -- Subscriptions: {}
+$30
+New conection: 127.0.0.1:58362
+$188
+List of clients:
+               -> Client: "127.0.0.1:58360" -- Status: Executor -- Subscriptions: {}
+               -> Client: "127.0.0.1:58362" -- Status: Executor -- Subscriptions: {}
+$37
+Client disconected: "127.0.0.1:58360"
+$41
+[127.0.0.1:58362] ["set", "key", "value"]
+$30
+New conection: 127.0.0.1:58364
+$188
+List of clients:
+               -> Client: "127.0.0.1:58362" -- Status: Executor -- Subscriptions: {}
+               -> Client: "127.0.0.1:58364" -- Status: Executor -- Subscriptions: {}
+$28
+Server OFF in 127.0.0.1:6379
+$30
+[127.0.0.1:58364] ["shutdown"]
+$37
+Client disconected: "127.0.0.1:58364"
+$37
+Client disconected: "127.0.0.1:58362"
+$21
+Log center is closed.
