@@ -5,7 +5,7 @@ use std::{
     path::Path,
 };
 
-use crate::native_types::ErrorStruct;
+use crate::{native_types::ErrorStruct, commands::server::info_formatter::info_server_formatter::*};
 
 pub struct RedisConfig {
     ip: String,
@@ -45,6 +45,17 @@ impl RedisConfig {
                 format!("Setting a new config failed. Detail: {}", err),
             )),
         }
+    }
+
+    pub fn info(&self, info_compiler: &mut Vec<String>) {
+        info_compiler.push(title());
+        info_compiler.push(ip(&self.ip));
+        info_compiler.push(port(&self.port));
+        info_compiler.push(current_exe_dir());
+        info_compiler.push(logfile_name(&self.log_filename));
+        info_compiler.push(verbose_level(self.verbose));
+        info_compiler.push(client_timeout(self.timeout_secs));
+        info_compiler.push(String::new());
     }
 
     pub fn parse_config(argv: Vec<String>) -> Result<RedisConfig, ErrorStruct> {

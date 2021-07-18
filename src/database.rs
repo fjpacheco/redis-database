@@ -2,6 +2,7 @@ use crate::messages::redis_messages;
 use crate::native_types::error::ErrorStruct;
 use crate::regex::super_regex::SuperRegex;
 use crate::time_expiration::expire_info::ExpireInfo;
+use crate::commands::server::info_formatter::info_db_formatter;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::fmt;
 
@@ -26,6 +27,13 @@ impl Database {
         Database {
             elements: HashMap::new(),
         }
+    }
+
+    pub fn info(&self) -> Result<Vec<String>, ErrorStruct> {
+        let mut info = Vec::new();
+        info.push(info_db_formatter::title());
+        info.push(info_db_formatter::number_of_keys(self.elements.len()));
+        Ok(info)
     }
 
     pub fn remove(&mut self, key: &str) -> Option<TypeSaved> {

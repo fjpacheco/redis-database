@@ -36,6 +36,21 @@ pub struct ServerRedisAtributes {
 }
 
 impl ServerRedisAtributes {
+
+    pub fn info(&mut self) -> Result<Vec<String>, ErrorStruct> {
+        let mut info = Vec::new();
+
+        self.config.lock()
+        .map_err(|_| ErrorStruct::from(redis_messages::poisoned_lock("redis config", ErrorSeverity::ShutdownServer)))?
+        .info(&mut info);
+
+        self.shared_clients.lock()
+        .map_err(|_| ErrorStruct::from(redis_messages::poisoned_lock("redis config", ErrorSeverity::ShutdownServer)))?
+        .info(&mut info);
+
+        Ok(info)
+    }
+
     pub fn get_client_list(&self) -> Arc<Mutex<ClientList>> {
         Arc::clone(&self.shared_clients)
     }

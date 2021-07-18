@@ -1,4 +1,4 @@
-use crate::native_types::{RBulkString, RedisType};
+use crate::{commands::server::info_formatter::info_client_formatter::*, native_types::{RBulkString, RedisType}};
 use crate::regex::super_regex::SuperRegex;
 use crate::{joinable::Joinable, native_types::ErrorStruct};
 use std::collections::HashMap;
@@ -36,6 +36,13 @@ impl ClientList {
             channel_register: HashMap::new(),
             log_channel,
         }
+    }
+
+    pub fn info(&mut self, info_compiler: &mut Vec<String>) {
+        self.drop_clients_dead();
+        info_compiler.push(clients_connected(self.list.len()));
+        info_compiler.push(active_channels(self.channel_register.len()));
+        info_compiler.push(String::new())
     }
 
     pub fn drop_clients_dead(&mut self) {

@@ -7,5 +7,8 @@ pub mod config_set_verbose;
 pub mod monitor;
 pub mod notify_monitors;
 pub mod shutdown;
+pub mod info_db;
+pub mod info_sv;
+pub mod info_formatter;
 pub use monitor::Monitor;
 pub use notify_monitors::NotifyMonitors;
