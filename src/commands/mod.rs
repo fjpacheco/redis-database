@@ -6,6 +6,16 @@ pub mod pubsub;
 pub mod server;
 pub mod sets;
 pub mod strings;
+pub use keys::clean::Clean;
+pub use pubsub::{
+    publish::Publish, subscribe_cf::SubscribeCF, subscribe_cl::Subscribe,
+    unsubscribe_cf::UnsubscribeCF, unsubscribe_cl::Unsubscribe,
+};
+pub use server::{config::Config, notify_monitors::NotifyMonitors, shutdown::Shutdown};
+pub use strings::{
+    append::Append, decrby::Decrby, get::Get, getdel::Getdel, getset::Getset, incrby::Incrby,
+    mget::Mget, mset::Mset, set::Set, strlen::Strlen,
+};
 
 fn check_empty(buffer: &[String], name: &str) -> Result<(), ErrorStruct> {
     if buffer.is_empty() {

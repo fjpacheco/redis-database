@@ -12,6 +12,17 @@ use super::server::ServerRedisAtributes;
 pub struct RunnablesMap<T> {
     elements: HashMap<String, Arc<BoxedCommand<T>>>,
 }
+#[macro_export]
+macro_rules! get_runnables {
+    ( $map:expr, $( $x:ident ),* ) => {
+        {
+            $(
+                $map.insert(stringify!($x).to_string().to_lowercase(), Arc::new(Box::new($x)));
+            )*
+            $map
+        }
+    };
+}
 
 impl<T> RunnablesMap<T> {
     pub fn new(map: HashMap<String, Arc<BoxedCommand<T>>>) -> Self {
@@ -35,23 +46,17 @@ impl<T> RunnablesMap<T> {
 
     pub fn database() -> RunnablesMap<Database> {
         let mut map: HashMap<String, Arc<BoxedCommand<Database>>> = HashMap::new();
-        map.insert(String::from("set"), Arc::new(Box::new(strings::set::Set)));
-        map.insert(
-            String::from("clean"),
-            Arc::new(Box::new(keys::clean::Clean)),
-        );
-        map.insert(String::from("get"), Arc::new(Box::new(strings::get::Get)));
-        map.insert(
-            String::from("strlen"),
-            Arc::new(Box::new(strings::strlen::Strlen)),
-        );
-
-        RunnablesMap { elements: map }
+        RunnablesMap {
+            elements: get_runnables!(
+                map, Set, Get, Strlen, Mset, Mget, Getset, Getdel, Incrby, Decrby, Append, Clean
+            ),
+        }
     }
 
     pub fn server() -> RunnablesMap<ServerRedisAtributes> {
         let mut map: HashMap<String, Arc<BoxedCommand<ServerRedisAtributes>>> = HashMap::new();
-        map.insert(
+
+        /*map.insert(
             String::from("shutdown"),
             Arc::new(Box::new(server::shutdown::Shutdown)),
         );
@@ -60,7 +65,7 @@ impl<T> RunnablesMap<T> {
             Arc::new(Box::new(server::config_get::ConfigGet)),
         );
         map.insert(
-            String::from("notify_monitors"),
+            String::from("notifymonitors"),
             Arc::new(Box::new(server::notify_monitors::NotifyMonitors)),
         );
         map.insert(
@@ -76,7 +81,18 @@ impl<T> RunnablesMap<T> {
             Arc::new(Box::new(pubsub::publish::Publish)),
         );
 
-        RunnablesMap { elements: map }
+        RunnablesMap { elements: map }*/
+        RunnablesMap {
+            elements: get_runnables!(
+                map,
+                Shutdown,
+                Subscribe,
+                Unsubscribe,
+                Publish,
+                NotifyMonitors,
+                Config
+            ),
+        }
     }
 
     pub fn client_list() -> RunnablesMap<Arc<Mutex<ClientList>>> {

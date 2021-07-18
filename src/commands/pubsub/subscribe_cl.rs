@@ -30,9 +30,9 @@ use crate::{
     tcp_protocol::server::ServerRedisAtributes,
 };
 
-pub struct SubscribeCL;
+pub struct Subscribe;
 
-impl Runnable<ServerRedisAtributes> for SubscribeCL {
+impl Runnable<ServerRedisAtributes> for Subscribe {
     fn run(
         &self,
         buffer: Vec<String>,

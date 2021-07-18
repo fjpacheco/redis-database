@@ -122,12 +122,20 @@ impl RedisConfig {
         self.port = port.to_string();
     }
 
+    pub fn db_filename(&self) -> String {
+        "TODO".to_string()
+    }
+
     pub fn log_filename(&self) -> String {
         String::from(&self.log_filename)
     }
 
     pub fn verbose(&self) -> &usize {
         &self.verbose
+    }
+
+    pub fn change_verbose(&mut self, new: usize) {
+        self.verbose = new;
     }
 }
 

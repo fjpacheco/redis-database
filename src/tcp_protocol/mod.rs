@@ -25,21 +25,6 @@ pub type RawCommandTwo = Option<Arc<BoxedCommand<Arc<Mutex<ClientFields>>>>>;
 pub type BoxedCommand<T> = Box<dyn Runnable<T> + Send + Sync>;
 pub type Response = Result<String, ErrorStruct>;
 
-fn remove_command(command_input_user: &mut Vec<String>) -> String {
-    if command_input_user[0].contains("config") & command_input_user.len().eq(&3) {
-        let mut cmd = command_input_user.remove(0);
-        cmd.push(' ');
-        cmd.push_str(&command_input_user.remove(0));
-        if cmd.contains("set") {
-            cmd.push(' ');
-            cmd.push_str(&command_input_user.remove(0));
-        }
-        cmd
-    } else {
-        command_input_user.remove(0)
-    }
-}
-
 #[allow(dead_code)]
 fn get_command(command_input_user: &[String]) -> String {
     let mut command_type = command_input_user[0].clone();

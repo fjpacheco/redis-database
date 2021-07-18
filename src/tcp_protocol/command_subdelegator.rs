@@ -15,7 +15,7 @@ use crate::native_types::ErrorStruct;
 use crate::tcp_protocol::runnables_map::RunnablesMap;
 
 use super::notifiers::Notifiers;
-use super::{remove_command, RawCommand, Response};
+use super::{RawCommand, Response};
 pub struct CommandSubDelegator {
     join: Option<JoinHandle<Result<(), ErrorStruct>>>,
     notifier: Notifiers,
@@ -68,7 +68,7 @@ impl CommandSubDelegator {
         T: Send + Sync + Display,
     {
         for (mut command_input_user, sender_to_client, _) in rcv_cmd.iter() {
-            let command_type = remove_command(&mut command_input_user);
+            let command_type = command_input_user.remove(0);
             if let Some(runnable_command) = runnables_map.get(&command_type) {
                 let err_critical = is_critical(run_command(
                     runnable_command,

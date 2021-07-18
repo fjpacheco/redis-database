@@ -20,6 +20,17 @@ pub struct CommandsMap {
     channel_map: HashMap<String, Vec<Option<Sender<RawCommand>>>>,
 }
 
+#[macro_export]
+macro_rules! insert_in {
+    ($channel_map:expr, $sender:expr, $( $x:expr ),*) => {
+        {
+            $(
+                $channel_map.insert(String::from($x), vec![Some($sender.clone())]);
+            )*
+        }
+    };
+}
+
 impl CommandsMap {
     pub fn kill_senders(&mut self) {
         self.channel_map.iter_mut().for_each(|x| {
@@ -51,37 +62,35 @@ impl CommandsMap {
             mpsc::channel();
 
         let mut channel_map: HashMap<String, Vec<Option<Sender<RawCommand>>>> = HashMap::new();
-        channel_map.insert(String::from("set"), vec![Some(snd_cmd_dat.clone())]);
-        channel_map.insert(String::from("get"), vec![Some(snd_cmd_dat.clone())]);
-        channel_map.insert(String::from("clean"), vec![Some(snd_cmd_dat.clone())]);
-        channel_map.insert(String::from("strlen"), vec![Some(snd_cmd_dat.clone())]);
-        channel_map.insert(
-            String::from("config get"),
-            vec![Some(snd_cmd_server.clone())],
+        insert_in!(
+            channel_map,
+            snd_cmd_dat,
+            "set",
+            "get",
+            "strlen",
+            "mset",
+            "mget",
+            "getset",
+            "getdel",
+            "incrby",
+            "decrby",
+            "append",
+            "clean"
         );
-        channel_map.insert(
-            String::from("config set"),
-            vec![Some(snd_cmd_server.clone())],
+
+        insert_in!(
+            channel_map,
+            snd_cmd_server,
+            "config",
+            "clear_client",
+            "notifymonitors",
+            "shutdown",
+            "subscribe",
+            "unsubscribe"
         );
-        channel_map.insert(
-            String::from("clear_client"),
-            vec![Some(snd_cmd_server.clone())],
-        );
-        channel_map.insert(
-            String::from("notify_monitors"),
-            vec![Some(snd_cmd_server.clone())],
-        );
-        channel_map.insert(String::from("shutdown"), vec![Some(snd_cmd_server.clone())]);
-        channel_map.insert(String::from("monitor"), vec![None]);
-        channel_map.insert(
-            String::from("subscribe"),
-            vec![None, Some(snd_cmd_server.clone())],
-        );
-        channel_map.insert(
-            String::from("unsubscribe"),
-            vec![None, Some(snd_cmd_server.clone())],
-        );
+
         channel_map.insert(String::from("publish"), vec![Some(snd_cmd_server)]);
+        channel_map.insert(String::from("monitor"), vec![None]);
 
         (
             CommandsMap { channel_map },

@@ -90,7 +90,7 @@ impl Notifiers {
         let (sender_notify, receiver_notify) = channel();
 
         let mut command_vec_modify = command_received.clone();
-        command_vec_modify.insert(0, "notify_monitors".to_string());
+        command_vec_modify.insert(0, "notifymonitors".to_string());
         let addr = client_fields.lock().map(|x| x.get_addr()).map_err(|_| {
             ErrorStruct::from(redis_messages::poisoned_lock(
                 "client",

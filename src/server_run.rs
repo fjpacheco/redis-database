@@ -26,3 +26,13 @@ fn main() -> Result<(), ErrorStruct> {
     ServerRedis::start(argv)?;
     Ok(())
 }
+
+/*
+fn main() {
+    for line in stdin().lock().lines() {
+        match line {
+            Ok(line) => process(&*line),
+            Err(e) => panic!("{}", e),
+        }
+    }
+}*/

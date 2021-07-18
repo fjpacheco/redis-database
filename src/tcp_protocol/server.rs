@@ -14,7 +14,8 @@ use crate::{
     joinable::Joinable,
     logs::log_center::LogCenter,
     memory_checker::garbage_collector::GarbageCollector,
-    native_types::ErrorStruct,
+    messages::redis_messages,
+    native_types::{error_severity::ErrorSeverity, ErrorStruct},
     redis_config::RedisConfig,
     tcp_protocol::{
         command_delegator::CommandDelegator, listener_processor::ListenerProcessor,
@@ -35,14 +36,6 @@ pub struct ServerRedisAtributes {
 }
 
 impl ServerRedisAtributes {
-    pub fn get_timeout(&self) -> String {
-        self.config
-            .lock()
-            .expect("ERROR IN REDIS CONFIG POISSONED")
-            .timeout()
-            .to_string()
-    }
-
     pub fn get_client_list(&self) -> Arc<Mutex<ClientList>> {
         Arc::clone(&self.shared_clients)
     }
@@ -50,32 +43,134 @@ impl ServerRedisAtributes {
     pub fn store(&self, val: bool) {
         self.status_listener.store(val, Ordering::SeqCst);
     }
+    pub fn change_verbose(&self, new: usize) -> Result<(), ErrorStruct> {
+        self.config
+            .lock()
+            .map_err(|_| {
+                ErrorStruct::from(redis_messages::poisoned_lock(
+                    "Server Redis Atributes",
+                    ErrorSeverity::ShutdownServer,
+                ))
+            })?
+            .change_verbose(new);
+        Ok(())
+    }
 
-    pub fn set_timeout(&self, client: &TcpStream) {
+    pub fn change_logfilename(&self, new_file_name: String) -> Result<(), ErrorStruct> {
+        self.config
+            .lock()
+            .map_err(|_| {
+                ErrorStruct::from(redis_messages::poisoned_lock(
+                    "Server Redis Atributes",
+                    ErrorSeverity::ShutdownServer,
+                ))
+            })?
+            .change_file(new_file_name)?;
+        Ok(())
+    }
+
+    pub fn set_timeout(&self, client: &TcpStream) -> Result<(), ErrorStruct> {
         let time = self
             .config
             .lock()
-            .expect("ERROR IN REDIS CONFIG POISSONED")
+            .map_err(|_| {
+                ErrorStruct::from(redis_messages::poisoned_lock(
+                    "Server Redis Atributes",
+                    ErrorSeverity::ShutdownServer,
+                ))
+            })?
             .timeout();
         if time.gt(&0) {
             client
                 .set_read_timeout(Some(Duration::new(time, 0)))
-                .expect("ERROR FOR SET TIMEOUT IN CLIENT");
+                .map_err(|_| {
+                    ErrorStruct::from(redis_messages::init_failed(
+                        "Failed timeout",
+                        ErrorSeverity::ShutdownServer,
+                    ))
+                })?;
         }
+        Ok(())
     }
 
-    pub fn get_addr(&self) -> String {
-        self.config
+    pub fn get_addr(&self) -> Result<String, ErrorStruct> {
+        Ok(self
+            .config
             .lock()
-            .expect("ERROR IN REDIS CONFIG POISSONED")
-            .get_addr()
+            .map_err(|_| {
+                ErrorStruct::from(redis_messages::poisoned_lock(
+                    "Server Redis Atributes",
+                    ErrorSeverity::ShutdownServer,
+                ))
+            })?
+            .get_addr())
     }
 
-    pub fn get_port(&self) -> String {
-        self.config
+    pub fn get_port(&self) -> Result<String, ErrorStruct> {
+        Ok(self
+            .config
             .lock()
-            .expect("ERROR IN REDIS CONFIG POISSONED")
-            .port()
+            .map_err(|_| {
+                ErrorStruct::from(redis_messages::poisoned_lock(
+                    "Server Redis Atributes",
+                    ErrorSeverity::ShutdownServer,
+                ))
+            })?
+            .port())
+    }
+
+    pub fn get_verbose(&self) -> Result<String, ErrorStruct> {
+        Ok(self
+            .config
+            .lock()
+            .map_err(|_| {
+                ErrorStruct::from(redis_messages::poisoned_lock(
+                    "Server Redis Atributes",
+                    ErrorSeverity::ShutdownServer,
+                ))
+            })?
+            .verbose()
+            .to_string())
+    }
+
+    pub fn get_timeout(&self) -> Result<String, ErrorStruct> {
+        Ok(self
+            .config
+            .lock()
+            .map_err(|_| {
+                ErrorStruct::from(redis_messages::poisoned_lock(
+                    "Server Redis Atributes",
+                    ErrorSeverity::ShutdownServer,
+                ))
+            })?
+            .timeout()
+            .to_string())
+    }
+
+    pub fn get_logfile_name(&self) -> Result<String, ErrorStruct> {
+        Ok(self
+            .config
+            .lock()
+            .map_err(|_| {
+                ErrorStruct::from(redis_messages::poisoned_lock(
+                    "Server Redis Atributes",
+                    ErrorSeverity::ShutdownServer,
+                ))
+            })?
+            .log_filename())
+    }
+
+    pub fn get_dbfile_name(&self) -> Result<String, ErrorStruct> {
+        Ok(self
+            .config
+            .lock()
+            .map_err(|_| {
+                ErrorStruct::from(redis_messages::poisoned_lock(
+                    "Server Redis Atributes",
+                    ErrorSeverity::ShutdownServer,
+                ))
+            })?
+            .db_filename())
     }
 
     pub fn is_listener_off(&self) -> bool {
@@ -125,7 +220,7 @@ impl ServerRedis {
             sender_log.clone(),
             command_delegator_sender,
             status_listener,
-            server_redis.get_addr(),
+            server_redis.get_addr()?,
         );
 
         // ################## 7° Initialization structures: STRUCTS WITH THREADS ##################
@@ -154,6 +249,22 @@ impl ServerRedis {
 
         let mut collector = GarbageCollector::start(snd_cmd_dat_garbage, 4, 20, notifiers.clone());
 
+        /*let quit_notifier = Mutex::new(notifiers.clone());
+        let quit: JoinHandle<Result<(), ErrorStruct>> = thread::spawn(move ||{
+            for line in stdin().lock().lines() {
+                match line {
+                    Ok(line) => {
+                        if line.contains("q") || line.contains("quit") || line.contains("exit") || line.contains("shutdown")  {
+                            quit_notifier.lock().map_err(|_| {
+                                ErrorStruct::from(redis_messages::closed_sender(ErrorSeverity::ShutdownServer))
+                            })?.force_shutdown_server("Shutdown by stdin console of server".to_string()); break;
+                        }
+                    },
+                    Err(e) => panic!("{}", e),
+                }
+            }
+            Ok(())
+        });*/
         // ################## ListenerProcessor ##################
 
         ListenerProcessor::incoming(listener, server_redis, notifiers);
@@ -165,6 +276,8 @@ impl ServerRedis {
         command_sub_delegator_server_atributes.join()?;
         drop_shared_clients.lock().unwrap().join()?;
         log_center.join()?;
+        //quit.join();
+
         Ok(())
     }
 }

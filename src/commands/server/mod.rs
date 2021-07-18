@@ -1,7 +1,11 @@
+pub mod config;
 pub mod config_get;
+pub mod config_set;
+pub mod config_set_db_file_name;
+pub mod config_set_log_fle;
+pub mod config_set_verbose;
 pub mod monitor;
 pub mod notify_monitors;
 pub mod shutdown;
 pub use monitor::Monitor;
 pub use notify_monitors::NotifyMonitors;
-pub use shutdown::Shutdown;

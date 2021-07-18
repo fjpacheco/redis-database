@@ -30,9 +30,9 @@ use crate::{
     tcp_protocol::server::ServerRedisAtributes,
 };
 
-pub struct UnsubscribeCL;
+pub struct Unsubscribe;
 
-impl Runnable<ServerRedisAtributes> for UnsubscribeCL {
+impl Runnable<ServerRedisAtributes> for Unsubscribe {
     fn run(
         &self,
         buffer: Vec<String>,
