@@ -1,7 +1,7 @@
+use crate::tcp_protocol::server_redis_atributes::ServerRedisAtributes;
 use crate::{
     commands::{check_empty, Runnable},
     native_types::{ErrorStruct, RArray, RedisType},
-    tcp_protocol::server::ServerRedisAtributes,
     vec_strings,
 };
 

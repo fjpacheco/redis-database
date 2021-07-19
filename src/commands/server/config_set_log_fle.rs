@@ -1,9 +1,10 @@
+use crate::tcp_protocol::server_redis_atributes::ServerRedisAtributes;
 use crate::{
     commands::{check_empty, Runnable},
     messages::redis_messages,
     native_types::{ErrorStruct, RSimpleString, RedisType},
-    tcp_protocol::server::ServerRedisAtributes,
 };
+
 pub struct ConfigSetLogFile;
 
 impl Runnable<ServerRedisAtributes> for ConfigSetLogFile {

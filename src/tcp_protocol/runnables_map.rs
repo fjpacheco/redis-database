@@ -7,7 +7,7 @@ use std::sync::Arc;
 use std::sync::Mutex;
 
 use super::client_atributes::client_fields::ClientFields;
-use super::server::ServerRedisAtributes;
+use crate::tcp_protocol::server_redis_atributes::ServerRedisAtributes;
 
 pub struct RunnablesMap<T> {
     elements: HashMap<String, Arc<BoxedCommand<T>>>,
@@ -48,7 +48,8 @@ impl<T> RunnablesMap<T> {
         let mut map: HashMap<String, Arc<BoxedCommand<Database>>> = HashMap::new();
         RunnablesMap {
             elements: get_runnables!(
-                map, Set, Get, Strlen, Mset, Mget, Getset, Getdel, Incrby, Decrby, Append, Clean, Expire
+                map, Set, Get, Strlen, Mset, Mget, Getset, Getdel, Incrby, Decrby, Append, Clean,
+                Expire
             ),
         }
     }
@@ -83,15 +84,7 @@ impl<T> RunnablesMap<T> {
 
         RunnablesMap { elements: map }*/
         RunnablesMap {
-            elements: get_runnables!(
-                map,
-                Shutdown,
-                Subscribe,
-                Unsubscribe,
-                Publish,
-                NotifyMonitors,
-                Config
-            ),
+            elements: get_runnables!(map, Shutdown, Publish, NotifyMonitors, Config),
         }
     }
 

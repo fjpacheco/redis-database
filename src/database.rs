@@ -33,10 +33,10 @@ impl Database {
     }
 
     pub fn info(&self) -> Result<Vec<String>, ErrorStruct> {
-        let mut info = Vec::new();
-        info.push(info_db_formatter::title());
-        info.push(info_db_formatter::number_of_keys(self.elements.len()));
-        Ok(info)
+        Ok(vec![
+            info_db_formatter::title(),
+            info_db_formatter::number_of_keys(self.elements.len()),
+        ])
     }
 
     pub fn size(&self) -> usize {
@@ -93,9 +93,9 @@ impl Database {
         if let Some((info, _)) = self.elements.get_mut(key) {
             if info.is_expired(notifier, key) {
                 self.elements.remove(key);
-                return Ok(true);
+                Ok(true)
             } else {
-                return Ok(false);
+                Ok(false)
             }
         } else {
             Err(ErrorStruct::from(redis_messages::key_not_found()))

@@ -1,3 +1,4 @@
+use crate::tcp_protocol::server_redis_atributes::ServerRedisAtributes;
 use crate::{
     commands::{
         check_empty,
@@ -5,7 +6,6 @@ use crate::{
         Runnable,
     },
     native_types::ErrorStruct,
-    tcp_protocol::server::ServerRedisAtributes,
 };
 
 pub struct Config;

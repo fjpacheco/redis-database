@@ -1,3 +1,4 @@
+use crate::tcp_protocol::server_redis_atributes::ServerRedisAtributes;
 use crate::{
     commands::{
         pubsub::{no_more_values, pop_value},
@@ -6,7 +7,6 @@ use crate::{
     messages::redis_messages,
     native_types::{ErrorStruct, RArray, RedisType},
     regex::super_regex::SuperRegex,
-    tcp_protocol::server::ServerRedisAtributes,
 };
 
 pub struct Channels;

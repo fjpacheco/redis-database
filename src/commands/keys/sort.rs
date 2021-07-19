@@ -30,19 +30,13 @@ impl Runnable<Database> for Sort {
 }
 
 fn sort_list(list: &VecDeque<String>) -> Vec<String> {
-    let mut sorted = list
-        .iter()
-        .map(|elem| String::from(elem))
-        .collect::<Vec<String>>();
+    let mut sorted = list.iter().map(String::from).collect::<Vec<String>>();
     sorted.sort();
     sorted
 }
 
 fn sort_set(set: &HashSet<String>) -> Vec<String> {
-    let mut sorted = set
-        .iter()
-        .map(|elem| String::from(elem))
-        .collect::<Vec<String>>();
+    let mut sorted = set.iter().map(String::from).collect::<Vec<String>>();
     sorted.sort();
     sorted
 }

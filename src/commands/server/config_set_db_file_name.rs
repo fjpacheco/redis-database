@@ -1,6 +1,6 @@
-use crate::{
-    commands::Runnable, native_types::ErrorStruct, tcp_protocol::server::ServerRedisAtributes,
-};
+use crate::tcp_protocol::server_redis_atributes::ServerRedisAtributes;
+use crate::{commands::Runnable, native_types::ErrorStruct};
+
 pub struct ConfigSetDbFileName;
 
 impl Runnable<ServerRedisAtributes> for ConfigSetDbFileName {

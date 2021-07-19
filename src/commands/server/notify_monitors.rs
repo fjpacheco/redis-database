@@ -1,8 +1,8 @@
+use crate::tcp_protocol::server_redis_atributes::ServerRedisAtributes;
 use crate::{
     commands::Runnable,
     messages::redis_messages,
     native_types::{ErrorStruct, RSimpleString, RedisType},
-    tcp_protocol::server::ServerRedisAtributes,
 };
 
 pub struct NotifyMonitors;
@@ -15,7 +15,7 @@ impl Runnable<ServerRedisAtributes> for NotifyMonitors {
     ) -> Result<String, ErrorStruct> {
         let addr = buffer.pop();
         server
-            .shared_clients
+            .get_client_list()
             .lock()
             .unwrap()
             .notify_monitors(addr.unwrap(), buffer);

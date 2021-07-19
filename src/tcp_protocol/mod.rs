@@ -15,10 +15,12 @@ pub mod client_handler;
 pub mod client_list;
 pub mod command_delegator;
 pub mod command_subdelegator;
+pub mod commands_map;
 pub mod listener_processor;
 pub mod notifier;
 pub mod runnables_map;
 pub mod server;
+pub mod server_redis_atributes;
 
 pub type RawCommand = (Vec<String>, Sender<Response>, Arc<Mutex<ClientFields>>);
 pub type RawCommandTwo = Option<Arc<BoxedCommand<Arc<Mutex<ClientFields>>>>>;

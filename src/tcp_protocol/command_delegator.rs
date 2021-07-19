@@ -85,9 +85,7 @@ impl CommandsMap {
             "config",
             "clear_client",
             "notifymonitors",
-            "shutdown",
-            "subscribe",
-            "unsubscribe"
+            "shutdown"
         );
 
         channel_map.insert(String::from("publish"), vec![Some(snd_cmd_server)]);

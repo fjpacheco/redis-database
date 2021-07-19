@@ -24,22 +24,22 @@ impl Runnable<Arc<Mutex<ClientList>>> for SubscribeCL {
     }
 }*/
 
+use crate::tcp_protocol::server_redis_atributes::ServerRedisAtributes;
 use crate::{
     commands::Runnable,
     native_types::{ErrorStruct, RBulkString, RedisType},
-    tcp_protocol::server::ServerRedisAtributes,
 };
 
-pub struct Subscribe;
+pub struct SubscribeCL;
 
-impl Runnable<ServerRedisAtributes> for Subscribe {
+impl Runnable<ServerRedisAtributes> for SubscribeCL {
     fn run(
         &self,
         buffer: Vec<String>,
         server: &mut ServerRedisAtributes,
     ) -> Result<String, ErrorStruct> {
         server
-            .shared_clients
+            .get_client_list()
             .lock()
             .unwrap()
             .increase_channels(buffer);

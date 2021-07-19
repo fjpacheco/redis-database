@@ -25,11 +25,13 @@ impl ExpireInfo {
         }
     }
 
+    #[allow(clippy::branches_sharing_code)]
     pub fn is_expired(&mut self, notifier: Option<Arc<Mutex<Notifier>>>, key_name: &str) -> bool {
         if self.timeout.is_some() {
             let _ = self.update(notifier, key_name);
             !matches!(self.timeout, Some(_))
         } else {
+            let _ = self.update(notifier, key_name);
             false
         }
     }
@@ -57,7 +59,7 @@ impl ExpireInfo {
                     ))
                 })?
                 .send_log(LogMessage::key_touched(key_name, from_epoch.as_secs()))?;
-                println!("🧨🧨🧨🧨🧨");
+            println!("🧨🧨🧨🧨🧨");
         }
 
         Ok(())
@@ -76,9 +78,8 @@ impl ExpireInfo {
     pub fn set_timeout_unix_timestamp(&mut self, duration: u64) -> Result<(), ErrorStruct> {
         self.last_touch = SystemTime::now();
 
-        duration_since(&self.last_touch, UNIX_EPOCH).and_then(|duration_since_epoch| {
+        duration_since(&self.last_touch, UNIX_EPOCH).map(|duration_since_epoch| {
             self.timeout = Some(Duration::new(duration, 0) - duration_since_epoch);
-            Ok(())
         })
     }
 

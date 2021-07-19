@@ -1,7 +1,7 @@
 pub mod info_db_formatter {
 
     pub fn title() -> String {
-        format!("DATABASE:")
+        "DATABASE:".to_string()
     }
 
     pub fn number_of_keys(n: usize) -> String {
@@ -25,7 +25,7 @@ pub mod info_server_formatter {
     use std::env::current_exe;
 
     pub fn title() -> String {
-        format!("SERVER:")
+        "SERVER:".to_string()
     }
 
     pub fn ip(ip: &str) -> String {

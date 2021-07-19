@@ -17,13 +17,10 @@ pub mod pubsub;
 pub mod server;
 pub mod sets;
 pub mod strings;
-pub use keys::{
-    expire::Expire,
-    clean::Clean
-};
+pub use keys::{clean::Clean, expire::Expire};
 pub use pubsub::{
-    publish::Publish, subscribe_cf::SubscribeCF, subscribe_cl::Subscribe,
-    unsubscribe_cf::UnsubscribeCF, unsubscribe_cl::Unsubscribe,
+    publish::Publish, subscribe_cf::SubscribeCF, subscribe_cl::SubscribeCL,
+    unsubscribe_cf::UnsubscribeCF, unsubscribe_cl::UnsubscribeCL,
 };
 pub use server::{config::Config, notify_monitors::NotifyMonitors, shutdown::Shutdown};
 pub use strings::{

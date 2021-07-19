@@ -1,5 +1,6 @@
 use std::net::TcpListener;
 
+use crate::tcp_protocol::server_redis_atributes::ServerRedisAtributes;
 use crate::{
     communication::log_messages::LogMessage,
     messages::redis_messages,
@@ -9,7 +10,7 @@ use crate::{
     tcp_protocol::client_handler::ClientHandler,
 };
 
-use super::{notifier::Notifier, server::ServerRedisAtributes};
+use super::notifier::Notifier;
 
 pub struct ListenerProcessor;
 
@@ -57,7 +58,7 @@ fn start_incoming(
                 server_redis.set_timeout(&client)?;
                 notifier.send_log(LogMessage::new_conection(&client))?;
                 if let Ok(new_client) = ClientHandler::new(client, notifier.clone()) {
-                    if let Ok(mut client_list) = server_redis.shared_clients.lock() {
+                    if let Ok(mut client_list) = server_redis.get_client_list().lock() {
                         client_list.insert(new_client);
                     } else {
                         let _ = notifier.send_log(LogMessage::from_errorstruct(

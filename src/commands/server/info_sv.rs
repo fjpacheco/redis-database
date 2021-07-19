@@ -1,9 +1,10 @@
+use crate::tcp_protocol::server_redis_atributes::ServerRedisAtributes;
 use crate::{
     commands::Runnable,
     native_types::ErrorStruct,
     native_types::{RArray, RedisType},
-    tcp_protocol::server::ServerRedisAtributes,
 };
+
 pub struct InfoSV;
 
 impl Runnable<ServerRedisAtributes> for InfoSV {

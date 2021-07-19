@@ -1,7 +1,7 @@
+use crate::tcp_protocol::server_redis_atributes::ServerRedisAtributes;
 use crate::{
     commands::{pubsub::no_more_values, Runnable},
     native_types::{ErrorStruct, RArray, RedisType},
-    tcp_protocol::server::ServerRedisAtributes,
 };
 
 pub struct Numsub;

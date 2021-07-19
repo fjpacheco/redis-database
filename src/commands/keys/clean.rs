@@ -40,7 +40,7 @@ fn touch_n_random_keys(n: &isize, database: &mut &mut Database) -> isize {
         if let Some(key) = database.random_key() {
             let _ = database
                 .touch(&key)
-                .and_then(|is_expired| Ok(is_expired.then(|| expired_keys += 1)));
+                .map(|is_expired| is_expired.then(|| expired_keys += 1));
         }
     }
     expired_keys

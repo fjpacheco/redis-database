@@ -39,7 +39,7 @@ fn concatenate_words_of_vec(mut buffer: Vec<String>) -> String {
 }*/
 
 use crate::native_types::RInteger;
-use crate::tcp_protocol::server::ServerRedisAtributes;
+use crate::tcp_protocol::server_redis_atributes::ServerRedisAtributes;
 use crate::{
     commands::Runnable,
     native_types::{error::ErrorStruct, redis_type::RedisType},
@@ -56,7 +56,7 @@ impl Runnable<ServerRedisAtributes> for Publish {
         let channel = buffer.remove(0);
         let message = concatenate_words_of_vec(buffer);
         match server
-            .shared_clients
+            .get_client_list()
             .lock()
             .unwrap()
             .send_message_to_subscriptors(channel, message)
