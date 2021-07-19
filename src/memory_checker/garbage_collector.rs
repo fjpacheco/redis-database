@@ -3,8 +3,7 @@ use crate::{
     messages::redis_messages,
     native_types::error_severity::ErrorSeverity,
     tcp_protocol::{
-        client_atributes::client_fields::ClientFields, close_thread, notifiers::Notifiers,
-        RawCommand,
+        client_atributes::client_fields::ClientFields, close_thread, notifier::Notifier, RawCommand,
     },
 };
 
@@ -24,7 +23,7 @@ use std::time::Duration;
 pub struct GarbageCollector {
     handle: Option<JoinHandle<Result<(), ErrorStruct>>>,
     still_working: Arc<AtomicBool>,
-    notifiers: Notifiers,
+    notifier: Notifier,
 }
 
 impl GarbageCollector {
@@ -32,7 +31,7 @@ impl GarbageCollector {
         snd_to_dat_del: mpsc::Sender<RawCommand>,
         period: u64,
         keys_touched: u64,
-        notifiers: Notifiers,
+        notifier: Notifier,
     ) -> GarbageCollector {
         let still_working = Arc::new(AtomicBool::new(true));
         let still_working_clone = Arc::clone(&still_working);
@@ -44,7 +43,7 @@ impl GarbageCollector {
         GarbageCollector {
             handle: Some(garbage_collector_handle),
             still_working,
-            notifiers,
+            notifier,
         }
     }
 
@@ -111,7 +110,7 @@ impl Joinable<()> for GarbageCollector {
         close_thread(
             self.handle.take(),
             "Garbage collector",
-            self.notifiers.clone(),
+            self.notifier.clone(),
         )?;
         println!("🥽🥽🥽🥽🥽🥽Garbage collector has been shutted down!");
         Ok(())
@@ -165,13 +164,13 @@ mod test_garbage_collector {
         let (snd_log_test, _): (Sender<Option<LogMessage>>, Receiver<Option<LogMessage>>) =
             mpsc::channel();
 
-        let notifiers = Notifiers::new(
+        let notifier = Notifier::new(
             snd_log_test.clone(),
             snd_test_cmd.clone(),
             Arc::new(AtomicBool::new(false)),
             "test_addr".into(),
         );
-        let _collector = GarbageCollector::start(snd_col_test, 4, 20, notifiers);
+        let _collector = GarbageCollector::start(snd_col_test, 4, 20, notifier);
 
         assert_eq!(4, 4);
     }
@@ -190,13 +189,13 @@ mod test_garbage_collector {
         let (snd_log_test, _): (Sender<Option<LogMessage>>, Receiver<Option<LogMessage>>) =
             mpsc::channel();
 
-        let notifiers = Notifiers::new(
+        let notifier = Notifier::new(
             snd_log_test.clone(),
             snd_test_cmd.clone(),
             Arc::new(AtomicBool::new(false)),
             "test_addr".into(),
         );
-        let _collector = GarbageCollector::start(snd_col_test, 4, 20, notifiers);
+        let _collector = GarbageCollector::start(snd_col_test, 4, 20, notifier);
         let (command, sender, _) = rcv_col_test.recv().unwrap();
 
         assert_eq!(&command[0], "clean");
@@ -219,13 +218,13 @@ mod test_garbage_collector {
         let (snd_log_test, _): (Sender<Option<LogMessage>>, Receiver<Option<LogMessage>>) =
             mpsc::channel();
 
-        let notifiers = Notifiers::new(
+        let notifier = Notifier::new(
             snd_log_test.clone(),
             snd_test_cmd.clone(),
             Arc::new(AtomicBool::new(false)),
             "test_addr".into(),
         );
-        let _collector = GarbageCollector::start(snd_col_test, 4, 20, notifiers);
+        let _collector = GarbageCollector::start(snd_col_test, 4, 20, notifier);
         let (_command, sender, _) = rcv_col_test.recv().unwrap();
         sender
             .send(Err(ErrorStruct::new(

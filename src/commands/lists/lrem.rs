@@ -102,6 +102,7 @@ pub fn remove_value_default(
 
 #[cfg(test)]
 pub mod test_lset {
+    use crate::commands::create_notifier;
 
     use crate::{
         commands::lists::lrange::Lrange,
@@ -113,7 +114,8 @@ pub mod test_lset {
     use super::Lrem;
     #[test]
     fn test01_lrem_negative_count() {
-        let mut data = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut data = Database::new(notifier);
 
         let mut new_list = VecDeque::new();
         new_list.push_back("hello".to_string());
@@ -142,7 +144,8 @@ pub mod test_lset {
 
     #[test]
     fn test02_lrem_positive_count() {
-        let mut data = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut data = Database::new(notifier);
 
         let mut new_list = VecDeque::new();
         new_list.push_back("hello".to_string());
@@ -172,7 +175,8 @@ pub mod test_lset {
 
     #[test]
     fn test02_lrem_count_equals_zero() {
-        let mut data = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut data = Database::new(notifier);
 
         let mut new_list = VecDeque::new();
         new_list.push_back("hello".to_string());

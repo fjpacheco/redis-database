@@ -1,13 +1,14 @@
 use crate::{
     commands::Runnable,
     native_types::ErrorStruct,
-    native_types::{RArray, RedisType},
+    native_types::{RSimpleString, RedisType},
     Database,
 };
-pub struct InfoDB;
+pub struct FlushDB;
 
-impl Runnable<Database> for InfoDB {
+impl Runnable<Database> for FlushDB {
     fn run(&self, _buffer: Vec<String>, database: &mut Database) -> Result<String, ErrorStruct> {
-        Ok(RArray::encode(database.info()?))
+        database.clear();
+        Ok(RSimpleString::encode("OK".to_string()))
     }
 }

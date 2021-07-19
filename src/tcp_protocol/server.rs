@@ -26,7 +26,7 @@ use crate::{
 
 use super::{
     client_list::ClientList, command_delegator::CommandsMap,
-    command_subdelegator::CommandSubDelegator, notifiers::Notifiers,
+    command_subdelegator::CommandSubDelegator, notifier::Notifier,
 };
 #[derive(Clone)]
 pub struct ServerRedisAtributes {
@@ -36,17 +36,28 @@ pub struct ServerRedisAtributes {
 }
 
 impl ServerRedisAtributes {
-
     pub fn info(&mut self) -> Result<Vec<String>, ErrorStruct> {
         let mut info = Vec::new();
 
-        self.config.lock()
-        .map_err(|_| ErrorStruct::from(redis_messages::poisoned_lock("redis config", ErrorSeverity::ShutdownServer)))?
-        .info(&mut info);
+        self.config
+            .lock()
+            .map_err(|_| {
+                ErrorStruct::from(redis_messages::poisoned_lock(
+                    "redis config",
+                    ErrorSeverity::ShutdownServer,
+                ))
+            })?
+            .info(&mut info);
 
-        self.shared_clients.lock()
-        .map_err(|_| ErrorStruct::from(redis_messages::poisoned_lock("redis config", ErrorSeverity::ShutdownServer)))?
-        .info(&mut info);
+        self.shared_clients
+            .lock()
+            .map_err(|_| {
+                ErrorStruct::from(redis_messages::poisoned_lock(
+                    "redis config",
+                    ErrorSeverity::ShutdownServer,
+                ))
+            })?
+            .info(&mut info);
 
         Ok(info)
     }
@@ -202,7 +213,6 @@ impl ServerRedis {
         // ################## 1° Initialization structures: BASIC ELEMENTS ##################
         let config = RedisConfig::parse_config(argv)?;
         let listener = ListenerProcessor::new_tcp_listener(&config)?;
-        let database = Database::new();
 
         // ################## 2° Initialization structures: CHANNELS and COMMANDS MAP ##################
         let (command_delegator_sender, command_delegator_recv) = channel();
@@ -219,6 +229,8 @@ impl ServerRedis {
         let drop_shared_clients = Arc::clone(&shared_clients);
 
         // ################## 5° Initialization structures: SERVER REDIS ATRIBUTES AND RUNNABLES MAP ##################
+        // and
+        // ################## 6° Initialization structures: Notifier ##################
 
         let server_redis = ServerRedisAtributes {
             config: Arc::clone(&config),
@@ -226,17 +238,15 @@ impl ServerRedis {
             shared_clients,
         };
 
-        let runnables_database = RunnablesMap::<Database>::database();
-        let runnables_server = RunnablesMap::<ServerRedisAtributes>::server();
-
-        // ################## 6° Initialization structures: NOTIFIERS ##################
-
-        let notifiers = Notifiers::new(
+        let notifier = Notifier::new(
             sender_log.clone(),
             command_delegator_sender,
             status_listener,
             server_redis.get_addr()?,
         );
+        let database = Database::new(notifier.clone());
+        let runnables_database = RunnablesMap::<Database>::database();
+        let runnables_server = RunnablesMap::<ServerRedisAtributes>::server();
 
         // ################## 7° Initialization structures: STRUCTS WITH THREADS ##################
         let mut log_center = LogCenter::new(
@@ -247,24 +257,24 @@ impl ServerRedis {
         )?;
 
         let mut command_delegator =
-            CommandDelegator::start(command_delegator_recv, commands_map, notifiers.clone())?;
+            CommandDelegator::start(command_delegator_recv, commands_map, notifier.clone())?;
         let mut command_sub_delegator_databse = CommandSubDelegator::start::<Database>(
             rcv_cmd_dat,
             runnables_database,
             database,
-            notifiers.clone(),
+            notifier.clone(),
         )?;
         let mut command_sub_delegator_server_atributes =
             CommandSubDelegator::start::<ServerRedisAtributes>(
                 rcv_cmd_sv,
                 runnables_server,
                 server_redis.clone(),
-                notifiers.clone(),
+                notifier.clone(),
             )?;
 
-        let mut collector = GarbageCollector::start(snd_cmd_dat_garbage, 4, 20, notifiers.clone());
+        let mut collector = GarbageCollector::start(snd_cmd_dat_garbage, 4, 20, notifier.clone());
 
-        /*let quit_notifier = Mutex::new(notifiers.clone());
+        /*let quit_notifier = Mutex::new(notifier.clone());
         let quit: JoinHandle<Result<(), ErrorStruct>> = thread::spawn(move ||{
             for line in stdin().lock().lines() {
                 match line {
@@ -282,7 +292,7 @@ impl ServerRedis {
         });*/
         // ################## ListenerProcessor ##################
 
-        ListenerProcessor::incoming(listener, server_redis, notifiers);
+        ListenerProcessor::incoming(listener, server_redis, notifier);
 
         // ################## FINISH SERVER ##################
         command_delegator.join()?;

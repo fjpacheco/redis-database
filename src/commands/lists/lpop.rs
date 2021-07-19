@@ -14,6 +14,7 @@ impl Runnable<Database> for LPop {
 
 #[cfg(test)]
 pub mod test_lpop {
+    use crate::commands::create_notifier;
 
     use crate::{database::TypeSaved, vec_strings};
 
@@ -21,7 +22,8 @@ pub mod test_lpop {
     use std::collections::VecDeque;
     #[test]
     fn test01_lpop_one_value_from_an_existing_list() {
-        let mut data = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut data = Database::new(notifier);
         let mut new_list: VecDeque<String> = VecDeque::new();
         new_list.push_back("this".to_string());
         new_list.push_back("is".to_string());
@@ -46,7 +48,8 @@ pub mod test_lpop {
 
     #[test]
     fn test02_lpop_many_values_from_an_existing_list() {
-        let mut data = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut data = Database::new(notifier);
         let mut new_list: VecDeque<String> = VecDeque::new();
         new_list.push_back("this".to_string());
         new_list.push_back("is".to_string());
@@ -71,7 +74,8 @@ pub mod test_lpop {
 
     #[test]
     fn test03_lpop_value_from_a_non_existing_list() {
-        let mut data = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut data = Database::new(notifier);
         let buffer = vec_strings!["key"];
         let encode = LPop.run(buffer, &mut data);
         assert_eq!(encode.unwrap(), "$-1\r\n".to_string());
@@ -80,7 +84,8 @@ pub mod test_lpop {
 
     #[test]
     fn test04_lpop_with_no_key() {
-        let mut data = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut data = Database::new(notifier);
         let buffer = vec_strings![];
         match LPop.run(buffer, &mut data) {
             Ok(_encode) => {}

@@ -35,6 +35,7 @@ impl Runnable<Database> for Llen {
 
 #[cfg(test)]
 pub mod test_llen {
+    use crate::commands::create_notifier;
 
     use crate::vec_strings;
 
@@ -43,7 +44,8 @@ pub mod test_llen {
 
     #[test]
     fn test01_llen_an_existing_list_of_one_element() {
-        let mut data = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut data = Database::new(notifier);
 
         let mut new_list = VecDeque::new();
         new_list.push_back("value".to_string());
@@ -57,7 +59,8 @@ pub mod test_llen {
 
     #[test]
     fn test02_llen_an_existing_list_of_many_elements() {
-        let mut data = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut data = Database::new(notifier);
 
         let mut new_list = VecDeque::new();
         new_list.push_back("this".to_string());
@@ -74,7 +77,8 @@ pub mod test_llen {
 
     #[test]
     fn test03_llen_to_key_storing_non_list() {
-        let mut data = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut data = Database::new(notifier);
         // redis> SET mykey 10
         data.insert("key".to_string(), TypeSaved::String("value".to_string()));
 

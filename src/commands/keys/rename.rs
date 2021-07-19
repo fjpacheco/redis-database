@@ -35,6 +35,7 @@ impl Runnable<Database> for Rename {
 
 #[cfg(test)]
 mod test_rename {
+    use crate::commands::create_notifier;
 
     use super::*;
     use crate::{
@@ -43,7 +44,8 @@ mod test_rename {
 
     #[test]
     fn test01_rename_existing_key_with_new_key() {
-        let mut database = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database = Database::new(notifier);
         database.insert("key".to_string(), TypeSaved::String("value".to_string()));
         let buffer_mock_1 = vec_strings!["key", "new_key"];
         let result1 = Rename.run(buffer_mock_1, &mut database);
@@ -55,7 +57,8 @@ mod test_rename {
 
     #[test]
     fn test02_rename_non_existing_key() {
-        let mut database = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database = Database::new(notifier);
         database.insert("key".to_string(), TypeSaved::String("value".to_string()));
         let buffer_mock = vec_strings!["random_key", "new_key"];
         let error = Rename.run(buffer_mock, &mut database);
@@ -64,7 +67,8 @@ mod test_rename {
 
     #[test]
     fn test03_rename_existing_key_with_existing_key() {
-        let mut database = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database = Database::new(notifier);
         database.insert("key".to_string(), TypeSaved::String("value".to_string()));
         let buffer_mock_1 = vec_strings!["key", "key"];
         let result1 = Rename.run(buffer_mock_1, &mut database);

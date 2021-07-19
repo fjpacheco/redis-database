@@ -12,6 +12,7 @@ impl Runnable<Database> for RPushx {
 
 #[cfg(test)]
 pub mod test_rpushx {
+    use crate::commands::create_notifier;
 
     use super::*;
     use crate::{database::TypeSaved, vec_strings};
@@ -19,7 +20,8 @@ pub mod test_rpushx {
 
     #[test]
     fn test01_rpushx_values_on_an_existing_list() {
-        let mut data = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut data = Database::new(notifier);
         let mut new_list = VecDeque::new();
         new_list.push_back("this".to_string());
         new_list.push_back("is".to_string());
@@ -46,7 +48,8 @@ pub mod test_rpushx {
 
     #[test]
     fn test02_rpushx_values_on_a_non_existing_list() {
-        let mut data = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut data = Database::new(notifier);
         let buffer = vec_strings!["key", "this", "is", "a", "list"];
         let error = RPushx.run(buffer, &mut data);
         assert_eq!(

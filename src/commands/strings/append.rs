@@ -39,6 +39,7 @@ impl Runnable<Database> for Append {
 
 #[cfg(test)]
 pub mod test_append {
+    use crate::commands::create_notifier;
 
     use super::*;
     use crate::{
@@ -48,7 +49,8 @@ pub mod test_append {
 
     #[test]
     fn test01_append_to_an_existing_key() {
-        let mut data = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut data = Database::new(notifier);
 
         data.insert("key".to_string(), TypeSaved::String("value".to_string()));
 
@@ -64,7 +66,8 @@ pub mod test_append {
 
     #[test]
     fn test02_append_to_a_non_existing_key() {
-        let mut data = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut data = Database::new(notifier);
         let buffer = vec_strings!["key", "newValue"];
         let encoded = Append.run(buffer, &mut data);
 
@@ -77,7 +80,8 @@ pub mod test_append {
 
     #[test]
     fn test03_wrong_number_of_arguments() {
-        let mut data = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut data = Database::new(notifier);
 
         data.insert("key".to_string(), TypeSaved::String("value".to_string()));
 

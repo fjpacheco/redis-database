@@ -14,7 +14,7 @@ use crate::native_types::error_severity::ErrorSeverity;
 use crate::native_types::{redis_type::encode_netcat_input, ErrorStruct, RArray, RedisType};
 use crate::tcp_protocol::client_atributes::status::Status;
 
-use super::{client_atributes::client_fields::ClientFields, notifiers::Notifiers, Response};
+use super::{client_atributes::client_fields::ClientFields, notifier::Notifier, Response};
 
 pub struct ClientHandler {
     stream: TcpStream,
@@ -23,15 +23,15 @@ pub struct ClientHandler {
     out_thread: Option<JoinHandle<Result<(), ErrorStruct>>>,
     response_snd: mpsc::Sender<Option<String>>,
     addr: SocketAddrV4,
-    notifiers: Notifiers,
+    notifier: Notifier,
 }
 
 impl ClientHandler {
     pub fn new(
         stream_received: TcpStream,
-        notifiers: Notifiers,
+        notifier: Notifier,
     ) -> Result<ClientHandler, ErrorStruct> {
-        let c_notifiers = notifiers.clone();
+        let c_notifier = notifier.clone();
         let in_stream = stream_received
             .try_clone()
             .map_err(|_| ErrorStruct::from(redis_messages::clone_socket()))?;
@@ -50,7 +50,7 @@ impl ClientHandler {
         ) = mpsc::channel();
         let response_snd_clone = response_snd.clone();
         let in_thread = thread::spawn(move || {
-            read_socket(in_stream, c_shared_fields, c_notifiers, response_snd_clone)
+            read_socket(in_stream, c_shared_fields, c_notifier, response_snd_clone)
         });
 
         let out_thread = thread::spawn(move || write_socket(out_stream, response_recv));
@@ -62,7 +62,7 @@ impl ClientHandler {
             out_thread: Some(out_thread),
             response_snd,
             addr,
-            notifiers,
+            notifier,
         })
     }
 
@@ -130,7 +130,7 @@ fn write_socket(
 fn read_socket(
     stream: TcpStream,
     c_shared_fields: Arc<Mutex<ClientFields>>,
-    notifiers: Notifiers,
+    notifier: Notifier,
     response_snd: mpsc::Sender<Option<String>>,
 ) -> Result<(), ErrorStruct> {
     let buf_reader_stream = BufReader::new(
@@ -142,12 +142,12 @@ fn read_socket(
     let status_while = listen_while_client(
         buf_reader_stream.lines(),
         &c_shared_fields,
-        &notifiers,
+        &notifier,
         response_snd,
     )
     .map_err(|error| {
         if error.severity().eq(&Some(&ErrorSeverity::ShutdownServer)) {
-            notifiers.force_shutdown_server(error.print_it());
+            notifier.force_shutdown_server(error.print_it());
         }
         error
     });
@@ -162,7 +162,7 @@ fn read_socket(
             ))
         })?
         .replace_status(Status::Dead);
-    notifiers.send_log(LogMessage::client_off(
+    notifier.send_log(LogMessage::client_off(
         get_peer(&stream)
             .map(|x| x.to_string())
             .unwrap_or_else(|_| "Not found IP client".into()),
@@ -173,7 +173,7 @@ fn read_socket(
 fn listen_while_client(
     mut lines: Lines<BufReader<TcpStream>>,
     c_shared_fields: &Arc<Mutex<ClientFields>>,
-    notifiers: &Notifiers,
+    notifier: &Notifier,
     response_snd: mpsc::Sender<Option<String>>,
 ) -> Result<(), ErrorStruct> {
     let mut response;
@@ -181,9 +181,9 @@ fn listen_while_client(
         match received {
             Ok(input) => {
                 if input.starts_with('*') {
-                    response = process_command_redis(input, &mut lines, c_shared_fields, notifiers);
+                    response = process_command_redis(input, &mut lines, c_shared_fields, notifier);
                 } else {
-                    response = process_other(input, c_shared_fields, notifiers);
+                    response = process_other(input, c_shared_fields, notifier);
                 }
             }
             Err(err) => match err.kind() {
@@ -222,16 +222,16 @@ fn process_command_redis(
     mut input: String,
     mut lines_buffer_reader: &mut Lines<BufReader<TcpStream>>,
     client_status: &Arc<Mutex<ClientFields>>,
-    notifiers: &Notifiers,
+    notifier: &Notifier,
 ) -> Result<String, ErrorStruct> {
     input.remove(0);
-    process_command_general(input, &mut lines_buffer_reader, client_status, notifiers)
+    process_command_general(input, &mut lines_buffer_reader, client_status, notifier)
 }
 
 fn process_other(
     input: String,
     client_status: &Arc<Mutex<ClientFields>>,
-    notifiers: &Notifiers,
+    notifier: &Notifier,
 ) -> Result<String, ErrorStruct> {
     let mut input_encoded = encode_netcat_input(input)?;
     input_encoded.remove(0);
@@ -240,14 +240,14 @@ fn process_other(
         .next()
         .ok_or_else(|| ErrorStruct::from(redis_messages::empty_buffer()))?
         .map_err(|_| ErrorStruct::from(redis_messages::normal_error()))?;
-    process_command_general(first_lecture, &mut lines, client_status, &notifiers)
+    process_command_general(first_lecture, &mut lines, client_status, &notifier)
 }
 
 fn process_command_general<G>(
     first_lecture: String,
     lines_buffer_reader: &mut Lines<G>,
     client_status: &Arc<Mutex<ClientFields>>,
-    notifiers: &Notifiers,
+    notifier: &Notifier,
 ) -> Result<String, ErrorStruct>
 where
     G: BufRead,
@@ -262,17 +262,17 @@ where
             ))
         })?
         .is_allowed_to(&command_vec[0])?;
-    delegate_command(command_vec, client_status, notifiers)
+    delegate_command(command_vec, client_status, notifier)
 }
 
 fn delegate_command(
     command_received: Vec<String>,
     client_fields: &Arc<Mutex<ClientFields>>,
-    notifiers: &Notifiers,
+    notifier: &Notifier,
 ) -> Result<String, ErrorStruct> {
     let command_received_initial = command_received.clone();
     let (sender, receiver): (mpsc::Sender<Response>, mpsc::Receiver<Response>) = mpsc::channel();
-    notifiers.send_command_delegator(Some((
+    notifier.send_command_delegator(Some((
         command_received,
         sender,
         Arc::clone(&client_fields),
@@ -283,7 +283,7 @@ fn delegate_command(
         .map_err(|_| ErrorStruct::from(redis_messages::closed_sender(ErrorSeverity::Comunicate)))?
     {
         Ok(good_string) => {
-            notifiers.notify_successful_shipment(&client_fields, command_received_initial)?;
+            notifier.notify_successful_shipment(&client_fields, command_received_initial)?;
             Ok(good_string)
         }
         Err(error) => Err(error),
@@ -334,12 +334,12 @@ impl Joinable<()> for ClientHandler {
         let state = close_thread(
             self.out_thread.take(),
             "write socket",
-            self.notifiers.clone(),
+            self.notifier.clone(),
         )
         .and(close_thread(
             self.in_thread.take(),
             "read socket",
-            self.notifiers.clone(),
+            self.notifier.clone(),
         ));
 
         println!("ME ELIMINE -- DROP//JOIN SUCCESS");

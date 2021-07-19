@@ -41,6 +41,7 @@ fn check_error_cases(buffer: &[String]) -> Result<(), ErrorStruct> {
 
 #[cfg(test)]
 mod test_get {
+    use crate::commands::create_notifier;
 
     use crate::vec_strings;
 
@@ -49,7 +50,8 @@ mod test_get {
     #[test]
     fn test01_get_value_of_key_correct_is_success() {
         let buffer_mock_get = vec_strings!["key"];
-        let mut database_mock = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database_mock = Database::new(notifier);
 
         database_mock.insert("key".to_string(), TypeSaved::String("value".to_string()));
         let result_received = Get.run(buffer_mock_get, &mut database_mock);
@@ -61,7 +63,8 @@ mod test_get {
     #[test]
     fn test02_get_value_of_key_inorrect_return_result_ok_with_nil() {
         let buffer_mock_get = vec_strings!["key_other"];
-        let mut database_mock = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database_mock = Database::new(notifier);
 
         database_mock.insert("key".to_string(), TypeSaved::String("value".to_string()));
         let result_received = Get.run(buffer_mock_get, &mut database_mock);

@@ -14,11 +14,11 @@ use crate::native_types::error_severity::ErrorSeverity;
 use crate::native_types::ErrorStruct;
 use crate::tcp_protocol::runnables_map::RunnablesMap;
 
-use super::notifiers::Notifiers;
+use super::notifier::Notifier;
 use super::{RawCommand, Response};
 pub struct CommandSubDelegator {
     join: Option<JoinHandle<Result<(), ErrorStruct>>>,
-    notifier: Notifiers,
+    notifier: Notifier,
 }
 /// Interprets commands and delegates tasks
 
@@ -36,7 +36,7 @@ impl CommandSubDelegator {
         rcv_cmd: Receiver<RawCommand>,
         runnables_map: RunnablesMap<T>,
         data: T,
-        notifier: Notifiers,
+        notifier: Notifier,
     ) -> Result<Self, ErrorStruct>
     where
         T: Send + Sync + Display,
@@ -62,7 +62,7 @@ impl CommandSubDelegator {
         rcv_cmd: Receiver<RawCommand>,
         runnables_map: RunnablesMap<T>,
         mut data: T,
-        notifier: Notifiers,
+        notifier: Notifier,
     ) -> Result<(), ErrorStruct>
     where
         T: Send + Sync + Display,
@@ -136,6 +136,7 @@ fn check_severity(error: ErrorStruct) -> Result<(), ErrorStruct> {
 
 #[cfg(test)]
 pub mod test_database_command_delegator {
+    use crate::commands::create_notifier;
     use crate::commands::lists::rpop::RPop;
     use crate::commands::lists::rpush::RPush;
     use crate::commands::strings::get::Get;
@@ -170,7 +171,8 @@ pub mod test_database_command_delegator {
 
         let runnables_map = RunnablesMap::new(map);
 
-        let database = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let database = Database::new(notifier);
 
         let (tx1, rx1): (Sender<RawCommand>, Receiver<RawCommand>) = mpsc::channel();
 
@@ -179,7 +181,7 @@ pub mod test_database_command_delegator {
 
         let (snd_cmd_del_test, _c): (Sender<Option<RawCommand>>, Receiver<Option<RawCommand>>) =
             mpsc::channel();
-        let notifiers = Notifiers::new(
+        let notifier = Notifier::new(
             snd_log_test,
             snd_cmd_del_test,
             Arc::new(AtomicBool::new(false)),
@@ -187,7 +189,7 @@ pub mod test_database_command_delegator {
         );
 
         let _database_command_delegator_recv =
-            CommandSubDelegator::start::<Database>(rx1, runnables_map, database, notifiers.clone());
+            CommandSubDelegator::start::<Database>(rx1, runnables_map, database, notifier.clone());
 
         let (tx2, rx2): (Sender<Response>, Receiver<Response>) = mpsc::channel();
         let buffer_mock = vec_strings!["set", "key", "value"];
@@ -224,7 +226,7 @@ pub mod test_database_command_delegator {
 
         let response3 = rx4.recv().unwrap();
         assert_eq!(response3.unwrap(), ":5\r\n".to_string());
-        drop(notifiers);
+        drop(notifier);
         drop(tx1);
     }
 
@@ -234,7 +236,8 @@ pub mod test_database_command_delegator {
         map.insert(String::from("set"), Arc::new(Box::new(Set)));
         let runnables_map = RunnablesMap::new(map);
 
-        let database = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let database = Database::new(notifier);
 
         let (tx1, rx1): (Sender<RawCommand>, Receiver<RawCommand>) = mpsc::channel();
 
@@ -243,7 +246,7 @@ pub mod test_database_command_delegator {
 
         let (snd_cmd_del_test, _c): (Sender<Option<RawCommand>>, Receiver<Option<RawCommand>>) =
             mpsc::channel();
-        let notifiers = Notifiers::new(
+        let notifier = Notifier::new(
             snd_log_test,
             snd_cmd_del_test,
             Arc::new(AtomicBool::new(false)),
@@ -251,7 +254,7 @@ pub mod test_database_command_delegator {
         );
 
         let _database_command_delegator_recv =
-            CommandSubDelegator::start::<Database>(rx1, runnables_map, database, notifiers.clone());
+            CommandSubDelegator::start::<Database>(rx1, runnables_map, database, notifier.clone());
 
         let (tx2, rx2): (Sender<Response>, Receiver<Response>) = mpsc::channel();
         let buffer_mock = vec_strings!["set", "key", "value"];
@@ -279,7 +282,7 @@ pub mod test_database_command_delegator {
             RError::encode(response2.unwrap_err()),
             "-ERR unknown command \'get\', with args beginning with: \'key\', \r\n".to_string()
         );
-        drop(notifiers);
+        drop(notifier);
         drop(tx1);
     }
 
@@ -291,7 +294,8 @@ pub mod test_database_command_delegator {
         map.insert(String::from("llen"), Arc::new(Box::new(Llen)));
         let runnables_map = RunnablesMap::new(map);
 
-        let database = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let database = Database::new(notifier);
 
         let (tx1, rx1): (Sender<RawCommand>, Receiver<RawCommand>) = mpsc::channel();
         let (snd_log_test, _b): (Sender<Option<LogMessage>>, Receiver<Option<LogMessage>>) =
@@ -299,7 +303,7 @@ pub mod test_database_command_delegator {
 
         let (snd_cmd_del_test, _c): (Sender<Option<RawCommand>>, Receiver<Option<RawCommand>>) =
             mpsc::channel();
-        let notifiers = Notifiers::new(
+        let notifier = Notifier::new(
             snd_log_test,
             snd_cmd_del_test,
             Arc::new(AtomicBool::new(false)),
@@ -307,7 +311,7 @@ pub mod test_database_command_delegator {
         );
 
         let _database_command_delegator_recv =
-            CommandSubDelegator::start::<Database>(rx1, runnables_map, database, notifiers.clone());
+            CommandSubDelegator::start::<Database>(rx1, runnables_map, database, notifier.clone());
         let (tx2, rx2): (Sender<Response>, Receiver<Response>) = mpsc::channel();
         let buffer_mock = vec![
             "rpush".to_string(),
@@ -352,7 +356,7 @@ pub mod test_database_command_delegator {
         let response1 = rx4.recv().unwrap();
         assert_eq!(response1.unwrap(), ":0\r\n".to_string());
 
-        drop(notifiers);
+        drop(notifier);
         drop(tx1);
     }
 }

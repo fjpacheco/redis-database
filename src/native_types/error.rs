@@ -35,6 +35,10 @@ impl ErrorStruct {
         printed
     }
 
+    pub fn prefix(&self) -> Option<&str> {
+        Some(&self.prefix)
+    }
+
     pub fn severity(&self) -> Option<&ErrorSeverity> {
         Some(&self.severity)
     }

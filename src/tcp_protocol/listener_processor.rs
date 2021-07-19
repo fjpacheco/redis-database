@@ -9,20 +9,16 @@ use crate::{
     tcp_protocol::client_handler::ClientHandler,
 };
 
-use super::{notifiers::Notifiers, server::ServerRedisAtributes};
+use super::{notifier::Notifier, server::ServerRedisAtributes};
 
 pub struct ListenerProcessor;
 
 impl ListenerProcessor {
-    pub fn incoming(
-        listener: TcpListener,
-        server_redis: ServerRedisAtributes,
-        notifiers: Notifiers,
-    ) {
-        let result = start_incoming(listener, &notifiers, server_redis);
+    pub fn incoming(listener: TcpListener, server_redis: ServerRedisAtributes, notifier: Notifier) {
+        let result = start_incoming(listener, &notifier, server_redis);
         if let Err(err) = result {
             if err.severity().eq(&Some(&ErrorSeverity::ShutdownServer)) {
-                notifiers.force_shutdown_server("Forced shutdown".to_string());
+                notifier.force_shutdown_server("Forced shutdown".to_string());
             }
         }
     }
@@ -47,10 +43,10 @@ impl ListenerProcessor {
 
 fn start_incoming(
     listener: TcpListener,
-    notifiers: &Notifiers,
+    notifier: &Notifier,
     server_redis: ServerRedisAtributes,
 ) -> Result<(), ErrorStruct> {
-    welcome_message(&listener, &notifiers)?;
+    welcome_message(&listener, &notifier)?;
     for stream in listener.incoming() {
         if server_redis.is_listener_off() {
             break;
@@ -59,12 +55,12 @@ fn start_incoming(
         match stream {
             Ok(client) => {
                 server_redis.set_timeout(&client)?;
-                notifiers.send_log(LogMessage::new_conection(&client))?;
-                if let Ok(new_client) = ClientHandler::new(client, notifiers.clone()) {
+                notifier.send_log(LogMessage::new_conection(&client))?;
+                if let Ok(new_client) = ClientHandler::new(client, notifier.clone()) {
                     if let Ok(mut client_list) = server_redis.shared_clients.lock() {
                         client_list.insert(new_client);
                     } else {
-                        let _ = notifiers.send_log(LogMessage::from_errorstruct(
+                        let _ = notifier.send_log(LogMessage::from_errorstruct(
                             // I'm not interested ... I retired with the forced Shutdown!
                             ErrorStruct::from(redis_messages::poisoned_lock(
                                 "Client List",
@@ -75,15 +71,15 @@ fn start_incoming(
                 }
             }
             Err(e) => {
-                notifiers.send_log(LogMessage::error_to_connect_client(&e))?;
+                notifier.send_log(LogMessage::error_to_connect_client(&e))?;
             }
         }
     }
-    notifiers.send_log(LogMessage::off_server(&listener))?;
+    notifier.send_log(LogMessage::off_server(&listener))?;
     Ok(())
 }
 
-fn welcome_message(listener: &TcpListener, notifiers: &Notifiers) -> Result<(), ErrorStruct> {
+fn welcome_message(listener: &TcpListener, notifier: &Notifier) -> Result<(), ErrorStruct> {
     let port = listener
         .local_addr()
         .map_err(|_| {
@@ -95,6 +91,6 @@ fn welcome_message(listener: &TcpListener, notifiers: &Notifiers) -> Result<(), 
         .port()
         .to_string();
     print!("{}", redis_logo(&port));
-    notifiers.send_log(LogMessage::start_up(listener))?;
+    notifier.send_log(LogMessage::start_up(listener))?;
     Ok(())
 }

@@ -30,12 +30,16 @@ mod test_type {
 
     use super::*;
     use crate::{
-        commands::sets::sadd::Sadd, database::TypeSaved, native_types::RSimpleString, vec_strings,
+        commands::{create_notifier, sets::sadd::Sadd},
+        database::TypeSaved,
+        native_types::RSimpleString,
+        vec_strings,
     };
 
     #[test]
     fn test01_type_of_string_key() {
-        let mut database = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database = Database::new(notifier);
         database.insert("key".to_string(), TypeSaved::String("value".to_string()));
         let buffer = vec_strings!["key"];
         let result = Type.run(buffer, &mut database);
@@ -44,7 +48,8 @@ mod test_type {
 
     #[test]
     fn test02_type_of_set_key() {
-        let mut database = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database = Database::new(notifier);
         let buffer1 = vec_strings!["key", "member1", "member2"];
         let _result1 = Sadd.run(buffer1, &mut database);
 
@@ -55,7 +60,8 @@ mod test_type {
 
     #[test]
     fn test03_type_of_list_key() {
-        let mut database = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database = Database::new(notifier);
 
         let mut new_list = VecDeque::new();
         new_list.push_back("value1".to_string());
@@ -71,7 +77,8 @@ mod test_type {
 
     #[test]
     fn test01_type_of_non_existent_string_key() {
-        let mut database = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database = Database::new(notifier);
         database.insert("key1".to_string(), TypeSaved::String("value".to_string()));
         let buffer = vec_strings!["key2"];
         let result = Type.run(buffer, &mut database);

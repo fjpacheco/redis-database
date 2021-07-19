@@ -7,7 +7,11 @@ use crate::{
 pub struct InfoSV;
 
 impl Runnable<ServerRedisAtributes> for InfoSV {
-    fn run(&self, _buffer: Vec<String>, server: &mut ServerRedisAtributes) -> Result<String, ErrorStruct> {
+    fn run(
+        &self,
+        _buffer: Vec<String>,
+        server: &mut ServerRedisAtributes,
+    ) -> Result<String, ErrorStruct> {
         Ok(RArray::encode(server.info()?))
     }
 }

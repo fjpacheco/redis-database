@@ -48,7 +48,7 @@ impl<T> RunnablesMap<T> {
         let mut map: HashMap<String, Arc<BoxedCommand<Database>>> = HashMap::new();
         RunnablesMap {
             elements: get_runnables!(
-                map, Set, Get, Strlen, Mset, Mget, Getset, Getdel, Incrby, Decrby, Append, Clean
+                map, Set, Get, Strlen, Mset, Mget, Getset, Getdel, Incrby, Decrby, Append, Clean, Expire
             ),
         }
     }

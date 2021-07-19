@@ -1,12 +1,17 @@
 use crate::native_types::ErrorStruct;
 
 pub mod _type;
+pub mod clean;
 pub mod copy;
 pub mod del;
+pub mod exists;
+pub mod expire;
+pub mod expireat;
+pub mod persist;
 pub mod rename;
-//pub mod exists;
-pub mod clean;
-
+pub mod sort;
+pub mod touch;
+pub mod ttl;
 pub fn pop_value(buffer: &mut Vec<String>, name: &str) -> Result<String, ErrorStruct> {
     if let Some(value) = buffer.pop() {
         Ok(value)

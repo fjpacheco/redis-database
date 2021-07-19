@@ -29,6 +29,7 @@ impl Runnable<Database> for Getdel {
 
 #[cfg(test)]
 pub mod test_getdel {
+    use crate::commands::create_notifier;
 
     use super::*;
     use crate::{
@@ -38,7 +39,8 @@ pub mod test_getdel {
 
     #[test]
     fn test01_getdel_of_an_existing_key() {
-        let mut data = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut data = Database::new(notifier);
 
         data.insert("key".to_string(), TypeSaved::String("value".to_string()));
 
@@ -51,7 +53,8 @@ pub mod test_getdel {
 
     #[test]
     fn test02_getdel_of_a_non_existing_key() {
-        let mut data = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut data = Database::new(notifier);
         let buffer = vec_strings!["key"];
         let encoded = Getdel.run(buffer, &mut data);
 
@@ -61,7 +64,8 @@ pub mod test_getdel {
 
     #[test]
     fn test03_wrong_number_of_arguments() {
-        let mut data = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut data = Database::new(notifier);
 
         data.insert("key".to_string(), TypeSaved::String("value".to_string()));
 

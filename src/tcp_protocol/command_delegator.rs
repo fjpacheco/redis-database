@@ -6,7 +6,7 @@ use std::sync::Mutex;
 use std::thread::JoinHandle;
 use std::{collections::HashMap, thread};
 
-use super::notifiers::Notifiers;
+use super::notifier::Notifier;
 use super::{RawCommand, Response};
 
 use crate::joinable::Joinable;
@@ -75,7 +75,8 @@ impl CommandsMap {
             "incrby",
             "decrby",
             "append",
-            "clean"
+            "clean",
+            "expire"
         );
 
         insert_in!(
@@ -103,7 +104,7 @@ impl CommandsMap {
 
 pub struct CommandDelegator {
     join: Option<JoinHandle<Result<(), ErrorStruct>>>,
-    notifier: Notifiers,
+    notifier: Notifier,
 }
 
 /// Interprets commands and delegates tasks
@@ -127,7 +128,7 @@ impl CommandDelegator {
     pub fn start(
         command_delegator_recv: Receiver<Option<RawCommand>>,
         commands_map: CommandsMap,
-        notifier: Notifiers,
+        notifier: Notifier,
     ) -> Result<Self, ErrorStruct> {
         let builder = thread::Builder::new().name("Command Delegator".into());
         let c_notifier = notifier.clone();
@@ -149,7 +150,7 @@ impl CommandDelegator {
     fn init(
         command_delegator_recv: Receiver<Option<RawCommand>>,
         mut commands_map: CommandsMap,
-        notifier: Notifiers,
+        notifier: Notifier,
     ) -> Result<(), ErrorStruct> {
         let mut result = Ok(());
         for packed_raw_command in command_delegator_recv.iter() {
@@ -306,6 +307,7 @@ fn clone_command_vec(command_vec: &[String]) -> Vec<String> {
 #[cfg(test)]
 pub mod test_command_delegator {
 
+    use crate::commands::create_notifier;
     use crate::communication::log_messages::LogMessage;
     use crate::tcp_protocol::command_subdelegator::CommandSubDelegator;
     use crate::tcp_protocol::BoxedCommand;
@@ -335,7 +337,8 @@ pub mod test_command_delegator {
 
         let runnables_map = RunnablesMap::new(map);
 
-        let database = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let database = Database::new(notifier);
 
         let (snd_cmd_dat, rcv_cmd_dat): (Sender<RawCommand>, Receiver<RawCommand>) =
             mpsc::channel();
@@ -355,7 +358,7 @@ pub mod test_command_delegator {
         let (snd_log_test, _b): (Sender<Option<LogMessage>>, Receiver<Option<LogMessage>>) =
             mpsc::channel();
 
-        let notifiers = Notifiers::new(
+        let notifier = Notifier::new(
             snd_log_test,
             snd_test_cmd.clone(),
             Arc::new(AtomicBool::new(false)),
@@ -366,12 +369,12 @@ pub mod test_command_delegator {
             rcv_cmd_dat,
             runnables_map,
             database,
-            notifiers.clone(),
+            notifier.clone(),
         )
         .unwrap();
 
         let mut command_delegator =
-            CommandDelegator::start(rcv_test_cmd, commands_map, notifiers.clone()).unwrap();
+            CommandDelegator::start(rcv_test_cmd, commands_map, notifier.clone()).unwrap();
 
         // ACT
 
@@ -432,7 +435,7 @@ pub mod test_command_delegator {
             "*4\r\n$8\r\nbreaking\r\n$2\r\nmy\r\n$3\r\nnew\r\n$9\r\ndelegator\r\n".to_string()
         );
 
-        drop(notifiers);
+        drop(notifier);
         let _ = command_delegator.join();
         let _ = database_command_delegator.join();
     }
@@ -447,7 +450,8 @@ pub mod test_command_delegator {
 
         let runnables_map = RunnablesMap::new(map);
 
-        let database = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let database = Database::new(notifier);
 
         let (snd_cmd_dat, rcv_cmd_dat): (Sender<RawCommand>, Receiver<RawCommand>) =
             mpsc::channel();
@@ -466,7 +470,7 @@ pub mod test_command_delegator {
         let (snd_log_test, _b): (Sender<Option<LogMessage>>, Receiver<Option<LogMessage>>) =
             mpsc::channel();
 
-        let notifiers = Notifiers::new(
+        let notifier = Notifier::new(
             snd_log_test,
             snd_test_cmd.clone(),
             Arc::new(AtomicBool::new(false)),
@@ -477,12 +481,12 @@ pub mod test_command_delegator {
             rcv_cmd_dat,
             runnables_map,
             database,
-            notifiers.clone(),
+            notifier.clone(),
         )
         .unwrap();
 
         let mut command_delegator =
-            CommandDelegator::start(rcv_test_cmd, commands_map, notifiers.clone()).unwrap();
+            CommandDelegator::start(rcv_test_cmd, commands_map, notifier.clone()).unwrap();
 
         // ACT
 
@@ -501,7 +505,7 @@ pub mod test_command_delegator {
         let response1 = rcv_dat_test.recv().unwrap();
         assert_eq!(RError::encode(response1.unwrap_err()), "-ERR unknown command \'lpush\', with args beginning with: \'lpush\', \'key\', \'delegator\', \'new\', \'my\', \'testing\', \r\n".to_string());
 
-        drop(notifiers);
+        drop(notifier);
         let _ = command_delegator.join();
         let _ = database_command_delegator.join();
     }

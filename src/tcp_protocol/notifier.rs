@@ -16,14 +16,14 @@ use crate::{
 use super::{client_atributes::client_fields::ClientFields, RawCommand};
 
 #[derive(Clone)]
-pub struct Notifiers {
+pub struct Notifier {
     sender_log: Sender<Option<LogMessage>>,
     command_delegator_sender: Sender<Option<RawCommand>>,
     status_listener: Arc<AtomicBool>,
     addr_server: String,
 }
 
-impl Notifiers {
+impl Notifier {
     pub fn new(
         sender_log: Sender<Option<LogMessage>>,
         command_delegator_sender: Sender<Option<RawCommand>>,

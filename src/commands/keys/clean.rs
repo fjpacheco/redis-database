@@ -38,17 +38,17 @@ fn touch_n_random_keys(n: &isize, database: &mut &mut Database) -> isize {
     let mut expired_keys: isize = 0;
     for _ in 0..*n {
         if let Some(key) = database.random_key() {
-            if database.touch(&key) {
-                expired_keys += 1;
-            }
+            let _ = database
+                .touch(&key)
+                .and_then(|is_expired| Ok(is_expired.then(|| expired_keys += 1)));
         }
     }
-
     expired_keys
 }
 
 #[cfg(test)]
 mod test_clean {
+    use crate::commands::create_notifier;
 
     use super::*;
     use crate::database::TypeSaved;
@@ -81,7 +81,8 @@ mod test_clean {
     #[test]
     //#[ignore]
     fn test01_cleaning_some_keys() {
-        let mut database = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database = Database::new(notifier);
 
         load_database(&mut database);
 

@@ -46,6 +46,7 @@ fn check_error_cases(buffer: &[String]) -> Result<(), ErrorStruct> {
 
 #[cfg(test)]
 mod test_smembers_function {
+    use crate::commands::create_notifier;
     use std::collections::{HashSet, VecDeque};
 
     use crate::vec_strings;
@@ -57,7 +58,8 @@ mod test_smembers_function {
         let mut set = HashSet::new();
         set.insert(String::from("m1"));
         set.insert(String::from("m2"));
-        let mut database_mock = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database_mock = Database::new(notifier);
         database_mock.insert("key".to_string(), TypeSaved::Set(set));
         let buffer_mock = vec_strings!["key"];
 
@@ -75,7 +77,8 @@ mod test_smembers_function {
         let mut set = HashSet::new();
         set.insert(String::from("m1"));
         set.insert(String::from("m2"));
-        let mut database_mock = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database_mock = Database::new(notifier);
         database_mock.insert("key".to_string(), TypeSaved::Set(set));
         let buffer_mock = vec_strings!["key_other"];
 
@@ -88,7 +91,8 @@ mod test_smembers_function {
     #[test]
     fn test03_smembers_return_an_empty_array_if_set_is_empty() {
         let set = HashSet::new();
-        let mut database_mock = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database_mock = Database::new(notifier);
         database_mock.insert("key".to_string(), TypeSaved::Set(set));
         let buffer_mock = vec_strings!["key"];
 
@@ -100,7 +104,8 @@ mod test_smembers_function {
 
     #[test]
     fn test04_smembers_return_error_wrongtype_if_execute_with_key_of_string() {
-        let mut database_mock = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database_mock = Database::new(notifier);
         database_mock.insert(
             "keyOfString".to_string(),
             TypeSaved::String("value".to_string()),
@@ -118,7 +123,8 @@ mod test_smembers_function {
 
     #[test]
     fn test05_smembers_return_error_wrongtype_if_execute_with_key_of_list() {
-        let mut database_mock = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database_mock = Database::new(notifier);
         let mut new_list = VecDeque::new();
         new_list.push_back("value1".to_string());
         new_list.push_back("value2".to_string());
@@ -137,7 +143,8 @@ mod test_smembers_function {
 
     #[test]
     fn test06_smembers_return_error_arguments_invalid_ifbuffer_has_many_one_arguments() {
-        let mut database_mock = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database_mock = Database::new(notifier);
         let buffer_mock = vec_strings!["arg1", "arg2", "arg3"];
 
         let result_received = Smembers.run(buffer_mock, &mut database_mock);

@@ -1,4 +1,15 @@
-use crate::{messages::redis_messages, native_types::ErrorStruct};
+use std::sync::{
+    atomic::AtomicBool,
+    mpsc::{self, Receiver},
+    Arc,
+};
+
+use crate::{
+    communication::log_messages::LogMessage,
+    messages::redis_messages,
+    native_types::ErrorStruct,
+    tcp_protocol::{notifier::Notifier, RawCommand},
+};
 
 pub mod keys;
 pub mod lists;
@@ -6,7 +17,10 @@ pub mod pubsub;
 pub mod server;
 pub mod sets;
 pub mod strings;
-pub use keys::clean::Clean;
+pub use keys::{
+    expire::Expire,
+    clean::Clean
+};
 pub use pubsub::{
     publish::Publish, subscribe_cf::SubscribeCF, subscribe_cl::Subscribe,
     unsubscribe_cf::UnsubscribeCF, unsubscribe_cl::Unsubscribe,
@@ -55,6 +69,7 @@ pub trait Runnable<T> {
     /// use redis_rust::commands::strings::set::Set;
     /// use redis_rust::native_types::ErrorStruct;
     /// use redis_rust::commands::Runnable;
+    /// use redis_rust::commands::create_notifier;
     /// use redis_rust::vec_strings;
     ///
     /// fn execute<Database>(command: &dyn Runnable<Database>,
@@ -65,7 +80,8 @@ pub trait Runnable<T> {
     ///     command.run(buffer, database)
     /// }
     ///
-    /// let mut database = Database::new();
+    /// let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+    /// let mut database = Database::new(notifier);
     /// let buffer = vec_strings!["key", "value"];
     /// let object_commmand = Set;
     /// let result_received = execute(&object_commmand, buffer, &mut database);
@@ -112,3 +128,30 @@ pub fn check_empty_2(buffer: &[String]) -> Result<(), ErrorStruct> {
         Ok(())
     }
 }
+
+pub fn create_notifier() -> (
+    Notifier,
+    Receiver<Option<LogMessage>>,
+    Receiver<Option<RawCommand>>,
+) {
+    let (log_snd, log_rcv) = mpsc::channel();
+    let (cmd_snd, cmd_rcv) = mpsc::channel();
+
+    (
+        Notifier::new(
+            log_snd,
+            cmd_snd,
+            Arc::new(AtomicBool::new(false)),
+            "test_addr".into(),
+        ),
+        log_rcv,
+        cmd_rcv,
+    )
+}
+
+/*
+let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+let mut db = Database::new(notifier);
+30,22:         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+let mut db = Database::new(notifier);
+*/

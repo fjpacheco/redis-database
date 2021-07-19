@@ -7,7 +7,6 @@ pub mod info_db_formatter {
     pub fn number_of_keys(n: usize) -> String {
         format!("Number of keys: {}", n)
     }
-
 }
 
 pub mod info_client_formatter {
@@ -19,7 +18,6 @@ pub mod info_client_formatter {
     pub fn active_channels(n: usize) -> String {
         format!("active channels: {}", n)
     }
-
 }
 
 pub mod info_server_formatter {
@@ -53,5 +51,4 @@ pub mod info_server_formatter {
     pub fn logfile_name(name: &str) -> String {
         format!("log file name: {}", name)
     }
-
 }

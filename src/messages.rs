@@ -78,6 +78,14 @@ pub mod redis_messages {
         }
     }
 
+    pub fn negative_number() -> MessageRedis {
+        MessageRedis {
+            prefix: "NEG".to_string(),
+            message: "Given number must be positive or zero".to_string(),
+            severity: ErrorSeverity::Comunicate,
+        }
+    }
+
     pub fn key_not_found() -> MessageRedis {
         MessageRedis {
             prefix: "KEYNOTFOUND".to_string(),
@@ -86,7 +94,7 @@ pub mod redis_messages {
         }
     }
 
-    pub fn ttl_error() -> MessageRedis {
+    pub fn ttl_epoch_error() -> MessageRedis {
         MessageRedis {
             prefix: "TTL".to_string(),
             message: "an error occurred with the epoch expiration".to_string(),

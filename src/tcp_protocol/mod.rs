@@ -8,7 +8,7 @@ use std::sync::Arc;
 use std::sync::Mutex;
 use std::thread::JoinHandle;
 
-use self::notifiers::Notifiers;
+use self::notifier::Notifier;
 
 pub mod client_atributes;
 pub mod client_handler;
@@ -16,7 +16,7 @@ pub mod client_list;
 pub mod command_delegator;
 pub mod command_subdelegator;
 pub mod listener_processor;
-pub mod notifiers;
+pub mod notifier;
 pub mod runnables_map;
 pub mod server;
 
@@ -41,7 +41,7 @@ fn get_command(command_input_user: &[String]) -> String {
 pub fn close_thread(
     thread: Option<JoinHandle<Result<(), ErrorStruct>>>,
     name: &str,
-    notifer: Notifiers,
+    notifer: Notifier,
 ) -> Result<(), ErrorStruct> {
     if let Some(handle) = thread {
         handle

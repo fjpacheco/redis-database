@@ -66,6 +66,7 @@ fn get_from_index(mut index: isize, list: &VecDeque<String>) -> String {
 
 #[cfg(test)]
 pub mod test_lpush {
+    use crate::commands::create_notifier;
 
     use crate::vec_strings;
 
@@ -74,7 +75,8 @@ pub mod test_lpush {
 
     #[test]
     fn test01_lindex_positive_from_an_existing_list() {
-        let mut data = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut data = Database::new(notifier);
         let mut new_list = VecDeque::new();
         new_list.push_back("this".to_string());
         new_list.push_back("is".to_string());
@@ -89,7 +91,8 @@ pub mod test_lpush {
 
     #[test]
     fn test02_lindex_negative_from_an_existing_list() {
-        let mut data = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut data = Database::new(notifier);
         let mut new_list = VecDeque::new();
         new_list.push_back("this".to_string());
         new_list.push_back("is".to_string());
@@ -104,7 +107,8 @@ pub mod test_lpush {
 
     #[test]
     fn test03_lindex_from_a_non_existing_list() {
-        let mut data = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut data = Database::new(notifier);
         let buffer = vec_strings!["key", "4"];
         let encode = LIndex.run(buffer, &mut data);
         assert_eq!(encode.unwrap(), "$-1\r\n".to_string());
@@ -113,7 +117,8 @@ pub mod test_lpush {
 
     #[test]
     fn test04_lindex_out_of_index_from_an_existing_list() {
-        let mut data = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut data = Database::new(notifier);
         let mut new_list = VecDeque::new();
         new_list.push_back("this".to_string());
         new_list.push_back("is".to_string());

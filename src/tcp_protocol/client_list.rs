@@ -1,5 +1,8 @@
-use crate::{commands::server::info_formatter::info_client_formatter::*, native_types::{RBulkString, RedisType}};
 use crate::regex::super_regex::SuperRegex;
+use crate::{
+    commands::server::info_formatter::info_client_formatter::*,
+    native_types::{RBulkString, RedisType},
+};
 use crate::{joinable::Joinable, native_types::ErrorStruct};
 use std::collections::HashMap;
 use std::sync::mpsc::{SendError, Sender};

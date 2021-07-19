@@ -5,7 +5,9 @@ use std::{
     path::Path,
 };
 
-use crate::{native_types::ErrorStruct, commands::server::info_formatter::info_server_formatter::*};
+use crate::{
+    commands::server::info_formatter::info_server_formatter::*, native_types::ErrorStruct,
+};
 
 pub struct RedisConfig {
     ip: String,
