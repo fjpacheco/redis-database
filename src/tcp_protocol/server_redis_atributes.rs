@@ -85,7 +85,7 @@ impl ServerRedisAtributes {
                     ErrorSeverity::ShutdownServer,
                 ))
             })?
-            .change_file(new_file_name)?;
+            .change_log_file(new_file_name)?;
         Ok(())
     }
 

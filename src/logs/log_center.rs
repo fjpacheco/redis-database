@@ -189,12 +189,13 @@ pub mod test_log_center {
 
     #[test]
     fn test01_sending_a_log_message() {
-        let _ = File::create("example4.txt").unwrap();
+        let _ = File::create("logcenter_01.txt").unwrap();
         let config = Arc::new(Mutex::new(
             RedisConfig::new(
                 String::new(),
                 String::new(),
-                String::from("example4.txt"),
+                String::from("logcenter_01.txt"),
+                String::from("dump.txt"),
                 0,
             )
             .unwrap(),
@@ -207,7 +208,7 @@ pub mod test_log_center {
         sender.send(Some(message)).unwrap();
         thread::sleep(std::time::Duration::from_millis(1));
         assert_eq!(
-            fs::read("example4.txt").unwrap(),
+            fs::read("logcenter_01.txt").unwrap(),
             b"$14\r\nThis is test 1\r\n"
         );
         drop(sender);
@@ -217,12 +218,13 @@ pub mod test_log_center {
     #[test]
     fn test02_sending_a_log_message_and_drop_log_center() {
         {
-            let _ = File::create("example5.txt").unwrap();
+            let _ = File::create("logcenter_02.txt").unwrap();
             let config = Arc::new(Mutex::new(
                 RedisConfig::new(
                     String::new(),
                     String::new(),
-                    String::from("example5.txt"),
+                    String::from("logcenter_02.txt"),
+                    String::from("dump.txt"),
                     0,
                 )
                 .unwrap(),
@@ -234,7 +236,7 @@ pub mod test_log_center {
             sender.send(Some(message)).unwrap();
             thread::sleep(std::time::Duration::from_millis(1));
             assert_eq!(
-                fs::read("example5.txt").unwrap(),
+                fs::read("logcenter_02.txt").unwrap(),
                 b"$14\r\nThis is test 2\r\n"
             );
             drop(sender);
@@ -243,19 +245,20 @@ pub mod test_log_center {
 
         thread::sleep(std::time::Duration::from_millis(1));
         assert_eq!(
-            fs::read("example5.txt").unwrap(),
+            fs::read("logcenter_02.txt").unwrap(),
             b"$14\r\nThis is test 2\r\n$21\r\nLog center is closed.\r\n"
         );
     }
 
     #[test]
     fn test03_changing_logfile_name() {
-        let _ = File::create("example6.txt").unwrap();
+        let _ = File::create("logcenter_03.txt").unwrap();
         let config = Arc::new(Mutex::new(
             RedisConfig::new(
                 String::new(),
                 String::new(),
-                String::from("example6.txt"),
+                String::from("logcenter_03.txt"),
+                String::from("dump.txt"),
                 0,
             )
             .unwrap(),
@@ -270,15 +273,15 @@ pub mod test_log_center {
         thread::sleep(std::time::Duration::from_millis(1));
 
         assert_eq!(
-            fs::read("example6.txt").unwrap(),
+            fs::read("logcenter_03.txt").unwrap(),
             b"$14\r\nThis is test 1\r\n"
         );
 
-        let _ = File::create("new_file_name.txt").unwrap();
+        let _ = File::create("new_logfile_name.txt").unwrap();
         config
             .lock()
             .unwrap()
-            .change_file("new_file_name.txt".to_string())
+            .change_log_file("new_logfile_name.txt".to_string())
             .unwrap();
 
         let message2 = LogMessage::test_message1();
@@ -286,7 +289,7 @@ pub mod test_log_center {
         thread::sleep(std::time::Duration::from_millis(1)); // Para no leer el archivo antes de que se escriba
 
         assert_eq!(
-            fs::read("new_file_name.txt").unwrap(),
+            fs::read("new_logfile_name.txt").unwrap(),
             b"$14\r\nThis is test 1\r\n"
         );
         drop(sender);

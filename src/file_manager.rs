@@ -75,13 +75,13 @@ mod test_file_manager {
     fn test01_write_line() {
         let file_manager = FileManager::new();
         let text = "This is a line to be written".to_string();
-        let file = File::create("example1.txt").unwrap();
+        let file = File::create("file_manager_01.txt").unwrap();
         // file.set_len(0);
         let mut file = LineWriter::new(file);
         file_manager.write_to_file(&mut file, text).unwrap();
 
         assert_eq!(
-            fs::read("example1.txt").unwrap(),
+            fs::read("file_manager_01.txt").unwrap(),
             b"$28\r\nThis is a line to be written\r\n"
         );
     }
@@ -89,7 +89,7 @@ mod test_file_manager {
     #[test]
     fn test02_write_many_lines() {
         let file_manager = FileManager::new();
-        let file = File::create("example2.txt").unwrap();
+        let file = File::create("file_manager_02.txt").unwrap();
         // file.set_len(0);
         let mut file = LineWriter::new(file);
 
@@ -103,17 +103,17 @@ mod test_file_manager {
         file_manager.write_to_file(&mut file, text3).unwrap();
 
         let should_be = b"$28\r\nThis is a line to be written\r\n$28\r\nThis is a line to be written\r\n$28\r\nThis is a line to be written\r\n";
-        assert_eq!(fs::read("example2.txt").unwrap(), &should_be[..]);
+        assert_eq!(fs::read("file_manager_02.txt").unwrap(), &should_be[..]);
     }
 
     #[test]
     fn test03_read_line() {
         let file_manager = FileManager::new();
         let text = "This is a line to be written".to_string();
-        let file = File::create("example3.txt").unwrap();
+        let file = File::create("file_manager_03.txt").unwrap();
         let mut file = LineWriter::new(file);
         file_manager.write_to_file(&mut file, text).unwrap();
-        let read = file_manager.read_line("example3.txt").unwrap();
+        let read = file_manager.read_line("file_manager_03.txt").unwrap();
         assert_eq!(read, "This is a line to be written".to_string());
     }
 }

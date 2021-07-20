@@ -1,20 +1,30 @@
-use crate::commands::server::info_formatter::info_db_formatter;
+use crate::commands::{create_notifier, server::info_formatter::info_db_formatter};
 use crate::native_types::error::ErrorStruct;
+use crate::native_types::{RArray, RInteger, RSimpleString, RedisType};
+use crate::redis_config;
 use crate::regex::super_regex::SuperRegex;
 use crate::time_expiration::expire_info::ExpireInfo;
 use crate::{messages::redis_messages, tcp_protocol::notifier::Notifier};
-use std::collections::{HashMap, HashSet, VecDeque};
 use std::fmt;
+use std::io::Lines;
 use std::sync::{Arc, Mutex};
-
-use regex;
+use std::{
+    collections::{HashMap, HashSet, VecDeque},
+    ops::Not,
+};
+use std::{
+    fs::{self, File},
+    io::{BufRead, BufReader, Write},
+};
 
 extern crate rand;
 use rand::seq::IteratorRandom;
+use redis_config::RedisConfig;
 
 pub struct Database {
     elements: HashMap<String, (ExpireInfo, TypeSaved)>,
     notifier: Arc<Mutex<Notifier>>, // https://stackoverflow.com/questions/40384274/rust-mpscsender-cannot-be-shared-between-threads
+    redis_config: Option<Arc<Mutex<RedisConfig>>>,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -29,7 +39,48 @@ impl Database {
         Database {
             elements: HashMap::new(),
             notifier: Arc::new(Mutex::new(notifier)),
+            redis_config: None,
         }
+    }
+
+    pub fn set_redis_config(&mut self, redis_config: Arc<Mutex<RedisConfig>>) {
+        // TODO
+        self.redis_config = Some(redis_config);
+    }
+
+    pub fn new_from(filename: &str) -> Result<Self, ErrorStruct> {
+        let mut elements = HashMap::new();
+        let text = fs::read_to_string(filename).unwrap();
+        let reader = BufReader::new(text.as_bytes());
+        let mut lines = reader.lines();
+        let mut type_decoded: isize;
+        let mut key_decoded: String;
+        let mut value_decoded: TypeSaved;
+        let mut expire_info: ExpireInfo;
+        while let Some(line) = lines.next() {
+            match line {
+                Ok(line) => {
+                    expire_info = get_expire_info(line.clone(), &mut lines)?;
+                    type_decoded = decode_case(&mut lines)?;
+                    key_decoded = decode_key(&mut lines)?;
+                    value_decoded = decode_value(&mut lines, type_decoded)?;
+                    elements.insert(key_decoded, (expire_info, value_decoded)); //TODO
+                }
+                Err(_) => {
+                    return Err(ErrorStruct::new(
+                        "ERR".to_string(),
+                        "Some error".to_string(), // TODO
+                    ));
+                }
+            }
+        }
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+
+        Ok(Database {
+            elements,
+            redis_config: None,
+            notifier: Arc::new(Mutex::new(notifier)),
+        })
     }
 
     pub fn info(&self) -> Result<Vec<String>, ErrorStruct> {
@@ -161,6 +212,24 @@ impl Database {
         self.elements.keys().choose(&mut rng).map(String::from)
     }
 
+    pub fn take_snapshot(
+        &mut self,
+        notifier: Option<Arc<Mutex<Notifier>>>,
+    ) -> Result<(), ErrorStruct> {
+        // TODO: recordar chequear el unwrap
+        let mut config = self.redis_config.as_ref().unwrap().lock().unwrap();
+        let mut file = config.get_mut_dump_file().unwrap();
+        for (key, (expire_info, typesaved)) in self.elements.iter_mut() {
+            let mut expire_clone = expire_info.clone();
+            if expire_clone.is_expired(notifier.clone(), key).not() {
+                let time = expire_clone.ttl().map(|t| t as isize).unwrap_or(-1);
+                write_integer_to_file(time, &mut file)?;
+                persist_data(&key, &mut file, typesaved)?;
+            }
+        }
+        Ok(())
+    }
+
     pub fn match_pattern(&self, regex: &str) -> Result<Vec<String>, regex::Error> {
         let matcher = SuperRegex::from(regex)?;
 
@@ -179,10 +248,213 @@ impl fmt::Display for Database {
     }
 }
 
+fn decode_value(
+    //TODO: refactor
+    lines: &mut Lines<BufReader<&[u8]>>,
+    type_decoded: isize,
+) -> Result<TypeSaved, ErrorStruct> {
+    if let Some(line) = lines.next() {
+        match line {
+            Ok(mut line) => {
+                //TODO: refactor
+                match type_decoded {
+                    0 => {
+                        check_decodable_line(&mut line, '+')?;
+                        let value = match RSimpleString::decode(line, lines) {
+                            Ok(value) => value,
+                            Err(err) => return Err(err),
+                        };
+                        return Ok(TypeSaved::String(value));
+                    }
+                    1 => {
+                        check_decodable_line(&mut line, '*')?;
+                        let value = match RArray::decode(line, lines) {
+                            Ok(value) => value,
+                            Err(err) => return Err(err),
+                        };
+                        return Ok(TypeSaved::List(VecDeque::from(value))); // chequear si el orden del vecdeque es correcto
+                    }
+                    _ => {
+                        check_decodable_line(&mut line, '*')?;
+                        let value = match RArray::decode(line, lines) {
+                            Ok(value) => value,
+                            Err(err) => return Err(err),
+                        };
+                        return Ok(TypeSaved::Set(value.into_iter().collect()));
+                    }
+                }
+            }
+            Err(_) => {
+                return Err(ErrorStruct::new(
+                    "ERR".to_string(),
+                    "Some error".to_string(), // TODO
+                ));
+            }
+        }
+    } else {
+        Err(ErrorStruct::new(
+            "ERR".to_string(),
+            "Some error".to_string(), // TODO
+        ))
+    }
+}
+
+fn decode_key(lines: &mut Lines<BufReader<&[u8]>>) -> Result<String, ErrorStruct> {
+    if let Some(line) = lines.next() {
+        match line {
+            Ok(mut line) => {
+                check_decodable_line(&mut line, '+')?;
+                RSimpleString::decode(line, lines)
+            }
+            Err(_) => {
+                return Err(ErrorStruct::new(
+                    "ERR".to_string(),
+                    "Some error".to_string(), // TODO
+                ));
+            }
+        }
+    } else {
+        Err(ErrorStruct::new(
+            "ERR".to_string(),
+            "Some error".to_string(), // TODO
+        ))
+    }
+}
+
+fn decode_case(lines: &mut Lines<BufReader<&[u8]>>) -> Result<isize, ErrorStruct> {
+    if let Some(line) = lines.next() {
+        match line {
+            Ok(mut line) => {
+                check_decodable_line(&mut line, ':')?;
+                get_case(line, lines)
+            }
+            Err(_) => {
+                return Err(ErrorStruct::new(
+                    "ERR".to_string(),
+                    "Some error".to_string(), // TODO
+                ));
+            }
+        }
+    } else {
+        Err(ErrorStruct::new(
+            "ERR".to_string(),
+            "Some error".to_string(), // TODO
+        ))
+    }
+}
+
+fn get_case(line: String, lines: &mut Lines<BufReader<&[u8]>>) -> Result<isize, ErrorStruct> {
+    let value = RInteger::decode(line, lines)?;
+    if value == 0 || value == 1 || value == 2 {
+        return Ok(value);
+    }
+    Err(ErrorStruct::new(
+        "ERR".to_string(),
+        "Some error".to_string(), // TODO
+    ))
+}
+
+fn get_expire_info(
+    line: String,
+    lines: &mut Lines<BufReader<&[u8]>>,
+) -> Result<ExpireInfo, ErrorStruct> {
+    let mut line = line.clone();
+    check_decodable_line(&mut line, ':')?;
+    let ttl_decoded = RInteger::decode(line.clone(), lines)?;
+    println!("ttl: {}", ttl_decoded);
+    let mut expire_info: ExpireInfo = ExpireInfo::new();
+    if ttl_decoded >= 0 {
+        expire_info.set_timeout(ttl_decoded as u64)?;
+    }
+    Ok(expire_info)
+}
+
+fn check_decodable_line(line: &mut String, char: char) -> Result<(), ErrorStruct> {
+    if
+    /*line.pop().unwrap() != '\r' ||*/
+    line.remove(0) != char {
+        return Err(ErrorStruct::new(
+            "ERR".to_string(),
+            "Some error".to_string(), // TODO
+        ));
+    }
+    Ok(())
+}
+
+fn write_string_to_file(string: &String, file: &mut File) -> Result<(), ErrorStruct> {
+    if let Ok(_) = file.write_all(RSimpleString::encode(string.clone()).as_bytes()) {
+        Ok(())
+    } else {
+        Err(ErrorStruct::new(
+            "ERR_WRITE".to_string(),
+            "File write failed".to_string(),
+        ))
+    }
+}
+
+fn write_integer_to_file(number: isize, file: &mut File) -> Result<(), ErrorStruct> {
+    if let Ok(_) = file.write_all(RInteger::encode(number).as_bytes()) {
+        Ok(())
+    } else {
+        Err(ErrorStruct::new(
+            "ERR_WRITE".to_string(),
+            "File write failed".to_string(),
+        ))
+    }
+}
+
+fn write_array_to_file(vector: Vec<String>, file: &mut File) -> Result<(), ErrorStruct> {
+    if let Ok(_) = file.write_all(RArray::encode(vector).as_bytes()) {
+        Ok(())
+    } else {
+        Err(ErrorStruct::new(
+            "ERR_WRITE".to_string(),
+            "File write failed".to_string(),
+        ))
+    }
+}
+
+enum TypeCase {
+    String = 0,
+    List = 1,
+    Set = 2,
+}
+
+fn persist_data(key: &String, file: &mut File, typesaved: &TypeSaved) -> Result<(), ErrorStruct> {
+    match typesaved {
+        TypeSaved::String(value) => {
+            write_integer_to_file(TypeCase::String as isize, file)?; // 0: String Encoding
+            write_string_to_file(key, file)?; // KEY encoded as Redis String
+            write_string_to_file(&value, file)?;
+        }
+        TypeSaved::List(values) => {
+            write_integer_to_file(TypeCase::List as isize, file)?; // 1: List Encoding
+            write_string_to_file(key, file)?; // KEY encoded as Redis String
+            let vector: Vec<String> = values.iter().map(|member| member.to_string()).collect();
+            write_array_to_file(vector, file)?;
+        }
+        TypeSaved::Set(values) => {
+            write_integer_to_file(TypeCase::Set as isize, file)?; // 2: Set Encoding
+            write_string_to_file(key, file)?; // KEY encoded as Redis String
+            let vector: Vec<String> = values.iter().map(|member| member.to_string()).collect();
+            write_array_to_file(vector, file)?;
+        }
+    };
+    Ok(())
+}
+
 #[cfg(test)]
 mod test_database {
 
-    use crate::commands::create_notifier;
+    use crate::{
+        commands::{
+            create_notifier,
+            lists::rpush::RPush,
+            sets::{sadd::Sadd, sismember::Sismember},
+            Runnable,
+        },
+        vec_strings,
+    };
 
     use super::*;
 
@@ -254,5 +526,299 @@ mod test_database {
         database.set_ttl("key", 10).unwrap();
         assert_eq!(database.persist("key"), Some(9));
         assert_eq!(database.ttl("key"), None);
+    }
+
+    #[test]
+    fn test07_persist_string_values_at_file() {
+        let filename = "database_01.rdb";
+        let config = Arc::new(Mutex::new(
+            RedisConfig::new(
+                String::new(),
+                String::new(),
+                String::from("log.txt"),
+                String::from(filename),
+                0,
+            )
+            .unwrap(),
+        ));
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut original_database = Database::new(notifier);
+        original_database.set_redis_config(config);
+        original_database.insert(
+            "key1".to_string(),
+            TypeSaved::String(String::from("value1")),
+        );
+
+        original_database.take_snapshot(None).unwrap();
+
+        assert_eq!(
+            fs::read("database_01.rdb").unwrap(),
+            b":-1\r\n:0\r\n+key1\r\n+value1\r\n"
+        );
+    }
+
+    #[test]
+    fn test08_persist_expirable_string_values_at_file() {
+        let filename = "database_08.rdb";
+        let config = Arc::new(Mutex::new(
+            RedisConfig::new(
+                String::new(),
+                String::new(),
+                String::from("log.txt"),
+                String::from(filename),
+                0,
+            )
+            .unwrap(),
+        ));
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database = Database::new(notifier);
+        database.set_redis_config(config);
+        database.insert("key".to_string(), TypeSaved::String(String::from("value")));
+        database.set_ttl("key", 5).unwrap();
+
+        database.take_snapshot(None).unwrap();
+
+        assert_eq!(
+            fs::read("database_08.rdb").unwrap(),
+            b":4\r\n:0\r\n+key\r\n+value\r\n"
+        );
+    }
+
+    #[test]
+    fn test09_persist_list_values_at_file() {
+        let filename = "database_09.rdb";
+        let config = Arc::new(Mutex::new(
+            RedisConfig::new(
+                String::new(),
+                String::new(),
+                String::from("log.txt"),
+                String::from(filename),
+                0,
+            )
+            .unwrap(),
+        ));
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database = Database::new(notifier);
+        database.set_redis_config(config);
+        let buffer = vec_strings!["key", "value1", "value2", "value3", "value4"];
+        RPush.run(buffer, &mut database).unwrap();
+        database.take_snapshot(None).unwrap();
+
+        assert_eq!(
+            fs::read("database_09.rdb").unwrap(),
+            b":-1\r\n:1\r\n+key\r\n*4\r\n$6\r\nvalue1\r\n$6\r\nvalue2\r\n$6\r\nvalue3\r\n$6\r\nvalue4\r\n"
+        );
+    }
+
+    #[ignore]
+    #[test]
+    fn test10_persist_set_values_at_file() {
+        let filename = "database_10.rdb";
+        let config = Arc::new(Mutex::new(
+            RedisConfig::new(
+                String::new(),
+                String::new(),
+                String::from("log.txt"),
+                String::from(filename),
+                0,
+            )
+            .unwrap(),
+        ));
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database = Database::new(notifier);
+        database.set_redis_config(config);
+        let buffer = vec_strings!["key", "value1", "value2"];
+        Sadd.run(buffer, &mut database).unwrap();
+        database.take_snapshot(None).unwrap();
+
+        assert_eq!(
+            fs::read("database_10.rdb").unwrap(),
+            b":0\r\n:2\r\n+key\r\n*2\r\n$6\r\nvalue1\r\n$6\r\nvalue2\r\n"
+        );
+    }
+
+    #[test]
+    fn test11_restore_string_values_from_file() {
+        let filename1 = "database_11_a.rdb";
+        let config1 = Arc::new(Mutex::new(
+            RedisConfig::new(
+                String::new(),
+                String::new(),
+                String::from("log.txt"),
+                String::from(filename1),
+                0,
+            )
+            .unwrap(),
+        ));
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut original_database = Database::new(notifier);
+        original_database.set_redis_config(config1);
+        original_database.insert(
+            "key1".to_string(),
+            TypeSaved::String(String::from("value1")),
+        );
+        original_database.take_snapshot(None).unwrap();
+
+        let filename2 = "database_11_b.rdb";
+        let config2 = Arc::new(Mutex::new(
+            RedisConfig::new(
+                String::new(),
+                String::new(),
+                String::from("log.txt"),
+                String::from(filename2),
+                0,
+            )
+            .unwrap(),
+        ));
+
+        let mut restored_database = Database::new_from(filename1).unwrap();
+        restored_database.set_redis_config(config2);
+        restored_database.take_snapshot(None).unwrap();
+
+        assert_eq!(
+            fs::read("database_11_a.rdb").unwrap(),
+            fs::read("database_11_b.rdb").unwrap()
+        );
+    }
+
+    #[test]
+    fn test12_restore_list_values_from_file() {
+        let filename1 = "database_12_a.rdb";
+        let config1 = Arc::new(Mutex::new(
+            RedisConfig::new(
+                String::new(),
+                String::new(),
+                String::from("log.txt"),
+                String::from(filename1),
+                0,
+            )
+            .unwrap(),
+        ));
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database = Database::new(notifier);
+        database.set_redis_config(config1);
+        let buffer = vec_strings!["key", "value1", "value2", "value3", "value4"];
+        RPush.run(buffer, &mut database).unwrap();
+
+        database.take_snapshot(None).unwrap();
+
+        let filename2 = "database_12_b.rdb";
+        let mut restored_database = Database::new_from(filename1).unwrap();
+
+        let config2 = Arc::new(Mutex::new(
+            RedisConfig::new(
+                String::new(),
+                String::new(),
+                String::from("log.txt"),
+                String::from(filename2),
+                0,
+            )
+            .unwrap(),
+        ));
+        restored_database.set_redis_config(config2);
+
+        restored_database.take_snapshot(None).unwrap();
+
+        assert_eq!(
+            fs::read("database_12_a.rdb").unwrap(),
+            fs::read("database_12_b.rdb").unwrap()
+        );
+    }
+
+    // #[ignore] // El orden de las keys de los sets no es siempre el mismo
+    #[test]
+    fn test13_restore_set_values_from_file() {
+        let filename1 = "database_13_a.rdb";
+        let config1 = Arc::new(Mutex::new(
+            RedisConfig::new(
+                String::new(),
+                String::new(),
+                String::from("log.txt"),
+                String::from(filename1),
+                0,
+            )
+            .unwrap(),
+        ));
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database = Database::new(notifier);
+        database.set_redis_config(config1);
+
+        let buffer: Vec<String> = vec_strings!["key", "value1", "value2"];
+        Sadd.run(buffer, &mut database).unwrap();
+
+        database.take_snapshot(None).unwrap();
+
+        let filename2 = "database_13_b.rdb";
+        let config2 = Arc::new(Mutex::new(
+            RedisConfig::new(
+                String::new(),
+                String::new(),
+                String::from("log.txt"),
+                String::from(filename2),
+                0,
+            )
+            .unwrap(),
+        ));
+
+        let mut restored_database = Database::new_from(filename1).unwrap();
+        restored_database.set_redis_config(config2);
+        restored_database.take_snapshot(None).unwrap();
+
+        let buffer_mock = vec_strings!["key", "value1"];
+        let result_received = Sismember.run(buffer_mock, &mut restored_database);
+        let excepted = RInteger::encode(1);
+        assert_eq!(excepted, result_received.unwrap());
+
+        assert_eq!(
+            Sismember
+                .run(vec_strings!["key", "value2"], &mut restored_database)
+                .unwrap(),
+            RInteger::encode(1)
+        );
+    }
+
+    #[ignore]
+    #[test]
+    fn test14_restore_expirable_string_values_from_file() {
+        let filename1 = "database_14_a.rdb";
+        let config1 = Arc::new(Mutex::new(
+            RedisConfig::new(
+                String::new(),
+                String::new(),
+                String::from("log.txt"),
+                String::from(filename1),
+                0,
+            )
+            .unwrap(),
+        ));
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut original_database = Database::new(notifier);
+        original_database.set_redis_config(config1);
+
+        original_database.insert("key".to_string(), TypeSaved::String(String::from("value")));
+        original_database.set_ttl("key", 5).unwrap();
+
+        original_database.take_snapshot(None).unwrap();
+
+        let filename2 = "database_14_b.rdb";
+        let config2 = Arc::new(Mutex::new(
+            RedisConfig::new(
+                String::new(),
+                String::new(),
+                String::from("log.txt"),
+                String::from(filename2),
+                0,
+            )
+            .unwrap(),
+        ));
+        let mut restored_database = Database::new_from(filename1).unwrap();
+        restored_database.set_redis_config(config2);
+
+        restored_database.take_snapshot(None).unwrap();
+
+        assert_eq!(
+            fs::read("database_14_a.rdb").unwrap(),
+            fs::read("database_14_b.rdb").unwrap()
+        );
     }
 }

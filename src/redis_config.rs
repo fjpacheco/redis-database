@@ -1,3 +1,5 @@
+use crate::commands::server::info_formatter::info_server_formatter::*;
+use crate::native_types::ErrorStruct;
 use std::{
     collections::HashMap,
     fs::{File, OpenOptions},
@@ -5,16 +7,14 @@ use std::{
     path::Path,
 };
 
-use crate::{
-    commands::server::info_formatter::info_server_formatter::*, native_types::ErrorStruct,
-};
-
 pub struct RedisConfig {
     ip: String,
     port: String,
     log_filename: String,
-    verbose: usize,
     lwriter: LineWriter<File>,
+    _dump_filename: String,
+    dump_file: File,
+    verbose: usize,
     timeout_secs: u64,
 }
 
@@ -23,6 +23,7 @@ impl RedisConfig {
         ip: String,
         port: String,
         log_filename: String,
+        _dump_filename: String,
         verbose: usize,
     ) -> Result<RedisConfig, ErrorStruct> {
         let lwriter;
@@ -33,20 +34,39 @@ impl RedisConfig {
         {
             Ok(file) => {
                 lwriter = LineWriter::new(file);
-                Ok(RedisConfig {
-                    ip,
-                    port,
-                    log_filename,
-                    verbose,
-                    lwriter,
-                    timeout_secs: 0,
-                })
             }
-            Err(err) => Err(ErrorStruct::new(
-                "ERR_CONFIG".into(),
-                format!("Setting a new config failed. Detail: {}", err),
-            )),
+            Err(err) => {
+                return Err(ErrorStruct::new(
+                    "ERR_CONFIG".into(),
+                    format!("Setting a new config failed. Detail: {}", err),
+                ))
+            }
         }
+
+        let dump_file = match OpenOptions::new()
+            .create(true)
+            .read(true)
+            .write(true)
+            .open(&_dump_filename)
+        {
+            Ok(file) => file,
+            Err(err) => {
+                return Err(ErrorStruct::new(
+                    "ERR_CONFIG".into(),
+                    format!("Setting a new config failed. Detail: {}", err),
+                ))
+            }
+        };
+        Ok(RedisConfig {
+            ip,
+            port,
+            log_filename,
+            verbose,
+            lwriter,
+            _dump_filename,
+            dump_file,
+            timeout_secs: 0,
+        })
     }
 
     pub fn info(&self, info_compiler: &mut Vec<String>) {
@@ -72,7 +92,11 @@ impl RedisConfig {
         Some(&mut self.lwriter)
     }
 
-    pub fn change_file(&mut self, new_log_filename: String) -> Result<(), ErrorStruct> {
+    pub fn get_mut_dump_file(&mut self) -> Option<&mut File> {
+        Some(&mut self.dump_file)
+    }
+
+    pub fn change_log_file(&mut self, new_log_filename: String) -> Result<(), ErrorStruct> {
         match OpenOptions::new()
             .append(true)
             .create(true)
@@ -87,6 +111,24 @@ impl RedisConfig {
                 format!("Setting a new config failed. Detail: {}", err),
             )),
         }
+    }
+
+    pub fn change_dump_file(&mut self, new_dump_filename: String) -> Result<(), ErrorStruct> {
+        self.dump_file = match OpenOptions::new()
+            .create(true)
+            .read(true)
+            .write(true)
+            .open(&new_dump_filename)
+        {
+            Ok(file) => file,
+            Err(err) => {
+                return Err(ErrorStruct::new(
+                    "ERR_CONFIG".into(),
+                    format!("Setting a new config failed. Detail: {}", err),
+                ))
+            }
+        };
+        Ok(())
     }
 
     /// Received name path of new file .config to generate a new configuration for server Redis
@@ -112,7 +154,13 @@ impl RedisConfig {
             .get("port")
             .unwrap_or(&Self::default().port())
             .to_string();
-        RedisConfig::new(ip, port, String::from("logs.txt"), 0)
+        RedisConfig::new(
+            ip,
+            port,
+            String::from("logs.txt"),
+            "dump.rdb".to_string(),
+            0,
+        )
     }
 
     pub fn ip(&self) -> String {
@@ -165,7 +213,7 @@ impl Default for RedisConfig {
         let port = "6379".into();
         let log_filename = "logs.txt".to_string();
         let verbose = 100;
-        RedisConfig::new(ip, port, log_filename, verbose).unwrap()
+        RedisConfig::new(ip, port, log_filename, "dump.rdb".to_string(), verbose).unwrap()
     }
 }
 

@@ -7,6 +7,7 @@ use std::time::Duration;
 use std::time::SystemTime;
 use std::time::UNIX_EPOCH;
 
+#[derive(Clone)]
 pub struct ExpireInfo {
     last_touch: SystemTime,
     timeout: Option<Duration>,
