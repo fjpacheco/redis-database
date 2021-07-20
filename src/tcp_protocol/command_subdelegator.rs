@@ -17,6 +17,7 @@ use crate::tcp_protocol::runnables_map::RunnablesMap;
 use super::notifier::Notifier;
 use super::{RawCommand, Response};
 pub struct CommandSubDelegator {
+    sender: Sender<Option<RawCommand>>,
     join: Option<JoinHandle<Result<(), ErrorStruct>>>,
     notifier: Notifier,
 }
@@ -24,6 +25,7 @@ pub struct CommandSubDelegator {
 
 impl Joinable<()> for CommandSubDelegator {
     fn join(&mut self) -> Result<(), ErrorStruct> {
+        let _ = self.sender.send(None);
         close_thread(
             self.join.take(),
             "Command Subdelegator",
@@ -33,7 +35,8 @@ impl Joinable<()> for CommandSubDelegator {
 }
 impl CommandSubDelegator {
     pub fn start<T: 'static>(
-        rcv_cmd: Receiver<RawCommand>,
+        snd_cmd: Sender<Option<RawCommand>>,
+        rcv_cmd: Receiver<Option<RawCommand>>,
         runnables_map: RunnablesMap<T>,
         data: T,
         notifier: Notifier,
@@ -53,13 +56,14 @@ impl CommandSubDelegator {
             })?;
 
         Ok(Self {
+            sender: snd_cmd,
             join: Some(command_sub_delegator_handler),
             notifier,
         })
     }
 
     fn init<T: 'static>(
-        rcv_cmd: Receiver<RawCommand>,
+        rcv_cmd: Receiver<Option<RawCommand>>,
         runnables_map: RunnablesMap<T>,
         mut data: T,
         notifier: Notifier,
@@ -67,26 +71,30 @@ impl CommandSubDelegator {
     where
         T: Send + Sync + Display,
     {
-        for (mut command_input_user, sender_to_client, _) in rcv_cmd.iter() {
-            let command_type = command_input_user.remove(0);
-            if let Some(runnable_command) = runnables_map.get(&command_type) {
-                let err_critical = is_critical(run_command(
-                    runnable_command,
-                    command_input_user,
-                    sender_to_client,
-                    &mut data,
-                ));
-                if let Err(err) = err_critical {
-                    if err.severity().eq(&Some(&ErrorSeverity::ShutdownServer)) {
-                        notifier.force_shutdown_server(err.print_it());
-                        return Err(err);
+        for packed_raw_command in rcv_cmd.iter() {
+            if let Some((mut command_input_user, sender_to_client, _)) = packed_raw_command {
+                let command_type = command_input_user.remove(0);
+                if let Some(runnable_command) = runnables_map.get(&command_type) {
+                    let err_critical = is_critical(run_command(
+                        runnable_command,
+                        command_input_user,
+                        sender_to_client,
+                        &mut data,
+                    ));
+                    if let Err(err) = err_critical {
+                        if err.severity().eq(&Some(&ErrorSeverity::ShutdownServer)) {
+                            notifier.force_shutdown_server(err.print_it());
+                            return Err(err);
+                        }
+                    }
+                } else {
+                    let error = redis_messages::command_not_found(command_type, command_input_user);
+                    if sender_to_client.send(Err(error)).is_err() {
+                        notifier.send_log(LogMessage::channel_client_off())?;
                     }
                 }
             } else {
-                let error = redis_messages::command_not_found(command_type, command_input_user);
-                if sender_to_client.send(Err(error)).is_err() {
-                    notifier.send_log(LogMessage::channel_client_off())?;
-                }
+                break;
             }
         }
         Ok(())
@@ -172,32 +180,20 @@ pub mod test_database_command_delegator {
         let runnables_map = RunnablesMap::new(map);
 
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let database = Database::new(notifier);
+        let database = Database::new(notifier.clone());
 
-        let (tx1, rx1): (Sender<RawCommand>, Receiver<RawCommand>) = mpsc::channel();
-
-        let (snd_log_test, _b): (Sender<Option<LogMessage>>, Receiver<Option<LogMessage>>) =
-            mpsc::channel();
-
-        let (snd_cmd_del_test, _c): (Sender<Option<RawCommand>>, Receiver<Option<RawCommand>>) =
-            mpsc::channel();
-        let notifier = Notifier::new(
-            snd_log_test,
-            snd_cmd_del_test,
-            Arc::new(AtomicBool::new(false)),
-            "test_addr".into(),
-        );
+        let (tx1, rx1) = mpsc::channel();
 
         let _database_command_delegator_recv =
-            CommandSubDelegator::start::<Database>(rx1, runnables_map, database, notifier.clone());
+            CommandSubDelegator::start::<Database>(tx1.clone(), rx1, runnables_map, database, notifier.clone());
 
         let (tx2, rx2): (Sender<Response>, Receiver<Response>) = mpsc::channel();
         let buffer_mock = vec_strings!["set", "key", "value"];
-        tx1.send((
+        tx1.send(Some((
             buffer_mock,
             tx2,
             Arc::new(Mutex::new(ClientFields::default())),
-        ))
+        )))
         .unwrap();
 
         let response1 = rx2.recv().unwrap();
@@ -205,11 +201,11 @@ pub mod test_database_command_delegator {
 
         let (tx3, rx3): (Sender<Response>, Receiver<Response>) = mpsc::channel();
         let buffer_mock_get = vec!["get".to_string(), "key".to_string()];
-        tx1.send((
+        tx1.send(Some((
             buffer_mock_get,
             tx3,
             Arc::new(Mutex::new(ClientFields::default())),
-        ))
+        )))
         .unwrap();
 
         let response2 = rx3.recv().unwrap();
@@ -217,11 +213,11 @@ pub mod test_database_command_delegator {
 
         let buffer_mock_strlen = vec_strings!["strlen", "key"];
         let (tx4, rx4): (Sender<Response>, Receiver<Response>) = mpsc::channel();
-        tx1.send((
+        tx1.send(Some((
             buffer_mock_strlen,
             tx4,
             Arc::new(Mutex::new(ClientFields::default())),
-        ))
+        )))
         .unwrap();
 
         let response3 = rx4.recv().unwrap();
@@ -237,32 +233,20 @@ pub mod test_database_command_delegator {
         let runnables_map = RunnablesMap::new(map);
 
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let database = Database::new(notifier);
+        let database = Database::new(notifier.clone());
 
-        let (tx1, rx1): (Sender<RawCommand>, Receiver<RawCommand>) = mpsc::channel();
-
-        let (snd_log_test, _b): (Sender<Option<LogMessage>>, Receiver<Option<LogMessage>>) =
-            mpsc::channel();
-
-        let (snd_cmd_del_test, _c): (Sender<Option<RawCommand>>, Receiver<Option<RawCommand>>) =
-            mpsc::channel();
-        let notifier = Notifier::new(
-            snd_log_test,
-            snd_cmd_del_test,
-            Arc::new(AtomicBool::new(false)),
-            "test_addr".into(),
-        );
+        let (tx1, rx1) = mpsc::channel();
 
         let _database_command_delegator_recv =
-            CommandSubDelegator::start::<Database>(rx1, runnables_map, database, notifier.clone());
+            CommandSubDelegator::start::<Database>(tx1.clone(), rx1, runnables_map, database, notifier.clone());
 
         let (tx2, rx2): (Sender<Response>, Receiver<Response>) = mpsc::channel();
         let buffer_mock = vec_strings!["set", "key", "value"];
-        tx1.send((
+        tx1.send(Some((
             buffer_mock,
             tx2,
             Arc::new(Mutex::new(ClientFields::default())),
-        ))
+        )))
         .unwrap();
 
         let response1 = rx2.recv().unwrap();
@@ -270,11 +254,11 @@ pub mod test_database_command_delegator {
 
         let (tx3, rx3): (Sender<Response>, Receiver<Response>) = mpsc::channel();
         let buffer_mock_get = vec_strings!["get", "key"];
-        tx1.send((
+        tx1.send(Some((
             buffer_mock_get,
             tx3,
             Arc::new(Mutex::new(ClientFields::default())),
-        ))
+        )))
         .unwrap();
 
         let response2 = rx3.recv().unwrap();
@@ -297,7 +281,7 @@ pub mod test_database_command_delegator {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let database = Database::new(notifier);
 
-        let (tx1, rx1): (Sender<RawCommand>, Receiver<RawCommand>) = mpsc::channel();
+        let (tx1, rx1)= mpsc::channel();
         let (snd_log_test, _b): (Sender<Option<LogMessage>>, Receiver<Option<LogMessage>>) =
             mpsc::channel();
 
@@ -311,7 +295,7 @@ pub mod test_database_command_delegator {
         );
 
         let _database_command_delegator_recv =
-            CommandSubDelegator::start::<Database>(rx1, runnables_map, database, notifier.clone());
+            CommandSubDelegator::start::<Database>(tx1.clone(),rx1, runnables_map, database, notifier.clone());
         let (tx2, rx2): (Sender<Response>, Receiver<Response>) = mpsc::channel();
         let buffer_mock = vec![
             "rpush".to_string(),
@@ -320,11 +304,11 @@ pub mod test_database_command_delegator {
             "value2".to_string(),
             "value3".to_string(),
         ];
-        tx1.send((
+        tx1.send(Some((
             buffer_mock,
             tx2,
             Arc::new(Mutex::new(ClientFields::default())),
-        ))
+        )))
         .unwrap();
 
         let response1 = rx2.recv().unwrap();
@@ -332,11 +316,11 @@ pub mod test_database_command_delegator {
 
         let (tx3, rx3): (Sender<Response>, Receiver<Response>) = mpsc::channel();
         let buffer_mock = vec_strings!["rpop", "key", "2"];
-        tx1.send((
+        tx1.send(Some((
             buffer_mock,
             tx3,
             Arc::new(Mutex::new(ClientFields::default())),
-        ))
+        )))
         .unwrap();
 
         let response1 = rx3.recv().unwrap();
@@ -347,11 +331,11 @@ pub mod test_database_command_delegator {
 
         let (tx4, rx4): (Sender<Response>, Receiver<Response>) = mpsc::channel();
         let buffer_mock = vec_strings!["llen", "value"];
-        tx1.send((
+        tx1.send(Some((
             buffer_mock,
             tx4,
             Arc::new(Mutex::new(ClientFields::default())),
-        ))
+        )))
         .unwrap();
         let response1 = rx4.recv().unwrap();
         assert_eq!(response1.unwrap(), ":0\r\n".to_string());

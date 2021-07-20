@@ -1,4 +1,71 @@
-use crate::commands::*;
+use crate::commands::{
+    keys::{
+        _type::Type,
+        clean::Clean,
+        copy::Copy,
+        del::Del,
+        exists::Exists,
+        expire::Expire,
+        expireat::ExpireAt,
+        keys::Keys,
+        persist::Persist,
+        rename::Rename,
+        sort::Sort,
+        touch::Touch,
+        ttl::Ttl
+    },
+    lists::{
+        lindex::LIndex,
+        llen::Llen,
+        lpop::LPop,
+        lpush::LPush,
+        lpushx::LPushx,
+        lrange::Lrange,
+        lrem::Lrem,
+        lset::Lset,
+        rpop::RPop,
+        rpush::RPush,
+        rpushx::RPushx
+    },
+    pubsub::{
+        publish::Publish,
+        pubsub::Pubsub,
+        subscribe_cf::SubscribeCF,
+        subscribe_cl::SubscribeCL,
+        unsubscribe_cf::UnsubscribeCF,
+        unsubscribe_cl::UnsubscribeCL,
+    },
+    server::{
+        config::Config,
+        dbsize::Dbsize,
+        flushdb::FlushDB,
+        info_db::InfoDB,
+        info_sv::InfoSV,
+        monitor::Monitor,
+        notify_monitors::NotifyMonitors,
+        shutdown::Shutdown,
+    },
+    sets::{
+        sadd::Sadd,
+        scard::Scard,
+        sismember::Sismember,
+        smembers::Smembers,
+        srem::Srem,
+    },
+    strings::{
+        append::Append,
+        decrby::Decrby,
+        get::Get,
+        getdel::Getdel,
+        getset::Getset,
+        incrby::Incrby,
+        mget::Mget,
+        mset::Mset,
+        set::Set,
+        strlen::Strlen
+    },
+};
+
 use crate::tcp_protocol::client_list::ClientList;
 use crate::tcp_protocol::BoxedCommand;
 use crate::Database;
@@ -30,11 +97,6 @@ impl<T> RunnablesMap<T> {
     }
 
     pub fn get(&self, string: &str) -> Option<Arc<BoxedCommand<T>>> {
-        /*if let Some(summoner) = self.elements.get(string) {
-            Some(Arc::clone(summoner))
-        } else {
-            None
-        }*/
         self.elements
             .get(string)
             .map(|summoner| Arc::clone(summoner))
@@ -46,11 +108,15 @@ impl<T> RunnablesMap<T> {
 
     pub fn database() -> RunnablesMap<Database> {
         let mut map: HashMap<String, Arc<BoxedCommand<Database>>> = HashMap::new();
+        map = get_runnables!(
+            map, Type, Clean, Copy, Del, Exists, Expire, ExpireAt, Keys, Persist, Rename,
+            Sort, Touch, Ttl, LIndex, Llen, LPop, LPush, LPushx, Lrange, Lrem, Lset, RPop,
+            RPush, RPushx, Dbsize, FlushDB, Sadd, Scard, Sismember, Smembers, Srem,
+            Append, Decrby, Get, Getdel, Getset, Incrby, Mget, Mset, Set, Strlen
+        );
+        map.insert("info".to_string().to_lowercase(), Arc::new(Box::new(InfoDB)));
         RunnablesMap {
-            elements: get_runnables!(
-                map, Set, Get, Strlen, Mset, Mget, Getset, Getdel, Incrby, Decrby, Append, Clean,
-                Expire
-            ),
+            elements: map
         }
     }
 
@@ -83,15 +149,19 @@ impl<T> RunnablesMap<T> {
         );
 
         RunnablesMap { elements: map }*/
+        map = get_runnables!(
+            map, Publish, Pubsub, Config, NotifyMonitors, Shutdown
+        );
+        map.insert("subscribe".to_string().to_lowercase(), Arc::new(Box::new(SubscribeCL)));
+        map.insert("unsubscribe".to_string().to_lowercase(), Arc::new(Box::new(UnsubscribeCL)));
+        map.insert("info".to_string().to_lowercase(), Arc::new(Box::new(InfoSV)));
         RunnablesMap {
-            elements: get_runnables!(map, Shutdown, Publish, NotifyMonitors, Config),
+            elements: map,
         }
     }
 
     pub fn client_list() -> RunnablesMap<Arc<Mutex<ClientList>>> {
         let map: HashMap<String, Arc<BoxedCommand<Arc<Mutex<ClientList>>>>> = HashMap::new();
-        //map.insert(String::from("subscribe"), Arc::new(Box::new(pubsub::subscribe_cl::SubscribeCL)));
-        //map.insert(String::from("unsubscribe"), Arc::new(Box::new(pubsub::unsubscribe_cl::UnsubscribeCL)));
         RunnablesMap { elements: map }
     }
 
@@ -100,15 +170,15 @@ impl<T> RunnablesMap<T> {
         let mut map: HashMap<String, Arc<BoxedCommand<Arc<Mutex<ClientFields>>>>> = HashMap::new();
         map.insert(
             String::from("monitor"),
-            Arc::new(Box::new(server::monitor::Monitor)),
+            Arc::new(Box::new(Monitor)),
         );
         map.insert(
             String::from("subscribe"),
-            Arc::new(Box::new(pubsub::subscribe_cf::SubscribeCF)),
+            Arc::new(Box::new(SubscribeCF)),
         );
         map.insert(
             String::from("unsubscribe"),
-            Arc::new(Box::new(pubsub::unsubscribe_cf::UnsubscribeCF)),
+            Arc::new(Box::new(UnsubscribeCF)),
         );
         RunnablesMap { elements: map }
     }
@@ -117,12 +187,15 @@ impl<T> RunnablesMap<T> {
         let mut map: HashMap<String, Arc<BoxedCommand<Arc<Mutex<ClientFields>>>>> = HashMap::new();
         map.insert(
             String::from("subscribe"),
-            Arc::new(Box::new(pubsub::subscribe_cf::SubscribeCF)),
+            Arc::new(Box::new(SubscribeCF)),
         );
         map.insert(
             String::from("unsubscribe"),
-            Arc::new(Box::new(pubsub::unsubscribe_cf::UnsubscribeCF)),
+            Arc::new(Box::new(UnsubscribeCF)),
         );
         RunnablesMap { elements: map }
     }
+
 }
+
+

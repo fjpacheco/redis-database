@@ -28,7 +28,7 @@ pub struct GarbageCollector {
 
 impl GarbageCollector {
     pub fn start(
-        snd_to_dat_del: mpsc::Sender<RawCommand>,
+        snd_to_dat_del: mpsc::Sender<Option<RawCommand>>,
         period: u64,
         keys_touched: u64,
         notifier: Notifier,
@@ -48,7 +48,7 @@ impl GarbageCollector {
     }
 
     fn init(
-        snd_to_dat_del: mpsc::Sender<RawCommand>,
+        snd_to_dat_del: mpsc::Sender<Option<RawCommand>>,
         period: u64,
         keys_touched: u64,
         still_working_clone: Arc<AtomicBool>,
@@ -66,11 +66,11 @@ impl GarbageCollector {
 
             let command = vec!["clean".to_string(), keys_touched.to_string()];
             snd_to_dat_del
-                .send((
+                .send(Some((
                     command,
                     snd_rsp.clone(),
                     Arc::new(Mutex::new(ClientFields::default())),
-                ))
+                )))
                 .map_err(|_| {
                     ErrorStruct::from(redis_messages::closed_sender(ErrorSeverity::ShutdownServer))
                 })?;
@@ -117,22 +117,7 @@ impl Joinable<()> for GarbageCollector {
     }
 }
 
-/*fn is_err(response: String) -> Result<(), ErrorStruct> {
-    let mut buffer = BufReader::new(response.as_bytes());
-    let mut first_lecture = String::new();
-    buffer.read_line(&mut first_lecture).unwrap();
-    let redis_type = first_lecture.remove(0); // Redis Type inference
-    first_lecture.pop().unwrap(); // popping \n
-    first_lecture.pop().unwrap(); // popping \r
-    match redis_type {
-        '+' => Ok(()),
-        '-' => Err(RError::decode(first_lecture, &mut buffer.lines()).unwrap()),
-        _ => Err(ErrorStruct::new(
-            "ERR".to_string(),
-            "something went wrong in garbage collector".to_string(),
-        )),
-    }
-}*/
+
 
 #[cfg(test)]
 
@@ -142,7 +127,6 @@ mod test_garbage_collector {
 
     use super::*;
     use crate::{
-        communication::log_messages::LogMessage,
         native_types::{RSimpleString, RedisType},
     };
 
@@ -153,16 +137,14 @@ mod test_garbage_collector {
     #[test]
     #[ignore]
     fn test01_garbage_collector_is_dropped_safely() {
-        let (snd_col_test, _rcv_col_test): (mpsc::Sender<RawCommand>, mpsc::Receiver<RawCommand>) =
-            mpsc::channel();
+        let (snd_col_test, _rcv_col_test) = mpsc::channel();
 
         let (snd_test_cmd, _rcv_test_cmd): (
             Sender<Option<RawCommand>>,
             Receiver<Option<RawCommand>>,
         ) = mpsc::channel();
 
-        let (snd_log_test, _): (Sender<Option<LogMessage>>, Receiver<Option<LogMessage>>) =
-            mpsc::channel();
+        let (snd_log_test, _) = mpsc::channel();
 
         let notifier = Notifier::new(
             snd_log_test.clone(),
@@ -178,15 +160,12 @@ mod test_garbage_collector {
     #[test]
     #[ignore]
     fn test02_garbage_collector_send_the_correct_command() {
-        let (snd_col_test, rcv_col_test): (mpsc::Sender<RawCommand>, mpsc::Receiver<RawCommand>) =
+        let (snd_col_test, rcv_col_test) =
             mpsc::channel();
 
-        let (snd_test_cmd, _rcv_test_cmd): (
-            Sender<Option<RawCommand>>,
-            Receiver<Option<RawCommand>>,
-        ) = mpsc::channel();
+        let (snd_test_cmd, _rcv_test_cmd)= mpsc::channel();
 
-        let (snd_log_test, _): (Sender<Option<LogMessage>>, Receiver<Option<LogMessage>>) =
+        let (snd_log_test, _) =
             mpsc::channel();
 
         let notifier = Notifier::new(
@@ -196,7 +175,7 @@ mod test_garbage_collector {
             "test_addr".into(),
         );
         let _collector = GarbageCollector::start(snd_col_test, 4, 20, notifier);
-        let (command, sender, _) = rcv_col_test.recv().unwrap();
+        let (command, sender, _) = rcv_col_test.recv().unwrap().unwrap();
 
         assert_eq!(&command[0], "clean");
         assert_eq!(&command[1], "20");
@@ -208,14 +187,11 @@ mod test_garbage_collector {
     #[test]
     #[ignore]
     fn test03_returning_an_error_drops_the_garbage_collector() {
-        let (snd_col_test, rcv_col_test): (mpsc::Sender<RawCommand>, mpsc::Receiver<RawCommand>) =
+        let (snd_col_test, rcv_col_test) =
             mpsc::channel();
-        let (snd_test_cmd, _rcv_test_cmd): (
-            Sender<Option<RawCommand>>,
-            Receiver<Option<RawCommand>>,
-        ) = mpsc::channel();
+        let (snd_test_cmd, _rcv_test_cmd) = mpsc::channel();
 
-        let (snd_log_test, _): (Sender<Option<LogMessage>>, Receiver<Option<LogMessage>>) =
+        let (snd_log_test, _) =
             mpsc::channel();
 
         let notifier = Notifier::new(
@@ -225,7 +201,7 @@ mod test_garbage_collector {
             "test_addr".into(),
         );
         let _collector = GarbageCollector::start(snd_col_test, 4, 20, notifier);
-        let (_command, sender, _) = rcv_col_test.recv().unwrap();
+        let (_command, sender, _) = rcv_col_test.recv().unwrap().unwrap();
         sender
             .send(Err(ErrorStruct::new(
                 "ERR".to_string(),

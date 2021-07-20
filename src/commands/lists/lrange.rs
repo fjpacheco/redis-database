@@ -1,4 +1,4 @@
-use crate::commands::get_as_integer;
+use crate::commands::{Runnable, get_as_integer};
 use crate::commands::lists::{check_empty_2, check_not_empty};
 use crate::database::Database;
 use crate::database::TypeSaved;
@@ -16,8 +16,8 @@ pub struct Lrange;
 // the end of the list. For example, -1 is the last element of the list, -2
 // the penultimate, and so on.
 
-impl Lrange {
-    pub fn run(mut buffer: Vec<String>, database: &mut Database) -> Result<String, ErrorStruct> {
+impl Runnable<Database> for Lrange {
+    fn run(&self, mut buffer: Vec<String>, database: &mut Database) -> Result<String, ErrorStruct> {
         check_not_empty(&buffer)?;
         let key = buffer.remove(0);
         if let Some(typesaved) = database.get_mut(&key) {
@@ -123,7 +123,7 @@ pub mod test_lrange {
         assert_eq!(encode.unwrap(), ":1\r\n".to_string());
 
         let buffer = vec_strings!["key", "0", "0"];
-        let encoded = Lrange::run(buffer, &mut data);
+        let encoded = Lrange.run(buffer, &mut data);
         assert_eq!(
             encoded.unwrap(),
             "*1\r\n$10\r\n1) \"value\"\r\n".to_string()
@@ -141,7 +141,7 @@ pub mod test_lrange {
         data.insert("key".to_string(), TypeSaved::List(new_list));
 
         let buffer = vec_strings!["key", "-1", "-1"];
-        let encoded = Lrange::run(buffer, &mut data);
+        let encoded = Lrange.run(buffer, &mut data);
         assert_eq!(
             encoded.unwrap(),
             "*1\r\n$10\r\n1) \"value\"\r\n".to_string()
@@ -156,7 +156,7 @@ pub mod test_lrange {
         data.insert("key".to_string(), TypeSaved::String("value".to_string()));
 
         let buffer = vec_strings!["key"];
-        let error = Lrange::run(buffer, &mut data);
+        let error = Lrange.run(buffer, &mut data);
         assert_eq!(
             error.unwrap_err().print_it(),
             "WRONGTYPE Operation against a key holding the wrong kind of value".to_string()
@@ -175,7 +175,7 @@ pub mod test_lrange {
         data.insert("key".to_string(), TypeSaved::List(new_list));
 
         let buffer = vec_strings!["key", "2", "0"];
-        let encoded = Lrange::run(buffer, &mut data);
+        let encoded = Lrange.run(buffer, &mut data);
         assert_eq!(encoded.unwrap(), "+(empty list or set)\r\n".to_string());
     }
 
@@ -191,7 +191,7 @@ pub mod test_lrange {
         data.insert("key".to_string(), TypeSaved::List(new_list));
 
         let buffer = vec_strings!["key", "-2", "-4"];
-        let encoded = Lrange::run(buffer, &mut data);
+        let encoded = Lrange.run(buffer, &mut data);
         assert_eq!(encoded.unwrap(), "+(empty list or set)\r\n".to_string());
     }
 
@@ -208,7 +208,7 @@ pub mod test_lrange {
         data.insert("key".to_string(), TypeSaved::List(new_list));
 
         let buffer = vec_strings!["key", "0", "2"];
-        let encoded = Lrange::run(buffer, &mut data);
+        let encoded = Lrange.run(buffer, &mut data);
         assert_eq!(
             encoded.unwrap(),
             "*3\r\n$11\r\n1) \"value1\"\r\n$11\r\n2) \"value2\"\r\n$11\r\n3) \"value3\"\r\n"
@@ -229,7 +229,7 @@ pub mod test_lrange {
         data.insert("key".to_string(), TypeSaved::List(new_list));
 
         let buffer = vec_strings!["key", "-3", "0"];
-        let encoded = Lrange::run(buffer, &mut data);
+        let encoded = Lrange.run(buffer, &mut data);
         assert_eq!(
             encoded.unwrap(),
             "*1\r\n$11\r\n1) \"value1\"\r\n".to_string()
@@ -249,7 +249,7 @@ pub mod test_lrange {
         data.insert("key".to_string(), TypeSaved::List(new_list));
 
         let buffer = vec_strings!["key", "0", "-1"];
-        let encoded = Lrange::run(buffer, &mut data);
+        let encoded = Lrange.run(buffer, &mut data);
         assert_eq!(
             encoded.unwrap(),
             "*3\r\n$11\r\n1) \"value1\"\r\n$11\r\n2) \"value2\"\r\n$11\r\n3) \"value3\"\r\n"
@@ -271,7 +271,7 @@ pub mod test_lrange {
         data.insert("key".to_string(), TypeSaved::List(new_list));
 
         let buffer = vec_strings!["key", "-20", "-2"];
-        let encoded = Lrange::run(buffer, &mut data);
+        let encoded = Lrange.run(buffer, &mut data);
         // >lrange keyy -23 -2
         assert_eq!(
             encoded.unwrap(),
@@ -294,7 +294,7 @@ pub mod test_lrange {
 
         let buffer = vec_strings!["key", "-20", "-10"];
         // >lrange keyy -20 -10
-        let encoded = Lrange::run(buffer, &mut data);
+        let encoded = Lrange.run(buffer, &mut data);
         assert_eq!(encoded.unwrap(), "+(empty list or set)\r\n".to_string());
     }
 
@@ -312,7 +312,7 @@ pub mod test_lrange {
         data.insert("key".to_string(), TypeSaved::List(new_list));
 
         let buffer = vec_strings!["key", "-20", "20"];
-        let encoded = Lrange::run(buffer, &mut data);
+        let encoded = Lrange.run(buffer, &mut data);
         // >lrange keyy -20 20
         assert_eq!(
             encoded.unwrap(),
@@ -334,7 +334,7 @@ pub mod test_lrange {
         data.insert("key".to_string(), TypeSaved::List(new_list));
 
         let buffer = vec_strings!["key", "-20", "-1"];
-        let encoded = Lrange::run(buffer, &mut data);
+        let encoded = Lrange.run(buffer, &mut data);
         // >lrange keyy -20 -1
         assert_eq!(
             encoded.unwrap(),
@@ -356,7 +356,7 @@ pub mod test_lrange {
         data.insert("key".to_string(), TypeSaved::List(new_list));
 
         let buffer = vec_strings!["key", "-1", "-1"];
-        let encoded = Lrange::run(buffer, &mut data);
+        let encoded = Lrange.run(buffer, &mut data);
         assert_eq!(
             encoded.unwrap(),
             "*1\r\n$11\r\n1) \"value3\"\r\n".to_string()
@@ -376,7 +376,7 @@ pub mod test_lrange {
         data.insert("key".to_string(), TypeSaved::List(new_list));
 
         let buffer = vec_strings!["key", "-3", "0"];
-        let encoded = Lrange::run(buffer, &mut data);
+        let encoded = Lrange.run(buffer, &mut data);
         assert_eq!(
             encoded.unwrap(),
             "*1\r\n$11\r\n1) \"value1\"\r\n".to_string()

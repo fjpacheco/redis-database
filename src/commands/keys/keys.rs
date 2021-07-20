@@ -24,11 +24,11 @@ impl Runnable<Database> for Keys {
 mod test_keys {
 
     use super::*;
-    use crate::database::TypeSaved;
+    use crate::{database::TypeSaved, commands::create_notifier};
 
     fn default_database() -> Database {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-let mut db = Database::new(notifier);
+        let mut db = Database::new(notifier);
 
         db.insert(String::from("Camo"), TypeSaved::String(String::from("a")));
         db.insert(String::from("Cemo"), TypeSaved::String(String::from("a")));

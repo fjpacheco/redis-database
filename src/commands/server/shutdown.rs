@@ -11,6 +11,7 @@ impl Runnable<ServerRedisAtributes> for Shutdown {
         _buffer: Vec<String>,
         server: &mut ServerRedisAtributes,
     ) -> Result<String, ErrorStruct> {
+
         server.store(true);
         match TcpStream::connect(server.get_addr()?) {
             Ok(_) => Ok("+SERVER OFF\r\n".to_string()),

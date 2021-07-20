@@ -325,7 +325,6 @@ impl Joinable<()> for ClientHandler {
             Ok(()) => { /* Socket has been closed right now */ }
             Err(_) => { /* Socket is already closed */ }
         }
-
         match self.response_snd.send(None) {
             Ok(()) => { /* Channel has been closed right now */ }
             Err(_) => { /* Channel is already closed */ }

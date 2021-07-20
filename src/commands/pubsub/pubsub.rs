@@ -5,7 +5,7 @@ use crate::{
     },
     messages::redis_messages,
     native_types::ErrorStruct,
-    tcp_protocol::server::ServerRedisAtributes,
+    tcp_protocol::server_redis_atributes::ServerRedisAtributes,
 };
 
 pub struct Pubsub;

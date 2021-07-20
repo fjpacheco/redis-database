@@ -16,7 +16,7 @@ use crate::{
 };
 
 use super::{
-    client_list::ClientList, command_delegator::CommandsMap,
+    client_list::ClientList, commands_map::CommandsMap,
     command_subdelegator::CommandSubDelegator, notifier::Notifier,
 };
 
@@ -32,7 +32,9 @@ impl ServerRedis {
         // ################## 2° Initialization structures: CHANNELS and COMMANDS MAP ##################
         let (command_delegator_sender, command_delegator_recv) = channel();
         let (sender_log, receiver) = channel();
-        let (commands_map, rcv_cmd_dat, rcv_cmd_sv, snd_cmd_dat_garbage) = CommandsMap::default();
+        let (snd_cmd_dat, rcv_cmd_dat) = channel();
+        let (snd_cmd_sv, rcv_cmd_sv) = channel();
+        let commands_map = CommandsMap::default(snd_cmd_dat.clone(), snd_cmd_sv.clone());
 
         // ################## 3° Initialization structures: SOME PACHMUTEX ##################
         let config = Arc::new(Mutex::new(config));
@@ -69,6 +71,7 @@ impl ServerRedis {
         let mut command_delegator =
             CommandDelegator::start(command_delegator_recv, commands_map, notifier.clone())?;
         let mut command_sub_delegator_databse = CommandSubDelegator::start::<Database>(
+            snd_cmd_dat.clone(),
             rcv_cmd_dat,
             runnables_database,
             database,
@@ -76,13 +79,14 @@ impl ServerRedis {
         )?;
         let mut command_sub_delegator_server_atributes =
             CommandSubDelegator::start::<ServerRedisAtributes>(
+                snd_cmd_sv.clone(),
                 rcv_cmd_sv,
                 runnables_server,
                 server_redis.clone(),
                 notifier.clone(),
             )?;
 
-        let mut collector = GarbageCollector::start(snd_cmd_dat_garbage, 4, 20, notifier.clone());
+        let mut collector = GarbageCollector::start(snd_cmd_dat.clone(), 4, 20, notifier.clone());
 
         /*let quit_notifier = Mutex::new(notifier.clone());
         let quit: JoinHandle<Result<(), ErrorStruct>> = thread::spawn(move ||{

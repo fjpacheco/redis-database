@@ -1,10 +1,6 @@
 use std::collections::VecDeque;
 
-use crate::{
-    commands::get_as_integer,
-    database::{Database, TypeSaved},
-    native_types::RInteger,
-};
+use crate::{commands::{Runnable, get_as_integer}, database::{Database, TypeSaved}, native_types::RInteger};
 use crate::{
     commands::lists::{check_empty_2, check_not_empty},
     native_types::{error::ErrorStruct, redis_type::RedisType, simple_string::RSimpleString},
@@ -18,8 +14,8 @@ pub struct Lrem;
 // count < 0: Remove elements equal to element moving from tail to head.
 // count = 0: Remove all elements equal to element.
 
-impl Lrem {
-    pub fn run(mut buffer: Vec<String>, database: &mut Database) -> Result<String, ErrorStruct> {
+impl Runnable<Database> for Lrem {
+    fn run(&self, mut buffer: Vec<String>, database: &mut Database) -> Result<String, ErrorStruct> {
         check_not_empty(&buffer)?;
         let key = buffer.remove(0);
         check_not_empty(&buffer)?;
@@ -111,7 +107,7 @@ pub mod test_lset {
     };
     use std::collections::VecDeque;
 
-    use super::Lrem;
+    use super::*;
     #[test]
     fn test01_lrem_negative_count() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
@@ -128,14 +124,14 @@ pub mod test_lset {
 
         // redis> LREM mylist -2 "hello"
         let buffer1 = vec_strings!["key", "-2", "hello"];
-        let encoded1 = Lrem::run(buffer1, &mut data);
+        let encoded1 = Lrem.run(buffer1, &mut data);
 
         // Check return value is simple string OK
         assert_eq!(encoded1.unwrap(), ":2\r\n".to_string()); // (integer) 2
 
         // redis> LRANGE mylist 0 -1
         let buffer2 = vec_strings!["key", "0", "-1"];
-        let encoded2 = Lrange::run(buffer2, &mut data);
+        let encoded2 = Lrange.run(buffer2, &mut data);
         assert_eq!(
             encoded2.unwrap().to_string(),
             "*2\r\n$10\r\n1) \"hello\"\r\n$8\r\n2) \"foo\"\r\n".to_string(),
@@ -159,14 +155,14 @@ pub mod test_lset {
 
         // redis> LREM mylist -2 "hello"
         let buffer1 = vec_strings!["key", "2", "hello"];
-        let encoded1 = Lrem::run(buffer1, &mut data);
+        let encoded1 = Lrem.run(buffer1, &mut data);
 
         // Check return value is simple string OK
         assert_eq!(encoded1.unwrap(), ":2\r\n".to_string()); // (integer) 2
 
         // redis> LRANGE mylist 0 -1
         let buffer2 = vec_strings!["key", "0", "-1"];
-        let encoded2 = Lrange::run(buffer2, &mut data);
+        let encoded2 = Lrange.run(buffer2, &mut data);
         assert_eq!(
             encoded2.unwrap().to_string(),
             "*2\r\n$8\r\n1) \"foo\"\r\n$10\r\n2) \"hello\"\r\n".to_string(),
@@ -190,14 +186,14 @@ pub mod test_lset {
 
         // redis> LREM mylist -2 "hello"
         let buffer1 = vec_strings!["key", "0", "hello"];
-        let encoded1 = Lrem::run(buffer1, &mut data);
+        let encoded1 = Lrem.run(buffer1, &mut data);
 
         // Check return value is simple string OK
         assert_eq!(encoded1.unwrap(), ":3\r\n".to_string()); // (integer) 2
 
         // redis> LRANGE mylist 0 -1
         let buffer2 = vec_strings!["key", "0", "-1"];
-        let encoded2 = Lrange::run(buffer2, &mut data);
+        let encoded2 = Lrange.run(buffer2, &mut data);
         assert_eq!(
             encoded2.unwrap().to_string(),
             "*1\r\n$8\r\n1) \"foo\"\r\n".to_string(),

@@ -3,6 +3,7 @@ use crate::native_types::ErrorStruct;
 pub mod channels;
 pub mod numsub;
 pub mod publish;
+pub mod pubsub;
 pub mod subscribe_cf;
 pub mod subscribe_cl;
 pub mod unsubscribe_cf;

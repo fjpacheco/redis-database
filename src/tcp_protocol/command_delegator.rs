@@ -1,12 +1,12 @@
 use crate::tcp_protocol::client_atributes::client_fields::ClientFields;
 use crate::tcp_protocol::BoxedCommand;
-use std::sync::mpsc::{self, Receiver, Sender};
+use std::sync::mpsc::{Receiver, Sender};
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::thread::JoinHandle;
-use std::{collections::HashMap, thread};
+use std::thread;
 
-use super::notifier::Notifier;
+use super::{commands_map::CommandsMap, notifier::Notifier};
 use super::{RawCommand, Response};
 
 use crate::joinable::Joinable;
@@ -15,90 +15,6 @@ use crate::messages::redis_messages::command_not_found;
 use crate::native_types::error_severity::ErrorSeverity;
 use crate::native_types::ErrorStruct;
 use crate::tcp_protocol::close_thread;
-
-pub struct CommandsMap {
-    channel_map: HashMap<String, Vec<Option<Sender<RawCommand>>>>,
-}
-
-#[macro_export]
-macro_rules! insert_in {
-    ($channel_map:expr, $sender:expr, $( $x:expr ),*) => {
-        {
-            $(
-                $channel_map.insert(String::from($x), vec![Some($sender.clone())]);
-            )*
-        }
-    };
-}
-
-impl CommandsMap {
-    pub fn kill_senders(&mut self) {
-        self.channel_map.iter_mut().for_each(|x| {
-            let senders = x.1;
-            senders.iter_mut().for_each(|x| {
-                let _ = x.take();
-            })
-        })
-    }
-
-    pub fn new(channel_map: HashMap<String, Vec<Option<Sender<RawCommand>>>>) -> CommandsMap {
-        CommandsMap { channel_map }
-    }
-
-    pub fn get(&self, string: &str) -> Option<&Vec<Option<Sender<RawCommand>>>> {
-        self.channel_map.get(string)
-    }
-
-    pub fn default() -> (
-        CommandsMap,
-        Receiver<RawCommand>,
-        Receiver<RawCommand>,
-        Sender<RawCommand>,
-    ) {
-        let (snd_cmd_dat, rcv_cmd_dat): (Sender<RawCommand>, Receiver<RawCommand>) =
-            mpsc::channel();
-
-        let (snd_cmd_server, rcv_cmd_server): (Sender<RawCommand>, Receiver<RawCommand>) =
-            mpsc::channel();
-
-        let mut channel_map: HashMap<String, Vec<Option<Sender<RawCommand>>>> = HashMap::new();
-        insert_in!(
-            channel_map,
-            snd_cmd_dat,
-            "set",
-            "get",
-            "strlen",
-            "mset",
-            "mget",
-            "getset",
-            "getdel",
-            "incrby",
-            "decrby",
-            "append",
-            "clean",
-            "expire"
-        );
-
-        insert_in!(
-            channel_map,
-            snd_cmd_server,
-            "config",
-            "clear_client",
-            "notifymonitors",
-            "shutdown"
-        );
-
-        channel_map.insert(String::from("publish"), vec![Some(snd_cmd_server)]);
-        channel_map.insert(String::from("monitor"), vec![None]);
-
-        (
-            CommandsMap { channel_map },
-            rcv_cmd_dat,
-            rcv_cmd_server,
-            snd_cmd_dat,
-        )
-    }
-}
 
 pub struct CommandDelegator {
     join: Option<JoinHandle<Result<(), ErrorStruct>>>,
@@ -210,13 +126,13 @@ fn check_severity(error: ErrorStruct) -> Result<(), ErrorStruct> {
 
 fn delegate_jobs(
     raw_command: RawCommand,
-    sender_list: &[Option<Sender<RawCommand>>],
+    sender_list: &[Option<Sender<Option<RawCommand>>>],
 ) -> Result<(), ErrorStruct> {
     for sender in sender_list.iter() {
         let raw_command_clone = clone_raw_command(&raw_command);
         if let Some(snd_struct) = sender.as_ref() {
             //Case SOME: El comando se envia al subdelegator indicado
-            snd_struct.send(raw_command_clone).map_err(|_| {
+            snd_struct.send(Some(raw_command_clone)).map_err(|_| {
                 ErrorStruct::from(redis_messages::closed_sender(ErrorSeverity::ShutdownServer))
             })?;
         } else {
@@ -314,7 +230,7 @@ pub mod test_command_delegator {
         database::Database,
         native_types::{RError, RedisType},
     };
-    use std::sync::atomic::AtomicBool;
+    use std::{sync::atomic::AtomicBool, collections::HashMap};
     use std::sync::mpsc;
     use std::sync::Arc;
 
@@ -338,20 +254,16 @@ pub mod test_command_delegator {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let database = Database::new(notifier);
 
-        let (snd_cmd_dat, rcv_cmd_dat): (Sender<RawCommand>, Receiver<RawCommand>) =
-            mpsc::channel();
+        let (snd_cmd_dat, rcv_cmd_dat) = mpsc::channel();
 
-        let mut channel_map: HashMap<String, Vec<Option<Sender<RawCommand>>>> = HashMap::new();
+        let mut channel_map: HashMap<String, Vec<Option<Sender<Option<RawCommand>>>>> = HashMap::new();
         channel_map.insert(String::from("lpush"), vec![Some(snd_cmd_dat.clone())]);
         channel_map.insert(String::from("lpop"), vec![Some(snd_cmd_dat.clone())]);
-        channel_map.insert(String::from("lset"), vec![Some(snd_cmd_dat)]);
+        channel_map.insert(String::from("lset"), vec![Some(snd_cmd_dat.clone())]);
 
         let commands_map = CommandsMap::new(channel_map);
 
-        let (snd_test_cmd, rcv_test_cmd): (
-            Sender<Option<RawCommand>>,
-            Receiver<Option<RawCommand>>,
-        ) = mpsc::channel();
+        let (snd_test_cmd, rcv_test_cmd) = mpsc::channel();
 
         let (snd_log_test, _b): (Sender<Option<LogMessage>>, Receiver<Option<LogMessage>>) =
             mpsc::channel();
@@ -364,6 +276,7 @@ pub mod test_command_delegator {
         );
 
         let mut database_command_delegator = CommandSubDelegator::start::<Database>(
+            snd_cmd_dat.clone(),
             rcv_cmd_dat,
             runnables_map,
             database,
@@ -451,12 +364,11 @@ pub mod test_command_delegator {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let database = Database::new(notifier);
 
-        let (snd_cmd_dat, rcv_cmd_dat): (Sender<RawCommand>, Receiver<RawCommand>) =
-            mpsc::channel();
+        let (snd_cmd_dat, rcv_cmd_dat) = mpsc::channel();
 
-        let mut channel_map: HashMap<String, Vec<Option<Sender<RawCommand>>>> = HashMap::new();
+        let mut channel_map: HashMap<String, Vec<Option<Sender<Option<RawCommand>>>>> = HashMap::new();
         channel_map.insert(String::from("lpop"), vec![Some(snd_cmd_dat.clone())]);
-        channel_map.insert(String::from("lset"), vec![Some(snd_cmd_dat)]);
+        channel_map.insert(String::from("lset"), vec![Some(snd_cmd_dat.clone())]);
 
         let commands_map = CommandsMap::new(channel_map);
 
@@ -476,6 +388,7 @@ pub mod test_command_delegator {
         );
 
         let mut database_command_delegator = CommandSubDelegator::start::<Database>(
+            snd_cmd_dat.clone(),
             rcv_cmd_dat,
             runnables_map,
             database,
@@ -508,3 +421,4 @@ pub mod test_command_delegator {
         let _ = database_command_delegator.join();
     }
 }
+  
