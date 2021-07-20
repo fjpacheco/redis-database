@@ -55,7 +55,7 @@ impl ServerRedis {
             status_listener,
             server_redis.get_addr()?,
         );
-        let database = Database::new(notifier.clone());
+        let database = Database::new_from(Arc::clone(&config), notifier.clone())?;
         let runnables_database = RunnablesMap::<Database>::database();
         let runnables_server = RunnablesMap::<ServerRedisAtributes>::server();
 
@@ -66,7 +66,6 @@ impl ServerRedis {
             Arc::clone(&config),
             FileManager::new(),
         )?;
-
         let mut command_delegator =
             CommandDelegator::start(command_delegator_recv, commands_map, notifier.clone())?;
         let mut command_sub_delegator_databse = CommandSubDelegator::start::<Database>(
@@ -102,8 +101,9 @@ impl ServerRedis {
             Ok(())
         });*/
         // ################## ListenerProcessor ##################
-
+        
         ListenerProcessor::incoming(listener, server_redis, notifier);
+   //     database.take_snapshot(notifier);
 
         // ################## FINISH SERVER ##################
         command_delegator.join()?;

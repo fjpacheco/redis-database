@@ -23,8 +23,8 @@ use redis_config::RedisConfig;
 
 pub struct Database {
     elements: HashMap<String, (ExpireInfo, TypeSaved)>,
-    notifier: Arc<Mutex<Notifier>>, // https://stackoverflow.com/questions/40384274/rust-mpscsender-cannot-be-shared-between-threads
     redis_config: Option<Arc<Mutex<RedisConfig>>>,
+    notifier: Arc<Mutex<Notifier>>, // https://stackoverflow.com/questions/40384274/rust-mpscsender-cannot-be-shared-between-threads
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -48,22 +48,34 @@ impl Database {
         self.redis_config = Some(redis_config);
     }
 
-    pub fn new_from(filename: &str) -> Result<Self, ErrorStruct> {
+    pub fn new_from(
+        config: Arc<Mutex<RedisConfig>>,
+        notifier: Notifier,
+    ) -> Result<Self, ErrorStruct> {
         let mut elements = HashMap::new();
-        let text = fs::read_to_string(filename).unwrap();
-        let reader = BufReader::new(text.as_bytes());
+        let file = File::open(config
+            .lock()
+            .map_err(|_| { ErrorStruct::from(
+                redis_messages::poisoned_lock(
+                    "redis config",
+                    crate::native_types::error_severity::ErrorSeverity::ShutdownServer,
+                ))
+            })?
+            .db_filename()).map_err(|_| { ErrorStruct::from(
+            redis_messages::init_failed(
+                "dbfile name",
+                crate::native_types::error_severity::ErrorSeverity::ShutdownServer,
+            ))
+        })?; //Deberia devolver Result o algo asi
+        let reader = BufReader::new(file);
         let mut lines = reader.lines();
-        let mut type_decoded: isize;
-        let mut key_decoded: String;
-        let mut value_decoded: TypeSaved;
-        let mut expire_info: ExpireInfo;
-        while let Some(line) = lines.next() {
-            match line {
-                Ok(line) => {
-                    expire_info = get_expire_info(line.clone(), &mut lines)?;
-                    type_decoded = decode_case(&mut lines)?;
-                    key_decoded = decode_key(&mut lines)?;
-                    value_decoded = decode_value(&mut lines, type_decoded)?;
+            while let Some(line) = lines.next() {
+                match line {
+                    Ok(line) => {
+                    let expire_info = get_expire_info(line.clone(), &mut lines)?;
+                    let type_decoded = decode_case(&mut lines)?;
+                    let key_decoded = decode_key(&mut lines)?;
+                    let value_decoded = decode_value(&mut lines, type_decoded)?;
                     elements.insert(key_decoded, (expire_info, value_decoded)); //TODO
                 }
                 Err(_) => {
@@ -73,12 +85,11 @@ impl Database {
                     ));
                 }
             }
-        }
-        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        };
 
         Ok(Database {
             elements,
-            redis_config: None,
+            redis_config: Some(config),
             notifier: Arc::new(Mutex::new(notifier)),
         })
     }
@@ -250,7 +261,7 @@ impl fmt::Display for Database {
 
 fn decode_value(
     //TODO: refactor
-    lines: &mut Lines<BufReader<&[u8]>>,
+    lines: &mut Lines<BufReader<File>>,
     type_decoded: isize,
 ) -> Result<TypeSaved, ErrorStruct> {
     if let Some(line) = lines.next() {
@@ -299,7 +310,7 @@ fn decode_value(
     }
 }
 
-fn decode_key(lines: &mut Lines<BufReader<&[u8]>>) -> Result<String, ErrorStruct> {
+fn decode_key(lines: &mut Lines<BufReader<File>>) -> Result<String, ErrorStruct> {
     if let Some(line) = lines.next() {
         match line {
             Ok(mut line) => {
@@ -321,7 +332,7 @@ fn decode_key(lines: &mut Lines<BufReader<&[u8]>>) -> Result<String, ErrorStruct
     }
 }
 
-fn decode_case(lines: &mut Lines<BufReader<&[u8]>>) -> Result<isize, ErrorStruct> {
+fn decode_case(lines: &mut Lines<BufReader<File>>) -> Result<isize, ErrorStruct> {
     if let Some(line) = lines.next() {
         match line {
             Ok(mut line) => {
@@ -343,7 +354,7 @@ fn decode_case(lines: &mut Lines<BufReader<&[u8]>>) -> Result<isize, ErrorStruct
     }
 }
 
-fn get_case(line: String, lines: &mut Lines<BufReader<&[u8]>>) -> Result<isize, ErrorStruct> {
+fn get_case(line: String, lines: &mut Lines<BufReader<File>>) -> Result<isize, ErrorStruct> {
     let value = RInteger::decode(line, lines)?;
     if value == 0 || value == 1 || value == 2 {
         return Ok(value);
@@ -356,7 +367,7 @@ fn get_case(line: String, lines: &mut Lines<BufReader<&[u8]>>) -> Result<isize, 
 
 fn get_expire_info(
     line: String,
-    lines: &mut Lines<BufReader<&[u8]>>,
+    lines: &mut Lines<BufReader<File>>,
 ) -> Result<ExpireInfo, ErrorStruct> {
     let mut line = line.clone();
     check_decodable_line(&mut line, ':')?;
@@ -442,7 +453,7 @@ fn persist_data(key: &String, file: &mut File, typesaved: &TypeSaved) -> Result<
     };
     Ok(())
 }
-
+/*
 #[cfg(test)]
 mod test_database {
 
@@ -822,3 +833,4 @@ mod test_database {
         );
     }
 }
+*/

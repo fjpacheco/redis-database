@@ -184,7 +184,7 @@ impl RedisConfig {
     }
 
     pub fn db_filename(&self) -> String {
-        "TODO".to_string()
+        self._dump_filename.to_string()
     }
 
     pub fn log_filename(&self) -> String {
@@ -210,7 +210,7 @@ impl Default for RedisConfig {
     /// * **PORT**: 6379
     fn default() -> Self {
         let ip = "127.0.0.1".into();
-        let port = "6379".into();
+        let port = "6370".into();
         let log_filename = "logs.txt".to_string();
         let verbose = 100;
         RedisConfig::new(ip, port, log_filename, "dump.rdb".to_string(), verbose).unwrap()
