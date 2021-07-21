@@ -2,18 +2,27 @@ use crate::{
     commands::keys::{no_more_values, parse_integer, pop_value},
     commands::Runnable,
     database::Database,
-    native_types::{ErrorStruct, RInteger, RedisType},
+    messages::redis_messages,
+    native_types::{error_severity::ErrorSeverity, ErrorStruct, RInteger, RedisType},
 };
 
+use std::sync::{Arc, Mutex, MutexGuard};
 pub struct Clean;
 
-impl Runnable<Database> for Clean {
+impl Runnable<Arc<Mutex<Database>>> for Clean {
     fn run(
         &self,
         mut buffer: Vec<String>,
-        mut database: &mut Database,
+        database: &mut Arc<Mutex<Database>>,
     ) -> Result<String, ErrorStruct> {
+        let mut database = database.lock().map_err(|_| {
+            ErrorStruct::from(redis_messages::poisoned_lock(
+                "database",
+                ErrorSeverity::ShutdownServer,
+            ))
+        })?;
         let argument = pop_value(&mut buffer, "clean")?;
+
         no_more_values(&buffer, "clean")?;
         let iterations = parse_integer(argument)?;
 
@@ -34,7 +43,7 @@ impl Runnable<Database> for Clean {
     }
 }
 
-fn touch_n_random_keys(n: &isize, database: &mut &mut Database) -> isize {
+fn touch_n_random_keys(n: &isize, database: &mut MutexGuard<Database>) -> isize {
     let mut expired_keys: isize = 0;
     for _ in 0..*n {
         if let Some(key) = database.random_key() {
@@ -92,7 +101,8 @@ mod test_clean {
         sleep(Duration::new(5, 0));
 
         let command = vec_strings!["3"];
-        let mut response = Clean.run(command, &mut database).unwrap();
+        let mut c_database = Arc::new(Mutex::new(database));
+        let mut response = Clean.run(command, &mut c_database).unwrap();
         response.remove(0);
         response.pop();
         response.pop();

@@ -244,7 +244,7 @@ pub mod test_command_delegator {
     fn test01_lpush_lpop_lset() {
         // ARRANGE
 
-        let mut map: HashMap<String, Arc<BoxedCommand<Database>>> = HashMap::new();
+        let mut map: HashMap<String, Arc<BoxedCommand<Arc<Mutex<Database>>>>> = HashMap::new();
         map.insert(String::from("lpush"), Arc::new(Box::new(LPush)));
         map.insert(String::from("lpop"), Arc::new(Box::new(LPop)));
         map.insert(String::from("lset"), Arc::new(Box::new(Lset)));
@@ -252,7 +252,7 @@ pub mod test_command_delegator {
         let runnables_map = RunnablesMap::new(map);
 
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let database = Database::new(notifier);
+        let database = Arc::new(Mutex::new(Database::new(notifier)));
 
         let (snd_cmd_dat, rcv_cmd_dat) = mpsc::channel();
 
@@ -276,11 +276,11 @@ pub mod test_command_delegator {
             "test_addr".into(),
         );
 
-        let mut database_command_delegator = CommandSubDelegator::start::<Database>(
+        let mut database_command_delegator = CommandSubDelegator::start::<Arc<Mutex<Database>>>(
             snd_cmd_dat.clone(),
             rcv_cmd_dat,
             runnables_map,
-            database,
+            Arc::clone(&database),
             notifier.clone(),
         )
         .unwrap();
@@ -356,14 +356,14 @@ pub mod test_command_delegator {
     fn test02_lpush_lpop_lset() {
         // ARRANGE
 
-        let mut map: HashMap<String, Arc<BoxedCommand<Database>>> = HashMap::new();
+        let mut map: HashMap<String, Arc<BoxedCommand<Arc<Mutex<Database>>>>> = HashMap::new();
         map.insert(String::from("lpop"), Arc::new(Box::new(LPop)));
         map.insert(String::from("lset"), Arc::new(Box::new(Lset)));
 
         let runnables_map = RunnablesMap::new(map);
 
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let database = Database::new(notifier);
+        let database = Arc::new(Mutex::new(Database::new(notifier)));
 
         let (snd_cmd_dat, rcv_cmd_dat) = mpsc::channel();
 
@@ -389,7 +389,7 @@ pub mod test_command_delegator {
             "test_addr".into(),
         );
 
-        let mut database_command_delegator = CommandSubDelegator::start::<Database>(
+        let mut database_command_delegator = CommandSubDelegator::start::<Arc<Mutex<Database>>>(
             snd_cmd_dat.clone(),
             rcv_cmd_dat,
             runnables_map,

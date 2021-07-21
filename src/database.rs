@@ -1,4 +1,4 @@
-use crate::commands::{create_notifier, server::info_formatter::info_db_formatter};
+use crate::commands::server::info_formatter::info_db_formatter;
 use crate::native_types::error::ErrorStruct;
 use crate::native_types::{RArray, RInteger, RSimpleString, RedisType};
 use crate::redis_config;
@@ -13,7 +13,7 @@ use std::{
     ops::Not,
 };
 use std::{
-    fs::{self, File},
+    fs::File,
     io::{BufRead, BufReader, Write},
 };
 
@@ -278,7 +278,7 @@ fn decode_value(
                             Ok(value) => value,
                             Err(err) => return Err(err),
                         };
-                        return Ok(TypeSaved::String(value));
+                        Ok(TypeSaved::String(value))
                     }
                     1 => {
                         check_decodable_line(&mut line, '*')?;
@@ -286,7 +286,7 @@ fn decode_value(
                             Ok(value) => value,
                             Err(err) => return Err(err),
                         };
-                        return Ok(TypeSaved::List(VecDeque::from(value))); // chequear si el orden del vecdeque es correcto
+                        Ok(TypeSaved::List(VecDeque::from(value))) // chequear si el orden del vecdeque es correcto
                     }
                     _ => {
                         check_decodable_line(&mut line, '*')?;
@@ -294,15 +294,15 @@ fn decode_value(
                             Ok(value) => value,
                             Err(err) => return Err(err),
                         };
-                        return Ok(TypeSaved::Set(value.into_iter().collect()));
+                        Ok(TypeSaved::Set(value.into_iter().collect()))
                     }
                 }
             }
             Err(_) => {
-                return Err(ErrorStruct::new(
+                Err(ErrorStruct::new(
                     "ERR".to_string(),
                     "Some error".to_string(), // TODO
-                ));
+                ))
             }
         }
     } else {
@@ -321,10 +321,10 @@ fn decode_key(lines: &mut Lines<BufReader<File>>) -> Result<String, ErrorStruct>
                 RSimpleString::decode(line, lines)
             }
             Err(_) => {
-                return Err(ErrorStruct::new(
+                Err(ErrorStruct::new(
                     "ERR".to_string(),
                     "Some error".to_string(), // TODO
-                ));
+                ))
             }
         }
     } else {
@@ -343,10 +343,10 @@ fn decode_case(lines: &mut Lines<BufReader<File>>) -> Result<isize, ErrorStruct>
                 get_case(line, lines)
             }
             Err(_) => {
-                return Err(ErrorStruct::new(
+                Err(ErrorStruct::new(
                     "ERR".to_string(),
                     "Some error".to_string(), // TODO
-                ));
+                ))
             }
         }
     } else {
@@ -369,12 +369,11 @@ fn get_case(line: String, lines: &mut Lines<BufReader<File>>) -> Result<isize, E
 }
 
 fn get_expire_info(
-    line: String,
+    mut line: String,
     lines: &mut Lines<BufReader<File>>,
 ) -> Result<ExpireInfo, ErrorStruct> {
-    let mut line = line.clone();
     check_decodable_line(&mut line, ':')?;
-    let ttl_decoded = RInteger::decode(line.clone(), lines)?;
+    let ttl_decoded = RInteger::decode(line, lines)?;
     println!("ttl: {}", ttl_decoded);
     let mut expire_info: ExpireInfo = ExpireInfo::new();
     if ttl_decoded >= 0 {
@@ -395,8 +394,11 @@ fn check_decodable_line(line: &mut String, char: char) -> Result<(), ErrorStruct
     Ok(())
 }
 
-fn write_string_to_file(string: &String, file: &mut File) -> Result<(), ErrorStruct> {
-    if let Ok(_) = file.write_all(RSimpleString::encode(string.clone()).as_bytes()) {
+fn write_string_to_file(string: &str, file: &mut File) -> Result<(), ErrorStruct> {
+    if file
+        .write_all(RSimpleString::encode(string.to_string()).as_bytes())
+        .is_ok()
+    {
         Ok(())
     } else {
         Err(ErrorStruct::new(
@@ -407,7 +409,7 @@ fn write_string_to_file(string: &String, file: &mut File) -> Result<(), ErrorStr
 }
 
 fn write_integer_to_file(number: isize, file: &mut File) -> Result<(), ErrorStruct> {
-    if let Ok(_) = file.write_all(RInteger::encode(number).as_bytes()) {
+    if file.write_all(RInteger::encode(number).as_bytes()).is_ok() {
         Ok(())
     } else {
         Err(ErrorStruct::new(
@@ -418,7 +420,7 @@ fn write_integer_to_file(number: isize, file: &mut File) -> Result<(), ErrorStru
 }
 
 fn write_array_to_file(vector: Vec<String>, file: &mut File) -> Result<(), ErrorStruct> {
-    if let Ok(_) = file.write_all(RArray::encode(vector).as_bytes()) {
+    if file.write_all(RArray::encode(vector).as_bytes()).is_ok() {
         Ok(())
     } else {
         Err(ErrorStruct::new(
@@ -434,7 +436,7 @@ enum TypeCase {
     Set = 2,
 }
 
-fn persist_data(key: &String, file: &mut File, typesaved: &TypeSaved) -> Result<(), ErrorStruct> {
+fn persist_data(key: &str, file: &mut File, typesaved: &TypeSaved) -> Result<(), ErrorStruct> {
     match typesaved {
         TypeSaved::String(value) => {
             write_integer_to_file(TypeCase::String as isize, file)?; // 0: String Encoding
@@ -475,7 +477,7 @@ mod test_database {
     #[test]
     fn test01_insert_a_key() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let mut database = Database::new(notifier);
+        let mut database = Arc::new(Mutex::new(Database::new(notifier)));
         let value = TypeSaved::String(String::from("hola"));
         database.insert("key".to_string(), value);
         let got = database.get("key");
@@ -490,7 +492,7 @@ mod test_database {
     #[test]
     fn test02_remove_a_key() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let mut database = Database::new(notifier);
+        let mut database = Arc::new(Mutex::new(Database::new(notifier)));
         let value = TypeSaved::String(String::from("hola"));
         database.insert("key".to_string(), value);
         database.remove("key");
@@ -501,7 +503,7 @@ mod test_database {
     #[test]
     fn test03_database_contains_key() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let mut database = Database::new(notifier);
+        let mut database = Arc::new(Mutex::new(Database::new(notifier)));
         assert!(!database.contains_key("key"));
         let value = TypeSaved::String(String::from("hola"));
         database.insert("key".to_string(), value);
@@ -511,7 +513,7 @@ mod test_database {
     #[test]
     fn test04_set_timeout_for_existing_key() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let mut database = Database::new(notifier);
+        let mut database = Arc::new(Mutex::new(Database::new(notifier)));
         let value = TypeSaved::String(String::from("hola"));
         database.insert("key".to_string(), value);
         database.set_ttl("key", 10).unwrap();
@@ -521,7 +523,7 @@ mod test_database {
     #[test]
     fn test05_set_timeout_for_non_existing_key() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let mut database = Database::new(notifier);
+        let mut database = Arc::new(Mutex::new(Database::new(notifier)));
         match database.set_ttl("key", 10) {
             Err(should_throw_error) => assert_eq!(
                 should_throw_error.print_it(),
@@ -534,7 +536,7 @@ mod test_database {
     #[test]
     fn test06_set_timeout_for_key_and_let_it_persist() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let mut database = Database::new(notifier);
+        let mut database = Arc::new(Mutex::new(Database::new(notifier)));
         let value = TypeSaved::String(String::from("hola"));
         database.insert("key".to_string(), value);
         database.set_ttl("key", 10).unwrap();
@@ -556,7 +558,7 @@ mod test_database {
             .unwrap(),
         ));
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let mut original_database = Database::new(notifier);
+        let mut original_database = Arc::new(Mutex::new(Database::new(notifier)));
         original_database.set_redis_config(config);
         original_database.insert(
             "key1".to_string(),
@@ -585,7 +587,7 @@ mod test_database {
             .unwrap(),
         ));
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let mut database = Database::new(notifier);
+        let mut database = Arc::new(Mutex::new(Database::new(notifier)));
         database.set_redis_config(config);
         database.insert("key".to_string(), TypeSaved::String(String::from("value")));
         database.set_ttl("key", 5).unwrap();
@@ -612,7 +614,7 @@ mod test_database {
             .unwrap(),
         ));
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let mut database = Database::new(notifier);
+        let mut database = Arc::new(Mutex::new(Database::new(notifier)));
         database.set_redis_config(config);
         let buffer = vec_strings!["key", "value1", "value2", "value3", "value4"];
         RPush.run(buffer, &mut database).unwrap();
@@ -639,7 +641,7 @@ mod test_database {
             .unwrap(),
         ));
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let mut database = Database::new(notifier);
+        let mut database = Arc::new(Mutex::new(Database::new(notifier)));
         database.set_redis_config(config);
         let buffer = vec_strings!["key", "value1", "value2"];
         Sadd.run(buffer, &mut database).unwrap();
@@ -665,7 +667,7 @@ mod test_database {
             .unwrap(),
         ));
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let mut original_database = Database::new(notifier);
+        let mut original_database = Arc::new(Mutex::new(Database::new(notifier)));
         original_database.set_redis_config(config1);
         original_database.insert(
             "key1".to_string(),
@@ -709,7 +711,7 @@ mod test_database {
             .unwrap(),
         ));
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let mut database = Database::new(notifier);
+        let mut database = Arc::new(Mutex::new(Database::new(notifier)));
         database.set_redis_config(config1);
         let buffer = vec_strings!["key", "value1", "value2", "value3", "value4"];
         RPush.run(buffer, &mut database).unwrap();
@@ -754,7 +756,7 @@ mod test_database {
             .unwrap(),
         ));
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let mut database = Database::new(notifier);
+        let mut database = Arc::new(Mutex::new(Database::new(notifier)));
         database.set_redis_config(config1);
 
         let buffer: Vec<String> = vec_strings!["key", "value1", "value2"];
@@ -806,7 +808,7 @@ mod test_database {
             .unwrap(),
         ));
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let mut original_database = Database::new(notifier);
+        let mut original_database = Arc::new(Mutex::new(Database::new(notifier)));
         original_database.set_redis_config(config1);
 
         original_database.insert("key".to_string(), TypeSaved::String(String::from("value")));

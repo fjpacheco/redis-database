@@ -1,14 +1,25 @@
+use crate::native_types::error_severity::ErrorSeverity;
 use crate::{
     commands::{check_empty, Runnable},
     database::{Database, TypeSaved},
     messages::redis_messages,
     native_types::{ErrorStruct, RArray, RedisType},
 };
-
+use std::sync::{Arc, Mutex};
 pub struct Mget;
 
-impl Runnable<Database> for Mget {
-    fn run(&self, buffer: Vec<String>, database: &mut Database) -> Result<String, ErrorStruct> {
+impl Runnable<Arc<Mutex<Database>>> for Mget {
+    fn run(
+        &self,
+        buffer: Vec<String>,
+        database: &mut Arc<Mutex<Database>>,
+    ) -> Result<String, ErrorStruct> {
+        let mut database = database.lock().map_err(|_| {
+            ErrorStruct::from(redis_messages::poisoned_lock(
+                "database",
+                ErrorSeverity::ShutdownServer,
+            ))
+        })?;
         check_error_cases(&buffer)?;
 
         let mut values_obtained: Vec<String> = Vec::new();
@@ -54,10 +65,16 @@ mod test_get {
     fn test01_mget_value_of_key_correct_is_success() {
         let buffer_mock_get = vec_strings!["key2", "asd", "key1"];
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let mut database_mock = Database::new(notifier);
+        let mut database_mock = Arc::new(Mutex::new(Database::new(notifier)));
 
-        database_mock.insert("key1".to_string(), TypeSaved::String("value1".to_string()));
-        database_mock.insert("key2".to_string(), TypeSaved::String("value2".to_string()));
+        database_mock
+            .lock()
+            .unwrap()
+            .insert("key1".to_string(), TypeSaved::String("value1".to_string()));
+        database_mock
+            .lock()
+            .unwrap()
+            .insert("key2".to_string(), TypeSaved::String("value2".to_string()));
         let result_received = Mget.run(buffer_mock_get, &mut database_mock);
 
         // ->> "*3\r\n $5\r\nvalue\r\n $-1\r\n $5\r\nvalue\r\n"
@@ -76,10 +93,16 @@ mod test_get {
         let buffer_mock_get2 = vec_strings!["asd", "key2", "key1"];
         let buffer_mock_get3 = vec_strings!["key1", "key2", "asd"];
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let mut database_mock = Database::new(notifier);
+        let mut database_mock = Arc::new(Mutex::new(Database::new(notifier)));
 
-        database_mock.insert("key1".to_string(), TypeSaved::String("value1".to_string()));
-        database_mock.insert("key2".to_string(), TypeSaved::String("value2".to_string()));
+        database_mock
+            .lock()
+            .unwrap()
+            .insert("key1".to_string(), TypeSaved::String("value1".to_string()));
+        database_mock
+            .lock()
+            .unwrap()
+            .insert("key2".to_string(), TypeSaved::String("value2".to_string()));
 
         let result_received = Mget.run(buffer_mock_get1, &mut database_mock);
         let expected_vec = vec![

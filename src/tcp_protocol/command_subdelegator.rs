@@ -3,7 +3,6 @@ use crate::joinable::Joinable;
 use crate::messages::redis_messages;
 use crate::tcp_protocol::close_thread;
 use crate::tcp_protocol::BoxedCommand;
-use std::fmt::Display;
 use std::sync::mpsc::Receiver;
 use std::sync::mpsc::Sender;
 use std::sync::Arc;
@@ -42,9 +41,9 @@ impl CommandSubDelegator {
         notifier: Notifier,
     ) -> Result<Self, ErrorStruct>
     where
-        T: Send + Sync + Display,
+        T: Send + Sync,
     {
-        let builder = thread::Builder::new().name(format!("Command Sub-Delegator for {}", data));
+        let builder = thread::Builder::new().name("Command Sub-Delegator".to_string());
         let c_notifier = notifier.clone();
         let command_sub_delegator_handler = builder
             .spawn(move || CommandSubDelegator::init(rcv_cmd, runnables_map, data, c_notifier))
@@ -69,7 +68,7 @@ impl CommandSubDelegator {
         notifier: Notifier,
     ) -> Result<(), ErrorStruct>
     where
-        T: Send + Sync + Display,
+        T: Send + Sync,
     {
         for packed_raw_command in rcv_cmd.iter() {
             if let Some((mut command_input_user, sender_to_client, _)) = packed_raw_command {
@@ -172,7 +171,7 @@ pub mod test_database_command_delegator {
     #[test]
 
     fn test01_set_get_strlen() {
-        let mut map: HashMap<String, Arc<BoxedCommand<Database>>> = HashMap::new();
+        let mut map: HashMap<String, Arc<BoxedCommand<Arc<Mutex<Database>>>>> = HashMap::new();
         map.insert(String::from("set"), Arc::new(Box::new(Set)));
         map.insert(String::from("get"), Arc::new(Box::new(Get)));
         map.insert(String::from("strlen"), Arc::new(Box::new(Strlen)));
@@ -180,11 +179,11 @@ pub mod test_database_command_delegator {
         let runnables_map = RunnablesMap::new(map);
 
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let database = Database::new(notifier.clone());
+        let database = Arc::new(Mutex::new(Database::new(notifier.clone())));
 
         let (tx1, rx1) = mpsc::channel();
 
-        let _database_command_delegator_recv = CommandSubDelegator::start::<Database>(
+        let _database_command_delegator_recv = CommandSubDelegator::start::<Arc<Mutex<Database>>>(
             tx1.clone(),
             rx1,
             runnables_map,
@@ -233,16 +232,16 @@ pub mod test_database_command_delegator {
 
     #[test]
     fn test02_get_command_does_not_exist() {
-        let mut map: HashMap<String, Arc<BoxedCommand<Database>>> = HashMap::new();
+        let mut map: HashMap<String, Arc<BoxedCommand<Arc<Mutex<Database>>>>> = HashMap::new();
         map.insert(String::from("set"), Arc::new(Box::new(Set)));
         let runnables_map = RunnablesMap::new(map);
 
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let database = Database::new(notifier.clone());
+        let database = Arc::new(Mutex::new(Database::new(notifier.clone())));
 
         let (tx1, rx1) = mpsc::channel();
 
-        let _database_command_delegator_recv = CommandSubDelegator::start::<Database>(
+        let _database_command_delegator_recv = CommandSubDelegator::start::<Arc<Mutex<Database>>>(
             tx1.clone(),
             rx1,
             runnables_map,
@@ -282,14 +281,14 @@ pub mod test_database_command_delegator {
 
     #[test]
     fn test03_rpush_rpop_llen() {
-        let mut map: HashMap<String, Arc<BoxedCommand<Database>>> = HashMap::new();
+        let mut map: HashMap<String, Arc<BoxedCommand<Arc<Mutex<Database>>>>> = HashMap::new();
         map.insert(String::from("rpush"), Arc::new(Box::new(RPush)));
         map.insert(String::from("rpop"), Arc::new(Box::new(RPop)));
         map.insert(String::from("llen"), Arc::new(Box::new(Llen)));
         let runnables_map = RunnablesMap::new(map);
 
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let database = Database::new(notifier);
+        let database = Arc::new(Mutex::new(Database::new(notifier)));
 
         let (tx1, rx1) = mpsc::channel();
         let (snd_log_test, _b): (Sender<Option<LogMessage>>, Receiver<Option<LogMessage>>) =
@@ -304,7 +303,7 @@ pub mod test_database_command_delegator {
             "test_addr".into(),
         );
 
-        let _database_command_delegator_recv = CommandSubDelegator::start::<Database>(
+        let _database_command_delegator_recv = CommandSubDelegator::start::<Arc<Mutex<Database>>>(
             tx1.clone(),
             rx1,
             runnables_map,

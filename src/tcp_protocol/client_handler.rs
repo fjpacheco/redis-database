@@ -307,7 +307,7 @@ fn delegate_command(
             }
         }
     }
-    notifier.notify_successful_shipment(&client_fields, command_received_initial.clone())?;
+    notifier.notify_successful_shipment(&client_fields, command_received_initial)?;
     Ok(())
 }
 

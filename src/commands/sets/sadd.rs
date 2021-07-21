@@ -1,3 +1,4 @@
+use crate::native_types::error_severity::ErrorSeverity;
 use crate::{
     commands::{check_empty, Runnable},
     database::{Database, TypeSaved},
@@ -6,11 +7,21 @@ use crate::{
     native_types::{ErrorStruct, RInteger, RedisType},
 };
 use std::collections::HashSet;
-
+use std::sync::{Arc, Mutex};
 pub struct Sadd;
 
-impl Runnable<Database> for Sadd {
-    fn run(&self, buffer: Vec<String>, database: &mut Database) -> Result<String, ErrorStruct> {
+impl Runnable<Arc<Mutex<Database>>> for Sadd {
+    fn run(
+        &self,
+        buffer: Vec<String>,
+        database: &mut Arc<Mutex<Database>>,
+    ) -> Result<String, ErrorStruct> {
+        let mut database = database.lock().map_err(|_| {
+            ErrorStruct::from(redis_messages::poisoned_lock(
+                "database",
+                ErrorSeverity::ShutdownServer,
+            ))
+        })?;
         check_error_cases(&buffer)?;
 
         let key = &buffer[0];
@@ -72,7 +83,7 @@ mod test_sadd_function {
     fn test01_sadd_insert_and_return_amount_insertions() {
         let buffer_mock = vec_strings!["key", "member1", "member2"];
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let mut database_mock = Database::new(notifier);
+        let mut database_mock = Arc::new(Mutex::new(Database::new(notifier)));
 
         let result_received = Sadd.run(buffer_mock, &mut database_mock);
         let amount_received = result_received.unwrap();
@@ -88,7 +99,7 @@ mod test_sadd_function {
             "member3"
         ];
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let mut database_mock = Database::new(notifier);
+        let mut database_mock = Arc::new(Mutex::new(Database::new(notifier)));
 
         let result_received = Sadd.run(buffer_mock, &mut database_mock);
         let amount_received = result_received.unwrap();
@@ -100,8 +111,11 @@ mod test_sadd_function {
     #[test]
     fn test03_sadd_does_not_insert_elements_over_an_existing_key_string() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let mut database_mock = Database::new(notifier);
-        database_mock.insert("key".to_string(), TypeSaved::String("value".to_string()));
+        let mut database_mock = Arc::new(Mutex::new(Database::new(notifier)));
+        database_mock
+            .lock()
+            .unwrap()
+            .insert("key".to_string(), TypeSaved::String("value".to_string()));
         let buffer_mock = vec_strings![
             "key", "member2", "member1", "member1", "member3", "member2", "member1", "member1",
             "member3"
@@ -115,10 +129,13 @@ mod test_sadd_function {
     #[test]
     fn test04_sadd_does_not_insert_elements_over_an_existing_key_list() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let mut database_mock = Database::new(notifier);
+        let mut database_mock = Arc::new(Mutex::new(Database::new(notifier)));
         let mut new_list = VecDeque::new();
         new_list.push_back("valueOfList".to_string());
-        database_mock.insert("key".to_string(), TypeSaved::List(new_list));
+        database_mock
+            .lock()
+            .unwrap()
+            .insert("key".to_string(), TypeSaved::List(new_list));
 
         let buffer_mock = vec_strings![
             "key", "member2", "member1", "member1", "member3", "member2", "member1", "member1",

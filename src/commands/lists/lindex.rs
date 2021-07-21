@@ -1,5 +1,5 @@
-use std::collections::VecDeque;
-
+use crate::messages::redis_messages;
+use crate::native_types::error_severity::ErrorSeverity;
 use crate::{
     commands::lists::{check_empty_2, check_not_empty},
     database::{Database, TypeSaved},
@@ -9,11 +9,23 @@ use crate::{
     commands::Runnable,
     native_types::{error::ErrorStruct, redis_type::RedisType},
 };
+use std::collections::VecDeque;
+use std::sync::{Arc, Mutex};
 
 pub struct LIndex;
 
-impl Runnable<Database> for LIndex {
-    fn run(&self, mut buffer: Vec<String>, database: &mut Database) -> Result<String, ErrorStruct> {
+impl Runnable<Arc<Mutex<Database>>> for LIndex {
+    fn run(
+        &self,
+        mut buffer: Vec<String>,
+        database: &mut Arc<Mutex<Database>>,
+    ) -> Result<String, ErrorStruct> {
+        let mut database = database.lock().map_err(|_| {
+            ErrorStruct::from(redis_messages::poisoned_lock(
+                "database",
+                ErrorSeverity::ShutdownServer,
+            ))
+        })?;
         check_not_empty(&buffer)?;
         let key = buffer.remove(0);
         check_not_empty(&buffer)?;
@@ -76,13 +88,15 @@ pub mod test_lpush {
     #[test]
     fn test01_lindex_positive_from_an_existing_list() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let mut data = Database::new(notifier);
+        let mut data = Arc::new(Mutex::new(Database::new(notifier)));
         let mut new_list = VecDeque::new();
         new_list.push_back("this".to_string());
         new_list.push_back("is".to_string());
         new_list.push_back("a".to_string());
         new_list.push_back("list".to_string());
-        data.insert("key".to_string(), TypeSaved::List(new_list));
+        data.lock()
+            .unwrap()
+            .insert("key".to_string(), TypeSaved::List(new_list));
 
         let buffer = vec_strings!["key", "2"];
         let encode = LIndex.run(buffer, &mut data);
@@ -92,13 +106,15 @@ pub mod test_lpush {
     #[test]
     fn test02_lindex_negative_from_an_existing_list() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let mut data = Database::new(notifier);
+        let mut data = Arc::new(Mutex::new(Database::new(notifier)));
         let mut new_list = VecDeque::new();
         new_list.push_back("this".to_string());
         new_list.push_back("is".to_string());
         new_list.push_back("a".to_string());
         new_list.push_back("list".to_string());
-        data.insert("key".to_string(), TypeSaved::List(new_list));
+        data.lock()
+            .unwrap()
+            .insert("key".to_string(), TypeSaved::List(new_list));
 
         let buffer = vec_strings!["key", "-1"];
         let encode = LIndex.run(buffer, &mut data);
@@ -108,23 +124,25 @@ pub mod test_lpush {
     #[test]
     fn test03_lindex_from_a_non_existing_list() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let mut data = Database::new(notifier);
+        let mut data = Arc::new(Mutex::new(Database::new(notifier)));
         let buffer = vec_strings!["key", "4"];
         let encode = LIndex.run(buffer, &mut data);
         assert_eq!(encode.unwrap(), "$-1\r\n".to_string());
-        assert_eq!(data.get("key"), None);
+        assert_eq!(data.lock().unwrap().get("key"), None);
     }
 
     #[test]
     fn test04_lindex_out_of_index_from_an_existing_list() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let mut data = Database::new(notifier);
+        let mut data = Arc::new(Mutex::new(Database::new(notifier)));
         let mut new_list = VecDeque::new();
         new_list.push_back("this".to_string());
         new_list.push_back("is".to_string());
         new_list.push_back("a".to_string());
         new_list.push_back("list".to_string());
-        data.insert("key".to_string(), TypeSaved::List(new_list));
+        data.lock()
+            .unwrap()
+            .insert("key".to_string(), TypeSaved::List(new_list));
         let buffer = vec_strings!["key", "6"];
         let encode = LIndex.run(buffer, &mut data);
         assert_eq!(encode.unwrap(), "$-1\r\n".to_string());

@@ -1,15 +1,26 @@
 use crate::commands::keys::{no_more_values, pop_value};
 use crate::commands::Runnable;
-use crate::messages::redis_messages::wrong_regex_pattern;
+use crate::messages::redis_messages::{self, wrong_regex_pattern};
+use crate::native_types::error_severity::ErrorSeverity;
 use crate::native_types::ErrorStruct;
 use crate::native_types::RArray;
 use crate::native_types::RedisType;
 use crate::Database;
-
+use std::sync::{Arc, Mutex};
 pub struct Keys;
 
-impl Runnable<Database> for Keys {
-    fn run(&self, mut buffer: Vec<String>, database: &mut Database) -> Result<String, ErrorStruct> {
+impl Runnable<Arc<Mutex<Database>>> for Keys {
+    fn run(
+        &self,
+        mut buffer: Vec<String>,
+        database: &mut Arc<Mutex<Database>>,
+    ) -> Result<String, ErrorStruct> {
+        let database = database.lock().map_err(|_| {
+            ErrorStruct::from(redis_messages::poisoned_lock(
+                "database",
+                ErrorSeverity::ShutdownServer,
+            ))
+        })?;
         let regex = pop_value(&mut buffer, "keys")?;
         no_more_values(&buffer, "keys")?;
 

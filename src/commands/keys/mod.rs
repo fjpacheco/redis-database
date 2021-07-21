@@ -7,7 +7,7 @@ pub mod del;
 pub mod exists;
 pub mod expire;
 pub mod expireat;
-pub mod keys;
+pub mod key_command;
 pub mod persist;
 pub mod rename;
 pub mod sort;

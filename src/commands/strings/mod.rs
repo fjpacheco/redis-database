@@ -1,3 +1,5 @@
+use std::sync::MutexGuard;
+
 use crate::{
     database::{Database, TypeSaved},
     native_types::{ErrorStruct, RBulkString, RInteger, RedisType},
@@ -18,7 +20,7 @@ pub mod set;
 pub mod strlen;
 
 pub fn execute_value_modification(
-    database: &mut Database,
+    database: &mut MutexGuard<Database>,
     mut buffer: Vec<String>,
     op: fn(isize, isize) -> isize,
 ) -> Result<String, ErrorStruct> {
@@ -74,7 +76,7 @@ fn no_more_values(buffer: &[String], name: &str) -> Result<(), ErrorStruct> {
 }
 
 fn replace_value(
-    database: &mut Database,
+    database: &mut MutexGuard<Database>,
     key: String,
     new_value: String,
 ) -> Result<String, ErrorStruct> {

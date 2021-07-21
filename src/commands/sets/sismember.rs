@@ -1,3 +1,4 @@
+use crate::native_types::error_severity::ErrorSeverity;
 use crate::{
     commands::{check_empty, Runnable},
     database::{Database, TypeSaved},
@@ -5,11 +6,21 @@ use crate::{
     messages::redis_messages,
     native_types::{ErrorStruct, RInteger, RedisType},
 };
-
+use std::sync::{Arc, Mutex};
 pub struct Sismember;
 
-impl Runnable<Database> for Sismember {
-    fn run(&self, buffer: Vec<String>, database: &mut Database) -> Result<String, ErrorStruct> {
+impl Runnable<Arc<Mutex<Database>>> for Sismember {
+    fn run(
+        &self,
+        buffer: Vec<String>,
+        database: &mut Arc<Mutex<Database>>,
+    ) -> Result<String, ErrorStruct> {
+        let mut database = database.lock().map_err(|_| {
+            ErrorStruct::from(redis_messages::poisoned_lock(
+                "database",
+                ErrorSeverity::ShutdownServer,
+            ))
+        })?;
         check_error_cases(&buffer)?;
 
         let key = &buffer[0];
@@ -61,8 +72,11 @@ mod test_sismember_function {
         set.insert(String::from("m1"));
         set.insert(String::from("m2"));
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let mut database_mock = Database::new(notifier);
-        database_mock.insert("key".to_string(), TypeSaved::Set(set));
+        let mut database_mock = Arc::new(Mutex::new(Database::new(notifier)));
+        database_mock
+            .lock()
+            .unwrap()
+            .insert("key".to_string(), TypeSaved::Set(set));
         let buffer_mock_1 = vec_strings!["key", "m1"];
         let buffer_mock_2 = vec_strings!["key", "m2"];
 
@@ -80,8 +94,11 @@ mod test_sismember_function {
         let mut set = HashSet::new();
         set.insert(String::from("m1"));
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let mut database_mock = Database::new(notifier);
-        database_mock.insert("key".to_string(), TypeSaved::Set(set));
+        let mut database_mock = Arc::new(Mutex::new(Database::new(notifier)));
+        database_mock
+            .lock()
+            .unwrap()
+            .insert("key".to_string(), TypeSaved::Set(set));
         let buffer_mock = vec_strings!["key", "m_random"];
 
         let result_received = Sismember.run(buffer_mock, &mut database_mock);
@@ -96,8 +113,11 @@ mod test_sismember_function {
         let mut set = HashSet::new();
         set.insert(String::from("m1"));
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let mut database_mock = Database::new(notifier);
-        database_mock.insert("key".to_string(), TypeSaved::Set(set));
+        let mut database_mock = Arc::new(Mutex::new(Database::new(notifier)));
+        database_mock
+            .lock()
+            .unwrap()
+            .insert("key".to_string(), TypeSaved::Set(set));
         let buffer_mock = vec_strings!["key_random", "m_random"];
 
         let result_received = Sismember.run(buffer_mock, &mut database_mock);
@@ -109,8 +129,8 @@ mod test_sismember_function {
     #[test]
     fn test04_sismember_return_error_wrongtype_if_execute_with_key_of_string() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let mut database_mock = Database::new(notifier);
-        database_mock.insert(
+        let mut database_mock = Arc::new(Mutex::new(Database::new(notifier)));
+        database_mock.lock().unwrap().insert(
             "keyOfString".to_string(),
             TypeSaved::String("value".to_string()),
         );
@@ -128,11 +148,14 @@ mod test_sismember_function {
     #[test]
     fn test05_sismember_return_error_wrongtype_if_execute_with_key_of_list() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let mut database_mock = Database::new(notifier);
+        let mut database_mock = Arc::new(Mutex::new(Database::new(notifier)));
         let mut new_list = VecDeque::new();
         new_list.push_back("value".to_string());
         new_list.push_back("value_other".to_string());
-        database_mock.insert("keyOfList".to_string(), TypeSaved::List(new_list));
+        database_mock
+            .lock()
+            .unwrap()
+            .insert("keyOfList".to_string(), TypeSaved::List(new_list));
 
         let buffer_mock = vec_strings!["keyOfList", "value"];
 
@@ -148,7 +171,7 @@ mod test_sismember_function {
     #[test]
     fn test06_sismember_return_error_arguments_invalid_ifbuffer_has_more_than_3_arguments() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let mut database_mock = Database::new(notifier);
+        let mut database_mock = Arc::new(Mutex::new(Database::new(notifier)));
         let buffer_mock = vec_strings!["arg1", "arg2", "arg3"];
 
         let result_received = Sismember.run(buffer_mock, &mut database_mock);

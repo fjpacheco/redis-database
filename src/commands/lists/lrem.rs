@@ -1,5 +1,5 @@
-use std::collections::VecDeque;
-
+use crate::messages::redis_messages;
+use crate::native_types::error_severity::ErrorSeverity;
 use crate::{
     commands::lists::{check_empty_2, check_not_empty},
     native_types::{error::ErrorStruct, redis_type::RedisType, simple_string::RSimpleString},
@@ -9,6 +9,8 @@ use crate::{
     database::{Database, TypeSaved},
     native_types::RInteger,
 };
+use std::collections::VecDeque;
+use std::sync::{Arc, Mutex};
 
 pub struct Lrem;
 
@@ -18,8 +20,18 @@ pub struct Lrem;
 // count < 0: Remove elements equal to element moving from tail to head.
 // count = 0: Remove all elements equal to element.
 
-impl Runnable<Database> for Lrem {
-    fn run(&self, mut buffer: Vec<String>, database: &mut Database) -> Result<String, ErrorStruct> {
+impl Runnable<Arc<Mutex<Database>>> for Lrem {
+    fn run(
+        &self,
+        mut buffer: Vec<String>,
+        database: &mut Arc<Mutex<Database>>,
+    ) -> Result<String, ErrorStruct> {
+        let mut database = database.lock().map_err(|_| {
+            ErrorStruct::from(redis_messages::poisoned_lock(
+                "database",
+                ErrorSeverity::ShutdownServer,
+            ))
+        })?;
         check_not_empty(&buffer)?;
         let key = buffer.remove(0);
         check_not_empty(&buffer)?;
@@ -115,7 +127,7 @@ pub mod test_lset {
     #[test]
     fn test01_lrem_negative_count() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let mut data = Database::new(notifier);
+        let mut data = Arc::new(Mutex::new(Database::new(notifier)));
 
         let mut new_list = VecDeque::new();
         new_list.push_back("hello".to_string());
@@ -124,7 +136,7 @@ pub mod test_lset {
         new_list.push_back("hello".to_string());
 
         let key = "key".to_string();
-        data.insert(key, TypeSaved::List(new_list));
+        data.lock().unwrap().insert(key, TypeSaved::List(new_list));
 
         // redis> LREM mylist -2 "hello"
         let buffer1 = vec_strings!["key", "-2", "hello"];
@@ -145,7 +157,7 @@ pub mod test_lset {
     #[test]
     fn test02_lrem_positive_count() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let mut data = Database::new(notifier);
+        let mut data = Arc::new(Mutex::new(Database::new(notifier)));
 
         let mut new_list = VecDeque::new();
         new_list.push_back("hello".to_string());
@@ -155,7 +167,7 @@ pub mod test_lset {
 
         let key = "key".to_string();
         // let key_cpy = key.clone();
-        data.insert(key, TypeSaved::List(new_list));
+        data.lock().unwrap().insert(key, TypeSaved::List(new_list));
 
         // redis> LREM mylist -2 "hello"
         let buffer1 = vec_strings!["key", "2", "hello"];
@@ -176,7 +188,7 @@ pub mod test_lset {
     #[test]
     fn test02_lrem_count_equals_zero() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let mut data = Database::new(notifier);
+        let mut data = Arc::new(Mutex::new(Database::new(notifier)));
 
         let mut new_list = VecDeque::new();
         new_list.push_back("hello".to_string());
@@ -186,8 +198,9 @@ pub mod test_lset {
 
         let key = "key".to_string();
         // let key_cpy = key.clone();
-        data.insert(key, TypeSaved::List(new_list));
-
+        {
+            data.lock().unwrap().insert(key, TypeSaved::List(new_list));
+        }
         // redis> LREM mylist -2 "hello"
         let buffer1 = vec_strings!["key", "0", "hello"];
         let encoded1 = Lrem.run(buffer1, &mut data);

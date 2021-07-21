@@ -1,18 +1,31 @@
 use std::collections::{HashSet, VecDeque};
 
 use super::{no_more_values, pop_value};
+use crate::native_types::error_severity::ErrorSeverity;
 use crate::{
     commands::Runnable,
     database::TypeSaved,
+    messages::redis_messages,
     native_types::ErrorStruct,
     native_types::RArray,
     native_types::{RBulkString, RedisType},
     Database,
 };
+use std::sync::{Arc, Mutex};
 pub struct Sort;
 
-impl Runnable<Database> for Sort {
-    fn run(&self, mut buffer: Vec<String>, database: &mut Database) -> Result<String, ErrorStruct> {
+impl Runnable<Arc<Mutex<Database>>> for Sort {
+    fn run(
+        &self,
+        mut buffer: Vec<String>,
+        database: &mut Arc<Mutex<Database>>,
+    ) -> Result<String, ErrorStruct> {
+        let mut database = database.lock().map_err(|_| {
+            ErrorStruct::from(redis_messages::poisoned_lock(
+                "database",
+                ErrorSeverity::ShutdownServer,
+            ))
+        })?;
         let key = pop_value(&mut buffer, "Sort")?;
         no_more_values(&buffer, "Sort")?;
 
@@ -52,7 +65,7 @@ pub mod test_llen {
     #[test]
     fn test01_sorting_a_list() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let mut db = Database::new(notifier);
+        let mut db = Arc::new(Mutex::new(Database::new(notifier)));
         let _ = LPush.run(
             vec![
                 "key".to_string(),

@@ -1,16 +1,16 @@
 use crate::commands::{
     keys::{
         _type::Type, clean::Clean, copy::Copy, del::Del, exists::Exists, expire::Expire,
-        expireat::ExpireAt, keys::Keys, persist::Persist, rename::Rename, sort::Sort, touch::Touch,
-        ttl::Ttl,
+        expireat::ExpireAt, key_command::Keys, persist::Persist, rename::Rename, sort::Sort,
+        touch::Touch, ttl::Ttl,
     },
     lists::{
         lindex::LIndex, llen::Llen, lpop::LPop, lpush::LPush, lpushx::LPushx, lrange::Lrange,
         lrem::Lrem, lset::Lset, rpop::RPop, rpush::RPush, rpushx::RPushx,
     },
     pubsub::{
-        publish::Publish, pubsub::Pubsub, subscribe_cf::SubscribeCF, subscribe_cl::SubscribeCL,
-        unsubscribe_cf::UnsubscribeCF, unsubscribe_cl::UnsubscribeCL,
+        publish::Publish, pubsub_command::Pubsub, subscribe_cf::SubscribeCF,
+        subscribe_cl::SubscribeCL, unsubscribe_cf::UnsubscribeCF, unsubscribe_cl::UnsubscribeCL,
     },
     server::{
         config::Config, dbsize::Dbsize, flushdb::FlushDB, info_db::InfoDB, info_sv::InfoSV,
@@ -63,8 +63,8 @@ impl<T> RunnablesMap<T> {
         self.elements.contains_key(string)
     }
 
-    pub fn database() -> RunnablesMap<Database> {
-        let mut map: HashMap<String, Arc<BoxedCommand<Database>>> = HashMap::new();
+    pub fn database() -> RunnablesMap<Arc<Mutex<Database>>> {
+        let mut map: HashMap<String, Arc<BoxedCommand<Arc<Mutex<Database>>>>> = HashMap::new();
         map = get_runnables!(
             map, Type, Clean, Copy, Del, Exists, Expire, ExpireAt, Keys, Persist, Rename, Sort,
             Touch, Ttl, LIndex, Llen, LPop, LPush, LPushx, Lrange, Lrem, Lset, RPop, RPush, RPushx,

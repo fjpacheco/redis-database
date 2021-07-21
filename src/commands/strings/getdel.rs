@@ -1,15 +1,27 @@
+use super::{no_more_values, pop_value};
 use crate::commands::Runnable;
 use crate::database::{Database, TypeSaved};
+use crate::messages::redis_messages;
 use crate::native_types::bulk_string::RBulkString;
 use crate::native_types::error::ErrorStruct;
+use crate::native_types::error_severity::ErrorSeverity;
 use crate::native_types::redis_type::RedisType;
-
-use super::{no_more_values, pop_value};
+use std::sync::{Arc, Mutex};
 
 pub struct Getdel;
 
-impl Runnable<Database> for Getdel {
-    fn run(&self, mut buffer: Vec<String>, database: &mut Database) -> Result<String, ErrorStruct> {
+impl Runnable<Arc<Mutex<Database>>> for Getdel {
+    fn run(
+        &self,
+        mut buffer: Vec<String>,
+        database: &mut Arc<Mutex<Database>>,
+    ) -> Result<String, ErrorStruct> {
+        let mut database = database.lock().map_err(|_| {
+            ErrorStruct::from(redis_messages::poisoned_lock(
+                "database",
+                ErrorSeverity::ShutdownServer,
+            ))
+        })?;
         let key = pop_value(&mut buffer)?;
         no_more_values(&buffer, "getdel")?;
 
@@ -40,34 +52,38 @@ pub mod test_getdel {
     #[test]
     fn test01_getdel_of_an_existing_key() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let mut data = Database::new(notifier);
+        let mut data = Arc::new(Mutex::new(Database::new(notifier)));
 
-        data.insert("key".to_string(), TypeSaved::String("value".to_string()));
+        data.lock()
+            .unwrap()
+            .insert("key".to_string(), TypeSaved::String("value".to_string()));
 
         let buffer = vec_strings!["key"];
         let encoded = Getdel.run(buffer, &mut data);
 
         assert_eq!(encoded.unwrap(), "$5\r\nvalue\r\n".to_string());
-        assert_eq!(data.get("key"), None);
+        assert_eq!(data.lock().unwrap().get("key"), None);
     }
 
     #[test]
     fn test02_getdel_of_a_non_existing_key() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let mut data = Database::new(notifier);
+        let mut data = Arc::new(Mutex::new(Database::new(notifier)));
         let buffer = vec_strings!["key"];
         let encoded = Getdel.run(buffer, &mut data);
 
         assert_eq!(encoded.unwrap(), "$-1\r\n".to_string());
-        assert_eq!(data.get("key"), None);
+        assert_eq!(data.lock().unwrap().get("key"), None);
     }
 
     #[test]
     fn test03_wrong_number_of_arguments() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let mut data = Database::new(notifier);
+        let mut data = Arc::new(Mutex::new(Database::new(notifier)));
 
-        data.insert("key".to_string(), TypeSaved::String("value".to_string()));
+        data.lock()
+            .unwrap()
+            .insert("key".to_string(), TypeSaved::String("value".to_string()));
 
         let buffer = vec_strings!["key", "ahre", "mas", "argumentos"];
         let encoded = Getdel.run(buffer, &mut data);

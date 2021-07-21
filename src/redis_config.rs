@@ -210,7 +210,7 @@ impl Default for RedisConfig {
     /// * **PORT**: 6379
     fn default() -> Self {
         let ip = "127.0.0.1".into();
-        let port = "6370".into();
+        let port = "6379".into();
         let log_filename = "logs.txt".to_string();
         let verbose = 100;
         RedisConfig::new(ip, port, log_filename, "dump.rdb".to_string(), verbose).unwrap()

@@ -168,7 +168,7 @@ impl CommandsMap {
         );
         channel_map.insert(
             String::from("info"),
-            vec![Some(snd_cmd_server.clone()), Some(snd_cmd_dat.clone())],
+            vec![Some(snd_cmd_server), Some(snd_cmd_dat)],
         );
         channel_map.insert(String::from("monitor"), vec![None]);
 

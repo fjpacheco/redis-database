@@ -1,3 +1,4 @@
+use crate::native_types::error_severity::ErrorSeverity;
 use crate::{
     commands::Runnable,
     database::{Database, TypeSaved},
@@ -5,11 +6,21 @@ use crate::{
     messages::redis_messages,
     native_types::{ErrorStruct, RBulkString, RedisType},
 };
-
+use std::sync::{Arc, Mutex};
 pub struct Get;
 
-impl Runnable<Database> for Get {
-    fn run(&self, buffer: Vec<String>, database: &mut Database) -> Result<String, ErrorStruct> {
+impl Runnable<Arc<Mutex<Database>>> for Get {
+    fn run(
+        &self,
+        buffer: Vec<String>,
+        database: &mut Arc<Mutex<Database>>,
+    ) -> Result<String, ErrorStruct> {
+        let mut database = database.lock().map_err(|_| {
+            ErrorStruct::from(redis_messages::poisoned_lock(
+                "database",
+                ErrorSeverity::ShutdownServer,
+            ))
+        })?;
         check_error_cases(&buffer)?;
 
         let key = buffer[0].to_string();
@@ -51,9 +62,12 @@ mod test_get {
     fn test01_get_value_of_key_correct_is_success() {
         let buffer_mock_get = vec_strings!["key"];
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let mut database_mock = Database::new(notifier);
+        let mut database_mock = Arc::new(Mutex::new(Database::new(notifier)));
 
-        database_mock.insert("key".to_string(), TypeSaved::String("value".to_string()));
+        database_mock
+            .lock()
+            .unwrap()
+            .insert("key".to_string(), TypeSaved::String("value".to_string()));
         let result_received = Get.run(buffer_mock_get, &mut database_mock);
 
         let expected_result = RBulkString::encode("value".to_string());
@@ -64,9 +78,12 @@ mod test_get {
     fn test02_get_value_of_key_inorrect_return_result_ok_with_nil() {
         let buffer_mock_get = vec_strings!["key_other"];
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let mut database_mock = Database::new(notifier);
+        let mut database_mock = Arc::new(Mutex::new(Database::new(notifier)));
 
-        database_mock.insert("key".to_string(), TypeSaved::String("value".to_string()));
+        database_mock
+            .lock()
+            .unwrap()
+            .insert("key".to_string(), TypeSaved::String("value".to_string()));
         let result_received = Get.run(buffer_mock_get, &mut database_mock);
         let received = result_received.unwrap();
 

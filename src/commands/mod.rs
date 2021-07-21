@@ -68,7 +68,7 @@ pub trait Runnable<T> {
     /// use redis_rust::commands::Runnable;
     /// use redis_rust::commands::create_notifier;
     /// use redis_rust::vec_strings;
-    ///
+    /// use std::sync::{Arc, Mutex};
     /// fn execute<Database>(command: &dyn Runnable<Database>,
     ///            buffer: Vec<String>,
     ///            database: &mut Database)
@@ -78,7 +78,7 @@ pub trait Runnable<T> {
     /// }
     ///
     /// let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-    /// let mut database = Database::new(notifier);
+    /// let mut database = Arc::new(Mutex::new(Database::new(notifier)));
     /// let buffer = vec_strings!["key", "value"];
     /// let object_commmand = Set;
     /// let result_received = execute(&object_commmand, buffer, &mut database);
@@ -148,7 +148,7 @@ pub fn create_notifier() -> (
 
 /*
 let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-let mut db = Database::new(notifier);
+let mut db = Arc::new(Mutex::new(Database::new(notifier)));
 30,22:         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-let mut db = Database::new(notifier);
+let mut db = Arc::new(Mutex::new(Database::new(notifier)));
 */

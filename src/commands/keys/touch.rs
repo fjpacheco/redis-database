@@ -1,13 +1,26 @@
+use crate::native_types::error_severity::ErrorSeverity;
 use crate::{
     commands::Runnable,
+    messages::redis_messages,
     native_types::ErrorStruct,
     native_types::{RInteger, RedisType},
     Database,
 };
+use std::sync::{Arc, Mutex};
 pub struct Touch;
 
-impl Runnable<Database> for Touch {
-    fn run(&self, buffer: Vec<String>, database: &mut Database) -> Result<String, ErrorStruct> {
+impl Runnable<Arc<Mutex<Database>>> for Touch {
+    fn run(
+        &self,
+        buffer: Vec<String>,
+        database: &mut Arc<Mutex<Database>>,
+    ) -> Result<String, ErrorStruct> {
+        let mut database = database.lock().map_err(|_| {
+            ErrorStruct::from(redis_messages::poisoned_lock(
+                "database",
+                ErrorSeverity::ShutdownServer,
+            ))
+        })?;
         Ok(RInteger::encode(
             buffer
                 .iter()
@@ -33,10 +46,11 @@ pub mod test_touch {
         db.insert("key1".to_string(), TypeSaved::String("a".to_string()));
         db.insert("key2".to_string(), TypeSaved::String("b".to_string()));
         db.insert("key3".to_string(), TypeSaved::String("c".to_string()));
+        let mut c_db = Arc::new(Mutex::new(db));
 
         let sum = Touch.run(
             vec!["key1".to_string(), "key2".to_string(), "key3".to_string()],
-            &mut db,
+            &mut c_db,
         );
 
         assert_eq!(&sum.unwrap(), ":3\r\n");
@@ -51,7 +65,9 @@ pub mod test_touch {
         db.insert("key2".to_string(), TypeSaved::String("b".to_string()));
         db.insert("key3".to_string(), TypeSaved::String("c".to_string()));
 
-        let sum = Touch.run(vec!["key1".to_string(), "key3".to_string()], &mut db);
+        let mut c_db = Arc::new(Mutex::new(db));
+
+        let sum = Touch.run(vec!["key1".to_string(), "key3".to_string()], &mut c_db);
 
         assert_eq!(&sum.unwrap(), ":2\r\n");
     }
@@ -65,6 +81,7 @@ pub mod test_touch {
         db.insert("key2".to_string(), TypeSaved::String("b".to_string()));
         db.insert("key3".to_string(), TypeSaved::String("c".to_string()));
 
+        let mut c_db = Arc::new(Mutex::new(db));
         let sum = Touch.run(
             vec![
                 "key1".to_string(),
@@ -72,7 +89,7 @@ pub mod test_touch {
                 "key3".to_string(),
                 "key4".to_string(),
             ],
-            &mut db,
+            &mut c_db,
         );
 
         assert_eq!(&sum.unwrap(), ":3\r\n");
@@ -86,8 +103,8 @@ pub mod test_touch {
         db.insert("key1".to_string(), TypeSaved::String("a".to_string()));
         db.insert("key2".to_string(), TypeSaved::String("b".to_string()));
         db.insert("key3".to_string(), TypeSaved::String("c".to_string()));
-
-        let sum = Touch.run(vec![], &mut db);
+        let mut c_db = Arc::new(Mutex::new(db));
+        let sum = Touch.run(vec![], &mut c_db);
 
         assert_eq!(&sum.unwrap(), ":0\r\n");
     }

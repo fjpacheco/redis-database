@@ -1,14 +1,26 @@
+use super::{no_more_values, pop_value};
 use crate::commands::{check_empty, Runnable};
 use crate::database::{Database, TypeSaved};
+use crate::messages::redis_messages;
 use crate::native_types::error::ErrorStruct;
+use crate::native_types::error_severity::ErrorSeverity;
 use crate::native_types::integer::RInteger;
 use crate::native_types::redis_type::RedisType;
-
-use super::{no_more_values, pop_value};
+use std::sync::{Arc, Mutex};
 
 pub struct Append;
-impl Runnable<Database> for Append {
-    fn run(&self, mut buffer: Vec<String>, database: &mut Database) -> Result<String, ErrorStruct> {
+impl Runnable<Arc<Mutex<Database>>> for Append {
+    fn run(
+        &self,
+        mut buffer: Vec<String>,
+        database: &mut Arc<Mutex<Database>>,
+    ) -> Result<String, ErrorStruct> {
+        let mut database = database.lock().map_err(|_| {
+            ErrorStruct::from(redis_messages::poisoned_lock(
+                "database",
+                ErrorSeverity::ShutdownServer,
+            ))
+        })?;
         check_empty(&buffer, "append")?;
 
         let new_value = pop_value(&mut buffer)?;
@@ -50,16 +62,18 @@ pub mod test_append {
     #[test]
     fn test01_append_to_an_existing_key() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let mut data = Database::new(notifier);
+        let mut data = Arc::new(Mutex::new(Database::new(notifier)));
 
-        data.insert("key".to_string(), TypeSaved::String("value".to_string()));
+        data.lock()
+            .unwrap()
+            .insert("key".to_string(), TypeSaved::String("value".to_string()));
 
         let buffer = vec_strings!["key", "Appended"];
         let encoded = Append.run(buffer, &mut data);
 
         assert_eq!(encoded.unwrap(), ":13\r\n".to_string());
         assert_eq!(
-            data.get("key"),
+            data.lock().unwrap().get("key"),
             Some(&TypeSaved::String("valueAppended".to_string()))
         );
     }
@@ -67,13 +81,13 @@ pub mod test_append {
     #[test]
     fn test02_append_to_a_non_existing_key() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let mut data = Database::new(notifier);
+        let mut data = Arc::new(Mutex::new(Database::new(notifier)));
         let buffer = vec_strings!["key", "newValue"];
         let encoded = Append.run(buffer, &mut data);
 
         assert_eq!(encoded.unwrap(), ":8\r\n".to_string());
         assert_eq!(
-            data.get("key"),
+            data.lock().unwrap().get("key"),
             Some(&TypeSaved::String("newValue".to_string()))
         );
     }
@@ -81,9 +95,11 @@ pub mod test_append {
     #[test]
     fn test03_wrong_number_of_arguments() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let mut data = Database::new(notifier);
+        let mut data = Arc::new(Mutex::new(Database::new(notifier)));
 
-        data.insert("key".to_string(), TypeSaved::String("value".to_string()));
+        data.lock()
+            .unwrap()
+            .insert("key".to_string(), TypeSaved::String("value".to_string()));
 
         let buffer = vec_strings!["key"];
         let encoded = Append.run(buffer, &mut data);

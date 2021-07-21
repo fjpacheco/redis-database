@@ -1,14 +1,26 @@
+use std::sync::{Arc, Mutex};
+
 use crate::{
     commands::{check_empty, Runnable},
     database::{Database, TypeSaved},
     messages::redis_messages,
-    native_types::{ErrorStruct, RSimpleString, RedisType},
+    native_types::{error_severity::ErrorSeverity, ErrorStruct, RSimpleString, RedisType},
 };
 
 pub struct Set;
 
-impl Runnable<Database> for Set {
-    fn run(&self, buffer: Vec<String>, database: &mut Database) -> Result<String, ErrorStruct> {
+impl Runnable<Arc<Mutex<Database>>> for Set {
+    fn run(
+        &self,
+        buffer: Vec<String>,
+        database: &mut Arc<Mutex<Database>>,
+    ) -> Result<String, ErrorStruct> {
+        let mut database = database.lock().map_err(|_| {
+            ErrorStruct::from(redis_messages::poisoned_lock(
+                "database",
+                ErrorSeverity::ShutdownServer,
+            ))
+        })?;
         check_error_cases(&buffer)?;
 
         let value = buffer[1].to_string();
@@ -55,7 +67,7 @@ mod test_set_function {
     fn test01_set_key_and_value_return_ok() {
         let buffer_mock = vec_strings!["key", "value"];
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let mut database_mock = Database::new(notifier);
+        let mut database_mock = Arc::new(Mutex::new(Database::new(notifier)));
 
         let result_received = Set.run(buffer_mock, &mut database_mock);
 
@@ -67,11 +79,11 @@ mod test_set_function {
     fn test02_set_key_and_value_save_correctly_in_database_mock() {
         let buffer_mock_set = vec_strings!["key", "value"];
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let mut database_mock = Database::new(notifier);
+        let mut database_mock = Arc::new(Mutex::new(Database::new(notifier)));
 
         let _ = Set.run(buffer_mock_set, &mut database_mock);
         let mut get_received = String::new();
-        if let TypeSaved::String(item) = database_mock.get("key").unwrap() {
+        if let TypeSaved::String(item) = database_mock.lock().unwrap().get("key").unwrap() {
             get_received = RBulkString::encode(item.to_string());
         }
 
@@ -83,11 +95,13 @@ mod test_set_function {
     fn test03_set_key_and_value_but_get_another_key_return_none() {
         let buffer_mock = vec_strings!["key", "value"];
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let mut database_mock = Database::new(notifier);
+        let mut database_mock = Arc::new(Mutex::new(Database::new(notifier)));
 
         let _ = Set.run(buffer_mock, &mut database_mock);
         let mut get_received = String::new();
         if let TypeSaved::String(item) = database_mock
+            .lock()
+            .unwrap()
             .get("key2")
             .unwrap_or(&TypeSaved::String("(nil)".to_string()))
         {
@@ -102,7 +116,7 @@ mod test_set_function {
     fn test04_set_without_value_and_key_return_err_syntax() {
         let buffer_mock = vec_strings!["set", "set", "set", "set"];
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let mut database_mock = Database::new(notifier);
+        let mut database_mock = Arc::new(Mutex::new(Database::new(notifier)));
 
         let result_received = Set.run(buffer_mock, &mut database_mock);
         let result_received_encoded = result_received.unwrap_err().get_encoded_message_complete();
