@@ -1,9 +1,13 @@
 use std::collections::VecDeque;
 
-use crate::{commands::{Runnable, get_as_integer}, database::{Database, TypeSaved}, native_types::RInteger};
 use crate::{
     commands::lists::{check_empty_2, check_not_empty},
     native_types::{error::ErrorStruct, redis_type::RedisType, simple_string::RSimpleString},
+};
+use crate::{
+    commands::{get_as_integer, Runnable},
+    database::{Database, TypeSaved},
+    native_types::RInteger,
 };
 
 pub struct Lrem;

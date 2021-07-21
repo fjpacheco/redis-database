@@ -3,8 +3,8 @@ use crate::tcp_protocol::BoxedCommand;
 use std::sync::mpsc::{Receiver, Sender};
 use std::sync::Arc;
 use std::sync::Mutex;
-use std::thread::JoinHandle;
 use std::thread;
+use std::thread::JoinHandle;
 
 use super::{commands_map::CommandsMap, notifier::Notifier};
 use super::{RawCommand, Response};
@@ -149,7 +149,7 @@ fn delegate_jobs(
 }
 
 fn case_client_status(
-    command_buffer: Vec<String>,
+    mut command_buffer: Vec<String>,
     response_sender: Sender<Response>,
     client_status: Arc<Mutex<ClientFields>>,
 ) -> Result<(), ErrorStruct> {
@@ -162,7 +162,7 @@ fn case_client_status(
             ))
         })?
         .review_command(&command_buffer);
-
+    command_buffer.remove(0);
     match review {
         Ok(allowed_command) => {
             run_command(
@@ -230,9 +230,9 @@ pub mod test_command_delegator {
         database::Database,
         native_types::{RError, RedisType},
     };
-    use std::{sync::atomic::AtomicBool, collections::HashMap};
     use std::sync::mpsc;
     use std::sync::Arc;
+    use std::{collections::HashMap, sync::atomic::AtomicBool};
 
     use super::*;
     use crate::commands::lists::lpop::LPop;
@@ -256,7 +256,8 @@ pub mod test_command_delegator {
 
         let (snd_cmd_dat, rcv_cmd_dat) = mpsc::channel();
 
-        let mut channel_map: HashMap<String, Vec<Option<Sender<Option<RawCommand>>>>> = HashMap::new();
+        let mut channel_map: HashMap<String, Vec<Option<Sender<Option<RawCommand>>>>> =
+            HashMap::new();
         channel_map.insert(String::from("lpush"), vec![Some(snd_cmd_dat.clone())]);
         channel_map.insert(String::from("lpop"), vec![Some(snd_cmd_dat.clone())]);
         channel_map.insert(String::from("lset"), vec![Some(snd_cmd_dat.clone())]);
@@ -366,7 +367,8 @@ pub mod test_command_delegator {
 
         let (snd_cmd_dat, rcv_cmd_dat) = mpsc::channel();
 
-        let mut channel_map: HashMap<String, Vec<Option<Sender<Option<RawCommand>>>>> = HashMap::new();
+        let mut channel_map: HashMap<String, Vec<Option<Sender<Option<RawCommand>>>>> =
+            HashMap::new();
         channel_map.insert(String::from("lpop"), vec![Some(snd_cmd_dat.clone())]);
         channel_map.insert(String::from("lset"), vec![Some(snd_cmd_dat.clone())]);
 
@@ -421,4 +423,3 @@ pub mod test_command_delegator {
         let _ = database_command_delegator.join();
     }
 }
-  

@@ -53,6 +53,8 @@ impl ServerRedisAtributes {
             })?
             .info(&mut info);
 
+        println!("{:?}", info);
+
         Ok(info)
     }
 

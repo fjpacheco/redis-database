@@ -1,68 +1,25 @@
 use crate::commands::{
     keys::{
-        _type::Type,
-        clean::Clean,
-        copy::Copy,
-        del::Del,
-        exists::Exists,
-        expire::Expire,
-        expireat::ExpireAt,
-        keys::Keys,
-        persist::Persist,
-        rename::Rename,
-        sort::Sort,
-        touch::Touch,
-        ttl::Ttl
+        _type::Type, clean::Clean, copy::Copy, del::Del, exists::Exists, expire::Expire,
+        expireat::ExpireAt, keys::Keys, persist::Persist, rename::Rename, sort::Sort, touch::Touch,
+        ttl::Ttl,
     },
     lists::{
-        lindex::LIndex,
-        llen::Llen,
-        lpop::LPop,
-        lpush::LPush,
-        lpushx::LPushx,
-        lrange::Lrange,
-        lrem::Lrem,
-        lset::Lset,
-        rpop::RPop,
-        rpush::RPush,
-        rpushx::RPushx
+        lindex::LIndex, llen::Llen, lpop::LPop, lpush::LPush, lpushx::LPushx, lrange::Lrange,
+        lrem::Lrem, lset::Lset, rpop::RPop, rpush::RPush, rpushx::RPushx,
     },
     pubsub::{
-        publish::Publish,
-        pubsub::Pubsub,
-        subscribe_cf::SubscribeCF,
-        subscribe_cl::SubscribeCL,
-        unsubscribe_cf::UnsubscribeCF,
-        unsubscribe_cl::UnsubscribeCL,
+        publish::Publish, pubsub::Pubsub, subscribe_cf::SubscribeCF, subscribe_cl::SubscribeCL,
+        unsubscribe_cf::UnsubscribeCF, unsubscribe_cl::UnsubscribeCL,
     },
     server::{
-        config::Config,
-        dbsize::Dbsize,
-        flushdb::FlushDB,
-        info_db::InfoDB,
-        info_sv::InfoSV,
-        monitor::Monitor,
-        notify_monitors::NotifyMonitors,
-        shutdown::Shutdown,
+        config::Config, dbsize::Dbsize, flushdb::FlushDB, info_db::InfoDB, info_sv::InfoSV,
+        monitor::Monitor, notify_monitors::NotifyMonitors, shutdown::Shutdown,
     },
-    sets::{
-        sadd::Sadd,
-        scard::Scard,
-        sismember::Sismember,
-        smembers::Smembers,
-        srem::Srem,
-    },
+    sets::{sadd::Sadd, scard::Scard, sismember::Sismember, smembers::Smembers, srem::Srem},
     strings::{
-        append::Append,
-        decrby::Decrby,
-        get::Get,
-        getdel::Getdel,
-        getset::Getset,
-        incrby::Incrby,
-        mget::Mget,
-        mset::Mset,
-        set::Set,
-        strlen::Strlen
+        append::Append, decrby::Decrby, get::Get, getdel::Getdel, getset::Getset, incrby::Incrby,
+        mget::Mget, mset::Mset, set::Set, strlen::Strlen,
     },
 };
 
@@ -109,15 +66,16 @@ impl<T> RunnablesMap<T> {
     pub fn database() -> RunnablesMap<Database> {
         let mut map: HashMap<String, Arc<BoxedCommand<Database>>> = HashMap::new();
         map = get_runnables!(
-            map, Type, Clean, Copy, Del, Exists, Expire, ExpireAt, Keys, Persist, Rename,
-            Sort, Touch, Ttl, LIndex, Llen, LPop, LPush, LPushx, Lrange, Lrem, Lset, RPop,
-            RPush, RPushx, Dbsize, FlushDB, Sadd, Scard, Sismember, Smembers, Srem,
-            Append, Decrby, Get, Getdel, Getset, Incrby, Mget, Mset, Set, Strlen
+            map, Type, Clean, Copy, Del, Exists, Expire, ExpireAt, Keys, Persist, Rename, Sort,
+            Touch, Ttl, LIndex, Llen, LPop, LPush, LPushx, Lrange, Lrem, Lset, RPop, RPush, RPushx,
+            Dbsize, FlushDB, Sadd, Scard, Sismember, Smembers, Srem, Append, Decrby, Get, Getdel,
+            Getset, Incrby, Mget, Mset, Set, Strlen
         );
-        map.insert("info".to_string().to_lowercase(), Arc::new(Box::new(InfoDB)));
-        RunnablesMap {
-            elements: map
-        }
+        map.insert(
+            "info".to_string().to_lowercase(),
+            Arc::new(Box::new(InfoDB)),
+        );
+        RunnablesMap { elements: map }
     }
 
     pub fn server() -> RunnablesMap<ServerRedisAtributes> {
@@ -149,15 +107,20 @@ impl<T> RunnablesMap<T> {
         );
 
         RunnablesMap { elements: map }*/
-        map = get_runnables!(
-            map, Publish, Pubsub, Config, NotifyMonitors, Shutdown
+        map = get_runnables!(map, Publish, Pubsub, Config, NotifyMonitors, Shutdown);
+        map.insert(
+            "subscribe".to_string().to_lowercase(),
+            Arc::new(Box::new(SubscribeCL)),
         );
-        map.insert("subscribe".to_string().to_lowercase(), Arc::new(Box::new(SubscribeCL)));
-        map.insert("unsubscribe".to_string().to_lowercase(), Arc::new(Box::new(UnsubscribeCL)));
-        map.insert("info".to_string().to_lowercase(), Arc::new(Box::new(InfoSV)));
-        RunnablesMap {
-            elements: map,
-        }
+        map.insert(
+            "unsubscribe".to_string().to_lowercase(),
+            Arc::new(Box::new(UnsubscribeCL)),
+        );
+        map.insert(
+            "info".to_string().to_lowercase(),
+            Arc::new(Box::new(InfoSV)),
+        );
+        RunnablesMap { elements: map }
     }
 
     pub fn client_list() -> RunnablesMap<Arc<Mutex<ClientList>>> {
@@ -168,14 +131,8 @@ impl<T> RunnablesMap<T> {
     // Hace falta agregarle metodos de ejecutor
     pub fn executor() -> RunnablesMap<Arc<Mutex<ClientFields>>> {
         let mut map: HashMap<String, Arc<BoxedCommand<Arc<Mutex<ClientFields>>>>> = HashMap::new();
-        map.insert(
-            String::from("monitor"),
-            Arc::new(Box::new(Monitor)),
-        );
-        map.insert(
-            String::from("subscribe"),
-            Arc::new(Box::new(SubscribeCF)),
-        );
+        map.insert(String::from("monitor"), Arc::new(Box::new(Monitor)));
+        map.insert(String::from("subscribe"), Arc::new(Box::new(SubscribeCF)));
         map.insert(
             String::from("unsubscribe"),
             Arc::new(Box::new(UnsubscribeCF)),
@@ -185,17 +142,11 @@ impl<T> RunnablesMap<T> {
 
     pub fn subscriber() -> RunnablesMap<Arc<Mutex<ClientFields>>> {
         let mut map: HashMap<String, Arc<BoxedCommand<Arc<Mutex<ClientFields>>>>> = HashMap::new();
-        map.insert(
-            String::from("subscribe"),
-            Arc::new(Box::new(SubscribeCF)),
-        );
+        map.insert(String::from("subscribe"), Arc::new(Box::new(SubscribeCF)));
         map.insert(
             String::from("unsubscribe"),
             Arc::new(Box::new(UnsubscribeCF)),
         );
         RunnablesMap { elements: map }
     }
-
 }
-
-

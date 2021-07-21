@@ -1,6 +1,6 @@
-use std::sync::mpsc::Sender;
-use std::collections::HashMap;
 use super::RawCommand;
+use std::collections::HashMap;
+use std::sync::mpsc::Sender;
 
 pub struct CommandsMap {
     channel_map: HashMap<String, Vec<Option<Sender<Option<RawCommand>>>>>,
@@ -27,7 +27,9 @@ impl CommandsMap {
         })
     }
 
-    pub fn new(channel_map: HashMap<String, Vec<Option<Sender<Option<RawCommand>>>>>) -> CommandsMap {
+    pub fn new(
+        channel_map: HashMap<String, Vec<Option<Sender<Option<RawCommand>>>>>,
+    ) -> CommandsMap {
         CommandsMap { channel_map }
     }
 
@@ -87,10 +89,10 @@ impl CommandsMap {
 
     pub fn default(
         snd_cmd_dat: Sender<Option<RawCommand>>,
-        snd_cmd_server: Sender<Option<RawCommand>>
+        snd_cmd_server: Sender<Option<RawCommand>>,
     ) -> CommandsMap {
-
-        let mut channel_map: HashMap<String, Vec<Option<Sender<Option<RawCommand>>>>> = HashMap::new();
+        let mut channel_map: HashMap<String, Vec<Option<Sender<Option<RawCommand>>>>> =
+            HashMap::new();
 
         // asociacion de comandos con database
 
@@ -153,25 +155,33 @@ impl CommandsMap {
                 "notifymonitors".to_string(),
                 "shutdown".to_string(),
             ],
-            snd_cmd_server.clone()
+            snd_cmd_server.clone(),
         );
 
-        channel_map.insert(String::from("subscribe"), vec![None, Some(snd_cmd_server.clone())]);
-        channel_map.insert(String::from("unsubscribe"), vec![None, Some(snd_cmd_server.clone())]);
-        channel_map.insert(String::from("info"), vec![Some(snd_cmd_server.clone()), Some(snd_cmd_dat.clone())]);
+        channel_map.insert(
+            String::from("subscribe"),
+            vec![None, Some(snd_cmd_server.clone())],
+        );
+        channel_map.insert(
+            String::from("unsubscribe"),
+            vec![None, Some(snd_cmd_server.clone())],
+        );
+        channel_map.insert(
+            String::from("info"),
+            vec![Some(snd_cmd_server.clone()), Some(snd_cmd_dat.clone())],
+        );
         channel_map.insert(String::from("monitor"), vec![None]);
 
         CommandsMap { channel_map }
     }
 
-    fn foo(map: &mut HashMap<String, Vec<Option<Sender<Option<RawCommand>>>>>, 
-        commands: Vec<String>, 
-        sender: Sender<Option<RawCommand>>) {
-
+    fn foo(
+        map: &mut HashMap<String, Vec<Option<Sender<Option<RawCommand>>>>>,
+        commands: Vec<String>,
+        sender: Sender<Option<RawCommand>>,
+    ) {
         for cmd in commands.iter() {
             map.insert(String::from(cmd), vec![Some(sender.clone())]);
         }
-
     }
-
 }

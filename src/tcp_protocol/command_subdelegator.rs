@@ -184,8 +184,13 @@ pub mod test_database_command_delegator {
 
         let (tx1, rx1) = mpsc::channel();
 
-        let _database_command_delegator_recv =
-            CommandSubDelegator::start::<Database>(tx1.clone(), rx1, runnables_map, database, notifier.clone());
+        let _database_command_delegator_recv = CommandSubDelegator::start::<Database>(
+            tx1.clone(),
+            rx1,
+            runnables_map,
+            database,
+            notifier.clone(),
+        );
 
         let (tx2, rx2): (Sender<Response>, Receiver<Response>) = mpsc::channel();
         let buffer_mock = vec_strings!["set", "key", "value"];
@@ -237,8 +242,13 @@ pub mod test_database_command_delegator {
 
         let (tx1, rx1) = mpsc::channel();
 
-        let _database_command_delegator_recv =
-            CommandSubDelegator::start::<Database>(tx1.clone(), rx1, runnables_map, database, notifier.clone());
+        let _database_command_delegator_recv = CommandSubDelegator::start::<Database>(
+            tx1.clone(),
+            rx1,
+            runnables_map,
+            database,
+            notifier.clone(),
+        );
 
         let (tx2, rx2): (Sender<Response>, Receiver<Response>) = mpsc::channel();
         let buffer_mock = vec_strings!["set", "key", "value"];
@@ -281,7 +291,7 @@ pub mod test_database_command_delegator {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let database = Database::new(notifier);
 
-        let (tx1, rx1)= mpsc::channel();
+        let (tx1, rx1) = mpsc::channel();
         let (snd_log_test, _b): (Sender<Option<LogMessage>>, Receiver<Option<LogMessage>>) =
             mpsc::channel();
 
@@ -294,8 +304,13 @@ pub mod test_database_command_delegator {
             "test_addr".into(),
         );
 
-        let _database_command_delegator_recv =
-            CommandSubDelegator::start::<Database>(tx1.clone(),rx1, runnables_map, database, notifier.clone());
+        let _database_command_delegator_recv = CommandSubDelegator::start::<Database>(
+            tx1.clone(),
+            rx1,
+            runnables_map,
+            database,
+            notifier.clone(),
+        );
         let (tx2, rx2): (Sender<Response>, Receiver<Response>) = mpsc::channel();
         let buffer_mock = vec![
             "rpush".to_string(),

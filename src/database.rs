@@ -53,25 +53,28 @@ impl Database {
         notifier: Notifier,
     ) -> Result<Self, ErrorStruct> {
         let mut elements = HashMap::new();
-        let file = File::open(config
-            .lock()
-            .map_err(|_| { ErrorStruct::from(
-                redis_messages::poisoned_lock(
-                    "redis config",
-                    crate::native_types::error_severity::ErrorSeverity::ShutdownServer,
-                ))
-            })?
-            .db_filename()).map_err(|_| { ErrorStruct::from(
-            redis_messages::init_failed(
+        let file = File::open(
+            config
+                .lock()
+                .map_err(|_| {
+                    ErrorStruct::from(redis_messages::poisoned_lock(
+                        "redis config",
+                        crate::native_types::error_severity::ErrorSeverity::ShutdownServer,
+                    ))
+                })?
+                .db_filename(),
+        )
+        .map_err(|_| {
+            ErrorStruct::from(redis_messages::init_failed(
                 "dbfile name",
                 crate::native_types::error_severity::ErrorSeverity::ShutdownServer,
             ))
         })?; //Deberia devolver Result o algo asi
         let reader = BufReader::new(file);
         let mut lines = reader.lines();
-            while let Some(line) = lines.next() {
-                match line {
-                    Ok(line) => {
+        while let Some(line) = lines.next() {
+            match line {
+                Ok(line) => {
                     let expire_info = get_expire_info(line.clone(), &mut lines)?;
                     let type_decoded = decode_case(&mut lines)?;
                     let key_decoded = decode_key(&mut lines)?;
@@ -85,7 +88,7 @@ impl Database {
                     ));
                 }
             }
-        };
+        }
 
         Ok(Database {
             elements,

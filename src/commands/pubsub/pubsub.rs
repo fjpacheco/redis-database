@@ -1,6 +1,6 @@
 use crate::{
     commands::{
-        pubsub::{channels::Channels, numsub::Numsub, pop_value},
+        pubsub::{channels::Channels, numsub::Numsub},
         Runnable,
     },
     messages::redis_messages,
@@ -16,14 +16,20 @@ impl Runnable<ServerRedisAtributes> for Pubsub {
         mut buffer: Vec<String>,
         server: &mut ServerRedisAtributes,
     ) -> Result<String, ErrorStruct> {
-        let mut subcommand = pop_value(&mut buffer, "pubsub")?;
-        subcommand.make_ascii_lowercase();
-        match subcommand.as_str() {
-            "channels" => Channels.run(buffer, server),
-            "numsub" => Numsub.run(buffer, server),
-            _ => Err(ErrorStruct::from(redis_messages::unknown_command(
-                subcommand, buffer,
-            ))),
+        if !buffer.is_empty() {
+            let mut subcommand = buffer.remove(0);
+            subcommand.make_ascii_lowercase();
+            match subcommand.as_str() {
+                "channels" => Channels.run(buffer, server),
+                "numsub" => Numsub.run(buffer, server),
+                _ => Err(ErrorStruct::from(redis_messages::unknown_command(
+                    subcommand, buffer,
+                ))),
+            }
+        } else {
+            Err(ErrorStruct::from(redis_messages::wrong_number_args_for(
+                "pubsub",
+            )))
         }
     }
 }

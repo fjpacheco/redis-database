@@ -1,12 +1,12 @@
-use crate::communication::log_messages::LogMessage;
 use crate::tcp_protocol::close_thread;
-use std::thread::JoinHandle;
+use crate::{communication::log_messages::LogMessage, native_types::RError};
 use std::{
     io::{BufRead, BufReader, Lines, Write},
     net::{Shutdown, SocketAddr, SocketAddrV4, TcpStream},
     sync::{mpsc, Arc, Mutex},
     thread,
 };
+use std::{sync::mpsc::Sender, thread::JoinHandle};
 
 use crate::joinable::Joinable;
 use crate::messages::redis_messages;
@@ -176,43 +176,32 @@ fn listen_while_client(
     notifier: &Notifier,
     response_snd: mpsc::Sender<Option<String>>,
 ) -> Result<(), ErrorStruct> {
-    let mut response;
     while let Some(received) = lines.next() {
         match received {
             Ok(input) => {
                 if input.starts_with('*') {
-                    response = process_command_redis(input, &mut lines, c_shared_fields, notifier);
+                    process_command_redis(
+                        input,
+                        &mut lines,
+                        c_shared_fields,
+                        notifier,
+                        &response_snd,
+                    )?;
                 } else {
-                    response = process_other(input, c_shared_fields, notifier);
+                    process_other(input, c_shared_fields, notifier, &response_snd)?;
                 }
             }
             Err(err) => match err.kind() {
                 std::io::ErrorKind::WouldBlock => {
-                    return Err(ErrorStruct::from(redis_messages::client_timeout_expired()));
+                    return Ok(());
                 }
                 _ => {
-                    response = Err(ErrorStruct::new(
+                    return Err(ErrorStruct::new(
                         "ERR".to_string(),
                         format!("Error received in next line.\nDetail: {:?}", err),
                     ))
                 }
             },
-        }
-
-        match response {
-            Ok(item) => {
-                send_response(item, &response_snd)?;
-            }
-            Err(error) => {
-                if let Some(severity) = error.severity() {
-                    match severity {
-                        ErrorSeverity::Comunicate => {
-                            send_response(error.print_it(), &response_snd)?;
-                        }
-                        _ => return Err(error),
-                    }
-                }
-            }
         }
     }
     Ok(())
@@ -223,16 +212,24 @@ fn process_command_redis(
     mut lines_buffer_reader: &mut Lines<BufReader<TcpStream>>,
     client_status: &Arc<Mutex<ClientFields>>,
     notifier: &Notifier,
-) -> Result<String, ErrorStruct> {
+    response_sender: &Sender<Option<String>>,
+) -> Result<(), ErrorStruct> {
     input.remove(0);
-    process_command_general(input, &mut lines_buffer_reader, client_status, notifier)
+    process_command_general(
+        input,
+        &mut lines_buffer_reader,
+        client_status,
+        notifier,
+        response_sender,
+    )
 }
 
 fn process_other(
     input: String,
     client_status: &Arc<Mutex<ClientFields>>,
     notifier: &Notifier,
-) -> Result<String, ErrorStruct> {
+    response_sender: &Sender<Option<String>>,
+) -> Result<(), ErrorStruct> {
     let mut input_encoded = encode_netcat_input(input)?;
     input_encoded.remove(0);
     let mut lines = BufReader::new(input_encoded.as_bytes()).lines();
@@ -240,7 +237,13 @@ fn process_other(
         .next()
         .ok_or_else(|| ErrorStruct::from(redis_messages::empty_buffer()))?
         .map_err(|_| ErrorStruct::from(redis_messages::normal_error()))?;
-    process_command_general(first_lecture, &mut lines, client_status, &notifier)
+    process_command_general(
+        first_lecture,
+        &mut lines,
+        client_status,
+        &notifier,
+        response_sender,
+    )
 }
 
 fn process_command_general<G>(
@@ -248,12 +251,13 @@ fn process_command_general<G>(
     lines_buffer_reader: &mut Lines<G>,
     client_status: &Arc<Mutex<ClientFields>>,
     notifier: &Notifier,
-) -> Result<String, ErrorStruct>
+    response_sender: &Sender<Option<String>>,
+) -> Result<(), ErrorStruct>
 where
     G: BufRead,
 {
     let command_vec = RArray::decode(first_lecture, lines_buffer_reader)?;
-    client_status
+    let result = client_status
         .lock()
         .map_err(|_| {
             ErrorStruct::from(redis_messages::poisoned_lock(
@@ -261,15 +265,20 @@ where
                 ErrorSeverity::CloseClient,
             ))
         })?
-        .is_allowed_to(&command_vec[0])?;
-    delegate_command(command_vec, client_status, notifier)
+        .is_allowed_to(&command_vec[0]);
+
+    match result {
+        Ok(()) => delegate_command(command_vec, client_status, notifier, response_sender),
+        Err(error) => send_response(RError::encode(error), response_sender),
+    }
 }
 
 fn delegate_command(
     command_received: Vec<String>,
     client_fields: &Arc<Mutex<ClientFields>>,
     notifier: &Notifier,
-) -> Result<String, ErrorStruct> {
+    response_sender: &Sender<Option<String>>,
+) -> Result<(), ErrorStruct> {
     let command_received_initial = command_received.clone();
     let (sender, receiver): (mpsc::Sender<Response>, mpsc::Receiver<Response>) = mpsc::channel();
     notifier.send_command_delegator(Some((
@@ -277,17 +286,29 @@ fn delegate_command(
         sender,
         Arc::clone(&client_fields),
     )))?;
-
-    match receiver
-        .recv()
-        .map_err(|_| ErrorStruct::from(redis_messages::closed_sender(ErrorSeverity::Comunicate)))?
-    {
-        Ok(good_string) => {
-            notifier.notify_successful_shipment(&client_fields, command_received_initial)?;
-            Ok(good_string)
+    for response in receiver.iter() {
+        match response {
+            Ok(good_string) => {
+                send_response(good_string, response_sender)?;
+            }
+            Err(error) => {
+                if let Some(severity) = error.severity() {
+                    match severity {
+                        ErrorSeverity::Comunicate => {
+                            send_response(RError::encode(error), response_sender)?
+                        }
+                        ErrorSeverity::CloseClient => return Err(error),
+                        ErrorSeverity::ShutdownServer => {
+                            notifier.force_shutdown_server(error.print_it());
+                            return Err(error);
+                        }
+                    }
+                }
+            }
         }
-        Err(error) => Err(error),
     }
+    notifier.notify_successful_shipment(&client_fields, command_received_initial.clone())?;
+    Ok(())
 }
 
 pub fn get_peer(stream: &TcpStream) -> Result<SocketAddrV4, ErrorStruct> {
@@ -321,14 +342,6 @@ impl Joinable<()> for ClientHandler {
     fn join(&mut self) -> Result<(), ErrorStruct> {
         let _ = self.stream.shutdown(Shutdown::Both);
         let _ = self.response_snd.send(None);
-        /*match self.stream.shutdown(Shutdown::Both) {
-            Ok(()) => { /* Socket has been closed right now */ }
-            Err(_) => { /* Socket is already closed */ }
-        }
-        match self.response_snd.send(None) {
-            Ok(()) => { /* Channel has been closed right now */ }
-            Err(_) => { /* Channel is already closed */ }
-        }*/
 
         let state = close_thread(
             self.out_thread.take(),

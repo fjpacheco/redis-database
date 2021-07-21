@@ -117,8 +117,6 @@ impl Joinable<()> for GarbageCollector {
     }
 }
 
-
-
 #[cfg(test)]
 
 mod test_garbage_collector {
@@ -126,9 +124,7 @@ mod test_garbage_collector {
     use std::sync::mpsc::{Receiver, Sender};
 
     use super::*;
-    use crate::{
-        native_types::{RSimpleString, RedisType},
-    };
+    use crate::native_types::{RSimpleString, RedisType};
 
     // Para probar los test 1 y 3, hagan fallar el test
     // y verifiquen que se imprima un mensaje indicando que
@@ -160,13 +156,11 @@ mod test_garbage_collector {
     #[test]
     #[ignore]
     fn test02_garbage_collector_send_the_correct_command() {
-        let (snd_col_test, rcv_col_test) =
-            mpsc::channel();
+        let (snd_col_test, rcv_col_test) = mpsc::channel();
 
-        let (snd_test_cmd, _rcv_test_cmd)= mpsc::channel();
+        let (snd_test_cmd, _rcv_test_cmd) = mpsc::channel();
 
-        let (snd_log_test, _) =
-            mpsc::channel();
+        let (snd_log_test, _) = mpsc::channel();
 
         let notifier = Notifier::new(
             snd_log_test.clone(),
@@ -187,12 +181,10 @@ mod test_garbage_collector {
     #[test]
     #[ignore]
     fn test03_returning_an_error_drops_the_garbage_collector() {
-        let (snd_col_test, rcv_col_test) =
-            mpsc::channel();
+        let (snd_col_test, rcv_col_test) = mpsc::channel();
         let (snd_test_cmd, _rcv_test_cmd) = mpsc::channel();
 
-        let (snd_log_test, _) =
-            mpsc::channel();
+        let (snd_log_test, _) = mpsc::channel();
 
         let notifier = Notifier::new(
             snd_log_test.clone(),

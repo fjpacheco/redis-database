@@ -16,8 +16,8 @@ use crate::{
 };
 
 use super::{
-    client_list::ClientList, commands_map::CommandsMap,
-    command_subdelegator::CommandSubDelegator, notifier::Notifier,
+    client_list::ClientList, command_subdelegator::CommandSubDelegator, commands_map::CommandsMap,
+    notifier::Notifier,
 };
 
 #[derive(Clone)]
@@ -105,9 +105,9 @@ impl ServerRedis {
             Ok(())
         });*/
         // ################## ListenerProcessor ##################
-        
+
         ListenerProcessor::incoming(listener, server_redis, notifier);
-   //     database.take_snapshot(notifier);
+        //     database.take_snapshot(notifier);
 
         // ################## FINISH SERVER ##################
         command_delegator.join()?;

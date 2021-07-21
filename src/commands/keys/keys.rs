@@ -24,7 +24,7 @@ impl Runnable<Database> for Keys {
 mod test_keys {
 
     use super::*;
-    use crate::{database::TypeSaved, commands::create_notifier};
+    use crate::{commands::create_notifier, database::TypeSaved};
 
     fn default_database() -> Database {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();

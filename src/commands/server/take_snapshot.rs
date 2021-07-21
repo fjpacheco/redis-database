@@ -1,4 +1,3 @@
-
 use crate::{
     commands::Runnable,
     database::Database,
@@ -10,7 +9,6 @@ pub struct Save;
 
 impl Runnable<Database> for Save {
     fn run(&self, buffer: Vec<String>, database: &mut Database) -> Result<String, ErrorStruct> {
-        
         //
 
         Ok(RSimpleString::encode(redis_messages::ok()))
