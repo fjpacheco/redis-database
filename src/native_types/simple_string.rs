@@ -2,6 +2,7 @@ use std::io::{BufRead, Lines};
 
 use super::{error::ErrorStruct, redis_type::RedisType};
 
+/// Redis native type: Simple String
 pub struct RSimpleString;
 
 impl RedisType<String> for RSimpleString {

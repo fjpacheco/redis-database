@@ -7,12 +7,18 @@ use std::{
 
 use crate::tcp_protocol::client_atributes::client_fields::ClientFields;
 
+/// This structure contains the message that
+/// should be dumped into the log file, and
+/// a number that represents the verbose
+/// priority, that indicates if the message
+/// should be printed through standar output.
 pub struct LogMessage {
     verbose_priority: usize,
     message: Option<String>,
 }
 
 impl LogMessage {
+    /// Creates the log message.
     pub fn new(verbose_priority: usize, message: String) -> LogMessage {
         LogMessage {
             verbose_priority,
@@ -20,6 +26,7 @@ impl LogMessage {
         }
     }
 
+    /// Creates the log message from an ErrorStruct.
     pub fn from_errorstruct(error: ErrorStruct) -> LogMessage {
         LogMessage {
             verbose_priority: 1,
@@ -27,6 +34,7 @@ impl LogMessage {
         }
     }
 
+    /// Returns the message if the verbose value match.
     pub fn is_verbosely_printable(&self, verbose: &usize) -> Option<&String> {
         if *verbose > self.verbose_priority {
             self.message.as_ref()
@@ -35,6 +43,7 @@ impl LogMessage {
         }
     }
 
+    // Removes and return the message.
     pub fn take_message(&mut self) -> Option<String> {
         self.message.take()
     }

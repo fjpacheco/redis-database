@@ -8,10 +8,15 @@ use std::time::SystemTime;
 use std::time::UNIX_EPOCH;
 
 #[derive(Clone)]
+/// This structure contains information about the
+/// time to live of a key. It has the instant of
+/// the last access to the key, and the value of
+/// the timeout of the key (if there is one).
 pub struct ExpireInfo {
     last_touch: SystemTime,
     timeout: Option<Duration>,
 }
+
 impl Default for ExpireInfo {
     fn default() -> Self {
         Self::new()
@@ -19,6 +24,7 @@ impl Default for ExpireInfo {
 }
 
 impl ExpireInfo {
+    // Creates the structure
     pub fn new() -> ExpireInfo {
         ExpireInfo {
             last_touch: SystemTime::now(),
@@ -26,6 +32,7 @@ impl ExpireInfo {
         }
     }
 
+    /// Evaluates if the timeout has ended.
     #[allow(clippy::branches_sharing_code)]
     pub fn is_expired(&mut self, notifier: Option<Arc<Mutex<Notifier>>>, key_name: &str) -> bool {
         if self.timeout.is_some() {
@@ -37,6 +44,8 @@ impl ExpireInfo {
         }
     }
 
+    /// Updates the last access to the info and
+    /// the remaining time to live.
     pub fn update(
         &mut self,
         wrapped_notifier: Option<Arc<Mutex<Notifier>>>,
@@ -60,22 +69,25 @@ impl ExpireInfo {
                     ))
                 })?
                 .send_log(LogMessage::key_touched(key_name, from_epoch.as_secs()))?;
-            println!("🧨🧨🧨🧨🧨");
         }
 
         Ok(())
     }
 
+    /// Returns the timeout as seconds.
     pub fn ttl(&self) -> Option<u64> {
         self.timeout.map(|ttl| ttl.as_secs())
     }
 
+    /// Sets a new timeout for the structure from seconds.
     pub fn set_timeout(&mut self, duration: u64) -> Result<(), ErrorStruct> {
         self.last_touch = SystemTime::now();
         self.timeout = Some(Duration::new(duration, 0));
         Ok(())
     }
 
+    /// Sets a new timeout for the structure from a time coded
+    /// in Unix timestamp.
     pub fn set_timeout_unix_timestamp(&mut self, duration: u64) -> Result<(), ErrorStruct> {
         self.last_touch = SystemTime::now();
 
@@ -84,12 +96,11 @@ impl ExpireInfo {
         })
     }
 
+    /// Takes the timeout of the structure and returns it.
     pub fn persist(&mut self) -> Option<u64> {
         self.timeout.take().map(|ttl| ttl.as_secs())
     }
 }
-
-// DESHABILITENLO PARA NO COMERSE PRUEBAS QUE DURAN BANDA (O SEA 5 PRECIOSOS SEGUNDOS)
 
 fn duration_since(time: &SystemTime, previous_time: SystemTime) -> Result<Duration, ErrorStruct> {
     time.duration_since(previous_time)

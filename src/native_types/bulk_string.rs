@@ -5,6 +5,7 @@ use super::{
     redis_type::{verify_parsable_bulk_size, RedisType},
 };
 
+/// Redis native type: BulkString
 pub struct RBulkString;
 
 impl RedisType<String> for RBulkString {

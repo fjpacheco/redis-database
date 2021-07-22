@@ -13,31 +13,11 @@ use crate::native_types::error::ErrorStruct;
 use crate::native_types::error_severity::ErrorSeverity;
 use crate::redis_config::RedisConfig;
 
-pub struct FileHandler {
-    last_message: Option<String>,
-}
-
-impl Default for FileHandler {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl FileHandler {
-    pub fn new() -> FileHandler {
-        FileHandler { last_message: None }
-    }
-
-    fn _write_line(&mut self, line: String) {
-        self.last_message = Some(line);
-    }
-
-    #[allow(dead_code)]
-    fn get(&mut self) -> Option<String> {
-        self.last_message.take()
-    }
-}
-
+/// This structure compiles all the actions that
+/// were executed and errors that occured during
+/// the execution, and dump them into a log file.
+/// If it is necessary, messages could be printed
+/// in the screen.
 pub struct LogCenter {
     handler: Option<JoinHandle<Result<(), ErrorStruct>>>,
     sender_log: Sender<Option<LogMessage>>,
@@ -49,11 +29,6 @@ impl Joinable<()> for LogCenter {
         println!("LOG CENTER: PODER DECIR ADIÓS ES CRECER");
 
         let _ = self.sender_log.send(None);
-
-        /*match self.sender.send(None) {
-            Ok(()) => { /* Log Center has been closed right now */ }
-            Err(_) => { /* Log Center is already closed */ }
-        }*/
 
         if let Some(handle) = self.handler.take() {
             match handle.join() {
@@ -68,6 +43,7 @@ impl Joinable<()> for LogCenter {
 }
 
 impl LogCenter {
+    /// Creates the structure
     pub fn new(
         sender: Sender<Option<LogMessage>>,
         receiver: Receiver<Option<LogMessage>>,
@@ -85,6 +61,8 @@ impl LogCenter {
         })
     }
 
+    /// Creates the thread which will be waiting
+    /// for log messages
     fn spawn_handler(
         builder: thread::Builder,
         receiver: Receiver<Option<LogMessage>>,
@@ -100,6 +78,10 @@ impl LogCenter {
         }
     }
 
+    /// Set the receiver and wait for messages.
+    /// When a message is received, it is printed
+    /// (if is necessary) and the it is appended
+    /// into the log file.
     fn start(
         receiver: Receiver<Option<LogMessage>>,
         redis_config: Arc<Mutex<RedisConfig>>,

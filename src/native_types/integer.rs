@@ -2,6 +2,7 @@ use std::io::{BufRead, Lines};
 
 use super::{error::ErrorStruct, redis_type::RedisType};
 
+/// Redis native type: Integer
 pub struct RInteger;
 
 impl RedisType<isize> for RInteger {

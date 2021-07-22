@@ -6,6 +6,7 @@ use super::{
     redis_type::{verify_parsable_array_size, RedisType},
 };
 
+/// Redis native type: Array
 pub struct RArray;
 
 impl RedisType<Vec<String>> for RArray {

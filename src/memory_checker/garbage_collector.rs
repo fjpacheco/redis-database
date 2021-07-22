@@ -26,8 +26,13 @@ pub struct GarbageCollector {
     notifier: Notifier,
 }
 
+/// Garbage Collector cleans periodically some keys of
+/// the database which are expired. The period and the
+/// number of keys that would be checked are customizable.
+
 impl GarbageCollector {
-    pub fn start(
+    /// Creates the structure
+    pub fn new(
         snd_to_dat_del: mpsc::Sender<Option<RawCommand>>,
         period: u64,
         keys_touched: u64,
@@ -47,6 +52,8 @@ impl GarbageCollector {
         }
     }
 
+    /// Initialize the loop that periodically send the
+    /// command CLEAN.
     fn init(
         snd_to_dat_del: mpsc::Sender<Option<RawCommand>>,
         period: u64,
@@ -59,8 +66,6 @@ impl GarbageCollector {
             thread::sleep(Duration::new(period, 0));
 
             if !still_working_clone.load(Ordering::Relaxed) {
-                //log
-                println!("Shutting down Garbage Collector");
                 return Ok(());
             }
 
@@ -97,6 +102,7 @@ impl GarbageCollector {
         Ok(())
     }
 
+    /// Stops the loop and finishes the job
     fn stop(&mut self) {
         self.still_working.store(false, Ordering::Relaxed);
     }
@@ -148,7 +154,7 @@ mod test_garbage_collector {
             Arc::new(AtomicBool::new(false)),
             "test_addr".into(),
         );
-        let _collector = GarbageCollector::start(snd_col_test, 4, 20, notifier);
+        let _collector = GarbageCollector::new(snd_col_test, 4, 20, notifier);
 
         assert_eq!(4, 4);
     }
@@ -168,7 +174,7 @@ mod test_garbage_collector {
             Arc::new(AtomicBool::new(false)),
             "test_addr".into(),
         );
-        let _collector = GarbageCollector::start(snd_col_test, 4, 20, notifier);
+        let _collector = GarbageCollector::new(snd_col_test, 4, 20, notifier);
         let (command, sender, _) = rcv_col_test.recv().unwrap().unwrap();
 
         assert_eq!(&command[0], "clean");
@@ -192,7 +198,7 @@ mod test_garbage_collector {
             Arc::new(AtomicBool::new(false)),
             "test_addr".into(),
         );
-        let _collector = GarbageCollector::start(snd_col_test, 4, 20, notifier);
+        let _collector = GarbageCollector::new(snd_col_test, 4, 20, notifier);
         let (_command, sender, _) = rcv_col_test.recv().unwrap().unwrap();
         sender
             .send(Err(ErrorStruct::new(

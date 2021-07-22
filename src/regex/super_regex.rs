@@ -5,7 +5,11 @@ pub struct SuperRegex {
     matcher: Regex,
 }
 
+/// SuperRegex evaluates an string slice and match
+/// it with a given regular expression.
 impl SuperRegex {
+    /// Creates the SuperRegex from a given regular expression.
+    /// Transtale from glob-style pattern to perl-style pattern
     pub fn from(input: &str) -> Result<SuperRegex, Error> {
         let mut regex = String::from("^");
         let replaced = input.replace("?", ".").replace("*", ".*");
@@ -15,6 +19,7 @@ impl SuperRegex {
         Ok(SuperRegex { matcher })
     }
 
+    /// Match a string slice with the regular expression.
     pub fn is_match(&self, word: &str) -> bool {
         self.matcher.is_match(word)
     }

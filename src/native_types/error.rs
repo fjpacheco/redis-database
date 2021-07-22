@@ -5,6 +5,9 @@ use super::redis_type::RedisType;
 use crate::messages::MessageRedis;
 
 #[derive(Debug, Clone)]
+/// This structure encapsulate information
+/// about an error that could be thrown from
+/// any execution.
 pub struct ErrorStruct {
     prefix: String,
     message: String,
@@ -48,6 +51,8 @@ impl ErrorStruct {
         RError::encode(self.clone())
     }
 }
+
+/// Redis native type: Error
 pub struct RError;
 
 impl RedisType<ErrorStruct> for RError {

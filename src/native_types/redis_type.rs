@@ -3,8 +3,15 @@ use std::io::{BufRead, Lines};
 use super::{error::ErrorStruct, RArray};
 use crate::{messages::redis_messages, native_types::bulk_string::RBulkString};
 
+/// This trait implements encoding and decoding
+/// methods for redis native types.
 pub trait RedisType<T> {
+    /// Encodes a native type into a redis
+    /// protocol syntax
     fn encode(t: T) -> String;
+
+    /// Decodes a native type from a redis
+    /// protocol syntax
     fn decode<G>(
         first_lecture: String,
         redis_encoded_line: &mut Lines<G>,
