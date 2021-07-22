@@ -5,10 +5,10 @@ use crate::{
     native_types::{RSimpleString, RedisType},
     Database,
 };
-pub struct FlushDB;
+pub struct FlushDb;
 use crate::native_types::error_severity::ErrorSeverity;
 use std::sync::{Arc, Mutex};
-impl Runnable<Arc<Mutex<Database>>> for FlushDB {
+impl Runnable<Arc<Mutex<Database>>> for FlushDb {
     fn run(
         &self,
         _buffer: Vec<String>,

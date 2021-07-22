@@ -10,6 +10,7 @@ pub mod info_formatter;
 pub mod info_sv;
 pub mod monitor;
 pub mod notify_monitors;
+pub mod save;
 pub mod shutdown;
 pub use monitor::Monitor;
 pub use notify_monitors::NotifyMonitors;

@@ -59,7 +59,7 @@ fn check_error_cases(buffer: &[String]) -> Result<(), ErrorStruct> {
 
     Ok(())
 }
-/*
+
 #[cfg(test)]
 mod test_srem_function {
     use crate::commands::create_notifier;
@@ -83,9 +83,11 @@ mod test_srem_function {
         set.insert(String::from("m1"));
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut database_mock = Arc::new(Mutex::new(Database::new(notifier)));
-        let c_database_mock = Arc::clone(&database_mock);
-        let mut db = c_database_mock.lock().unwrap();
-        db.insert("key".to_string(), TypeSaved::Set(set));
+
+        database_mock
+            .lock()
+            .unwrap()
+            .insert("key".to_string(), TypeSaved::Set(set));
         let buffer_mock_1 = vec_strings!["key", "m1"];
         let buffer_mock_2 = vec_strings!["key", "m2"];
 
@@ -96,14 +98,14 @@ mod test_srem_function {
         let excepted_2 = RInteger::encode(1);
         assert_eq!(excepted_1, result_received_1.unwrap());
         assert_eq!(excepted_2, result_received_2.unwrap());
-        if let TypeSaved::Set(set_post_srem) = db.get("key").unwrap() {
+        if let TypeSaved::Set(set_post_srem) = database_mock.lock().unwrap().get("key").unwrap() {
             assert!(!set_post_srem.contains("m1")); // deleted
             assert!(!set_post_srem.contains("m2")); // deleted
             assert!(set_post_srem.contains("m3"));
             assert!(set_post_srem.contains("m4"));
             assert!(set_post_srem.contains("m5"));
             assert!(set_post_srem.len().eq(&3))
-        }
+        };
     }
     #[test]
     fn test02_srem_accepts_multiples_member_arguments_to_remove() {
@@ -112,20 +114,22 @@ mod test_srem_function {
         set.insert(String::from("m2")); // m2
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut database_mock = Arc::new(Mutex::new(Database::new(notifier)));
-        let c_database_mock = Arc::clone(&database_mock);
-        let mut db = c_database_mock.lock().unwrap();
-        db.insert("key".to_string(), TypeSaved::Set(set));
+
+        database_mock
+            .lock()
+            .unwrap()
+            .insert("key".to_string(), TypeSaved::Set(set));
         let buffer_mock = vec_strings!["key", "m1901020", "m1", "m1", "m1", "m192192", "m1", "m1"];
 
         let result_received = Srem.run(buffer_mock, &mut database_mock);
 
         let excepted = RInteger::encode(1);
         assert_eq!(excepted, result_received.unwrap());
-        if let TypeSaved::Set(set_post_srem) = db.get("key").unwrap() {
+        if let TypeSaved::Set(set_post_srem) = database_mock.lock().unwrap().get("key").unwrap() {
             assert!(!set_post_srem.contains("m1")); // deleted one time
             assert!(set_post_srem.contains("m2"));
             assert!(set_post_srem.len().eq(&1))
-        }
+        };
     }
 
     #[test]
@@ -135,21 +139,22 @@ mod test_srem_function {
         set.insert(String::from("m2")); // m2
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut database_mock = Arc::new(Mutex::new(Database::new(notifier)));
-        let c_database_mock = Arc::clone(&database_mock);
-        let mut db = c_database_mock.lock().unwrap();
 
-        db.insert("key".to_string(), TypeSaved::Set(set));
+        database_mock
+            .lock()
+            .unwrap()
+            .insert("key".to_string(), TypeSaved::Set(set));
         let buffer_mock = vec_strings!["key", "m3", "m4"];
 
         let result_received = Srem.run(buffer_mock, &mut database_mock);
 
         let excepted = RInteger::encode(0);
         assert_eq!(excepted, result_received.unwrap());
-        if let TypeSaved::Set(set_post_srem) = db.get("key").unwrap() {
+        if let TypeSaved::Set(set_post_srem) = database_mock.lock().unwrap().get("key").unwrap() {
             assert!(set_post_srem.contains("m1")); // unmodified
             assert!(set_post_srem.contains("m2")); // unmodified
             assert!(set_post_srem.len().eq(&2))
-        }
+        };
     }
 
     #[test]
@@ -216,18 +221,19 @@ mod test_srem_function {
         let set = HashSet::new();
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut database_mock = Arc::new(Mutex::new(Database::new(notifier)));
-        let c_database_mock = Arc::clone(&database_mock);
-        let mut db = c_database_mock.lock().unwrap();
-        db.insert("key".to_string(), TypeSaved::Set(set));
+
+        database_mock
+            .lock()
+            .unwrap()
+            .insert("key".to_string(), TypeSaved::Set(set));
         let buffer_mock = vec_strings!["key", "value1", "value2"];
 
         let result_received = Srem.run(buffer_mock, &mut database_mock);
 
         let excepted = RInteger::encode(0);
         assert_eq!(excepted, result_received.unwrap());
-        if let TypeSaved::Set(set_post_srem) = db.get("key").unwrap() {
+        if let TypeSaved::Set(set_post_srem) = database_mock.lock().unwrap().get("key").unwrap() {
             assert!(set_post_srem.len().eq(&0))
-        }
+        };
     }
 }
-*/

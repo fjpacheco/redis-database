@@ -1,6 +1,9 @@
 use crate::{
     commands::Runnable,
-    native_types::{error::ErrorStruct, integer::RInteger, redis_type::RedisType},
+    messages::redis_messages,
+    native_types::{
+        error::ErrorStruct, error_severity::ErrorSeverity, integer::RInteger, redis_type::RedisType,
+    },
 };
 
 use crate::tcp_protocol::client_atributes::client_fields::ClientFields;
@@ -8,15 +11,24 @@ use crate::tcp_protocol::client_atributes::client_fields::ClientFields;
 use std::sync::Arc;
 use std::sync::Mutex;
 
-pub struct SubscribeCF;
+pub struct SubscribeCf;
 
-impl Runnable<Arc<Mutex<ClientFields>>> for SubscribeCF {
+impl Runnable<Arc<Mutex<ClientFields>>> for SubscribeCf {
     fn run(
         &self,
         buffer: Vec<String>,
         status: &mut Arc<Mutex<ClientFields>>,
     ) -> Result<String, ErrorStruct> {
-        match status.lock().unwrap().add_subscriptions(buffer) {
+        match status
+            .lock()
+            .map_err(|_| {
+                ErrorStruct::from(redis_messages::poisoned_lock(
+                    "status",
+                    ErrorSeverity::CloseClient,
+                ))
+            })?
+            .add_subscriptions(buffer)
+        {
             Ok(added) => Ok(RInteger::encode(added)),
             Err(error) => Err(error),
         }

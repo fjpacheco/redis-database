@@ -2182,3 +2182,139 @@ $37
 Thread 'Command Delegator' is closed.
 $37
 Client disconected: "127.0.0.1:40392"
+$27
+Server ON in 127.0.0.1:6379
+$30
+New conection: 127.0.0.1:56424
+$102
+List of clients:
+               -> Client: "127.0.0.1:56424" -- Status: Executor -- Subscriptions: {}
+$37
+Client disconected: "127.0.0.1:56424"
+$30
+New conection: 127.0.0.1:56425
+$102
+List of clients:
+               -> Client: "127.0.0.1:56425" -- Status: Executor -- Subscriptions: {}
+$41
+[127.0.0.1:56425] ["set", "key", "value"]
+$30
+New conection: 127.0.0.1:56426
+$188
+List of clients:
+               -> Client: "127.0.0.1:56425" -- Status: Executor -- Subscriptions: {}
+               -> Client: "127.0.0.1:56426" -- Status: Executor -- Subscriptions: {}
+$28
+Server OFF in 127.0.0.1:6379
+$49
+Key key has been updated. Last access: 1626984586
+$30
+[127.0.0.1:56426] ["shutdown"]
+$37
+Client disconected: "127.0.0.1:56426"
+$37
+Thread 'Command Delegator' is closed.
+$37
+Client disconected: "127.0.0.1:56425"
+$27
+Server ON in 127.0.0.1:6379
+$30
+New conection: 127.0.0.1:57267
+$37
+Client disconected: "127.0.0.1:57267"
+$102
+List of clients:
+               -> Client: "127.0.0.1:57267" -- Status: Executor -- Subscriptions: {}
+$30
+New conection: 127.0.0.1:57268
+$102
+List of clients:
+               -> Client: "127.0.0.1:57268" -- Status: Executor -- Subscriptions: {}
+$41
+[127.0.0.1:57268] ["set", "key", "value"]
+$30
+New conection: 127.0.0.1:57269
+$188
+List of clients:
+               -> Client: "127.0.0.1:57268" -- Status: Executor -- Subscriptions: {}
+               -> Client: "127.0.0.1:57269" -- Status: Executor -- Subscriptions: {}
+$28
+Server OFF in 127.0.0.1:6379
+$49
+Key key has been updated. Last access: 1626987740
+$30
+[127.0.0.1:57269] ["shutdown"]
+$37
+Client disconected: "127.0.0.1:57269"
+$37
+Thread 'Command Delegator' is closed.
+$37
+Client disconected: "127.0.0.1:57268"
+$27
+Server ON in 127.0.0.1:6379
+$30
+New conection: 127.0.0.1:57297
+$37
+Client disconected: "127.0.0.1:57297"
+$102
+List of clients:
+               -> Client: "127.0.0.1:57297" -- Status: Executor -- Subscriptions: {}
+$30
+New conection: 127.0.0.1:57298
+$102
+List of clients:
+               -> Client: "127.0.0.1:57298" -- Status: Executor -- Subscriptions: {}
+$41
+[127.0.0.1:57298] ["set", "key", "value"]
+$30
+New conection: 127.0.0.1:57299
+$188
+List of clients:
+               -> Client: "127.0.0.1:57298" -- Status: Executor -- Subscriptions: {}
+               -> Client: "127.0.0.1:57299" -- Status: Executor -- Subscriptions: {}
+$28
+Server OFF in 127.0.0.1:6379
+$49
+Key key has been updated. Last access: 1626988148
+$30
+[127.0.0.1:57299] ["shutdown"]
+$37
+Client disconected: "127.0.0.1:57299"
+$37
+Thread 'Command Delegator' is closed.
+$37
+Client disconected: "127.0.0.1:57298"
+$27
+Server ON in 127.0.0.1:6379
+$30
+New conection: 127.0.0.1:57441
+$102
+List of clients:
+               -> Client: "127.0.0.1:57441" -- Status: Executor -- Subscriptions: {}
+$37
+Client disconected: "127.0.0.1:57441"
+$30
+New conection: 127.0.0.1:57442
+$102
+List of clients:
+               -> Client: "127.0.0.1:57442" -- Status: Executor -- Subscriptions: {}
+$41
+[127.0.0.1:57442] ["set", "key", "value"]
+$30
+New conection: 127.0.0.1:57443
+$188
+List of clients:
+               -> Client: "127.0.0.1:57442" -- Status: Executor -- Subscriptions: {}
+               -> Client: "127.0.0.1:57443" -- Status: Executor -- Subscriptions: {}
+$28
+Server OFF in 127.0.0.1:6379
+$49
+Key key has been updated. Last access: 1626990115
+$30
+[127.0.0.1:57443] ["shutdown"]
+$37
+Client disconected: "127.0.0.1:57443"
+$37
+Thread 'Command Delegator' is closed.
+$37
+Client disconected: "127.0.0.1:57442"

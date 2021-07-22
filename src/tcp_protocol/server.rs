@@ -110,7 +110,7 @@ impl ServerRedis {
         });*/
         // ################## ListenerProcessor ##################
 
-        ListenerProcessor::incoming(listener, server_redis, notifier.clone());
+        ListenerProcessor::incoming(listener, server_redis, notifier);
         c_database
             .lock()
             .map_err(|_| {
@@ -119,7 +119,7 @@ impl ServerRedis {
                     ErrorSeverity::ShutdownServer,
                 ))
             })?
-            .take_snapshot(Some(Arc::new(Mutex::new(notifier))))?;
+            .take_snapshot()?;
 
         // ################## FINISH SERVER ##################
         command_delegator.join()?;

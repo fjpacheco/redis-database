@@ -226,16 +226,16 @@ impl Database {
         self.elements.keys().choose(&mut rng).map(String::from)
     }
 
-    pub fn take_snapshot(
-        &mut self,
-        notifier: Option<Arc<Mutex<Notifier>>>,
-    ) -> Result<(), ErrorStruct> {
+    pub fn take_snapshot(&mut self) -> Result<(), ErrorStruct> {
         // TODO: recordar chequear el unwrap
         let mut config = self.redis_config.as_ref().unwrap().lock().unwrap();
         let mut file = config.get_mut_dump_file().unwrap();
         for (key, (expire_info, typesaved)) in self.elements.iter_mut() {
             let mut expire_clone = expire_info.clone();
-            if expire_clone.is_expired(notifier.clone(), key).not() {
+            if expire_clone
+                .is_expired(Some(self.notifier.clone()), key)
+                .not()
+            {
                 let time = expire_clone.ttl().map(|t| t as isize).unwrap_or(-1);
                 write_integer_to_file(time, &mut file)?;
                 persist_data(&key, &mut file, typesaved)?;
@@ -286,7 +286,7 @@ fn decode_value(
                             Ok(value) => value,
                             Err(err) => return Err(err),
                         };
-                        Ok(TypeSaved::List(VecDeque::from(value))) // chequear si el orden del vecdeque es correcto
+                        Ok(TypeSaved::List(VecDeque::from(value)))
                     }
                     _ => {
                         check_decodable_line(&mut line, '*')?;
@@ -374,7 +374,6 @@ fn get_expire_info(
 ) -> Result<ExpireInfo, ErrorStruct> {
     check_decodable_line(&mut line, ':')?;
     let ttl_decoded = RInteger::decode(line, lines)?;
-    println!("ttl: {}", ttl_decoded);
     let mut expire_info: ExpireInfo = ExpireInfo::new();
     if ttl_decoded >= 0 {
         expire_info.set_timeout(ttl_decoded as u64)?;
@@ -458,17 +457,20 @@ fn persist_data(key: &str, file: &mut File, typesaved: &TypeSaved) -> Result<(),
     };
     Ok(())
 }
-/*
+
 #[cfg(test)]
 mod test_database {
+
+    use std::fs;
 
     use crate::{
         commands::{
             create_notifier,
-            lists::rpush::RPush,
+            lists::{llen::Llen, lpop::LPop, rpop::RPop, rpush::RPush},
             sets::{sadd::Sadd, sismember::Sismember},
-            Runnable,
+            Get, Runnable, Set,
         },
+        native_types::RBulkString,
         vec_strings,
     };
 
@@ -477,7 +479,7 @@ mod test_database {
     #[test]
     fn test01_insert_a_key() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let mut database = Arc::new(Mutex::new(Database::new(notifier)));
+        let mut database = Database::new(notifier);
         let value = TypeSaved::String(String::from("hola"));
         database.insert("key".to_string(), value);
         let got = database.get("key");
@@ -492,7 +494,7 @@ mod test_database {
     #[test]
     fn test02_remove_a_key() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let mut database = Arc::new(Mutex::new(Database::new(notifier)));
+        let mut database = Database::new(notifier);
         let value = TypeSaved::String(String::from("hola"));
         database.insert("key".to_string(), value);
         database.remove("key");
@@ -503,7 +505,7 @@ mod test_database {
     #[test]
     fn test03_database_contains_key() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let mut database = Arc::new(Mutex::new(Database::new(notifier)));
+        let mut database = Database::new(notifier);
         assert!(!database.contains_key("key"));
         let value = TypeSaved::String(String::from("hola"));
         database.insert("key".to_string(), value);
@@ -513,7 +515,7 @@ mod test_database {
     #[test]
     fn test04_set_timeout_for_existing_key() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let mut database = Arc::new(Mutex::new(Database::new(notifier)));
+        let mut database = Database::new(notifier);
         let value = TypeSaved::String(String::from("hola"));
         database.insert("key".to_string(), value);
         database.set_ttl("key", 10).unwrap();
@@ -523,7 +525,7 @@ mod test_database {
     #[test]
     fn test05_set_timeout_for_non_existing_key() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let mut database = Arc::new(Mutex::new(Database::new(notifier)));
+        let mut database = Database::new(notifier);
         match database.set_ttl("key", 10) {
             Err(should_throw_error) => assert_eq!(
                 should_throw_error.print_it(),
@@ -536,7 +538,7 @@ mod test_database {
     #[test]
     fn test06_set_timeout_for_key_and_let_it_persist() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let mut database = Arc::new(Mutex::new(Database::new(notifier)));
+        let mut database = Database::new(notifier);
         let value = TypeSaved::String(String::from("hola"));
         database.insert("key".to_string(), value);
         database.set_ttl("key", 10).unwrap();
@@ -558,14 +560,14 @@ mod test_database {
             .unwrap(),
         ));
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let mut original_database = Arc::new(Mutex::new(Database::new(notifier)));
+        let mut original_database = Database::new(notifier);
         original_database.set_redis_config(config);
         original_database.insert(
             "key1".to_string(),
             TypeSaved::String(String::from("value1")),
         );
 
-        original_database.take_snapshot(None).unwrap();
+        original_database.take_snapshot().unwrap();
 
         assert_eq!(
             fs::read("database_01.rdb").unwrap(),
@@ -587,12 +589,12 @@ mod test_database {
             .unwrap(),
         ));
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let mut database = Arc::new(Mutex::new(Database::new(notifier)));
+        let mut database = Database::new(notifier);
         database.set_redis_config(config);
         database.insert("key".to_string(), TypeSaved::String(String::from("value")));
         database.set_ttl("key", 5).unwrap();
 
-        database.take_snapshot(None).unwrap();
+        database.take_snapshot().unwrap();
 
         assert_eq!(
             fs::read("database_08.rdb").unwrap(),
@@ -615,10 +617,10 @@ mod test_database {
         ));
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut database = Arc::new(Mutex::new(Database::new(notifier)));
-        database.set_redis_config(config);
+        database.lock().unwrap().set_redis_config(config);
         let buffer = vec_strings!["key", "value1", "value2", "value3", "value4"];
         RPush.run(buffer, &mut database).unwrap();
-        database.take_snapshot(None).unwrap();
+        database.lock().unwrap().take_snapshot().unwrap();
 
         assert_eq!(
             fs::read("database_09.rdb").unwrap(),
@@ -642,14 +644,14 @@ mod test_database {
         ));
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut database = Arc::new(Mutex::new(Database::new(notifier)));
-        database.set_redis_config(config);
+        database.lock().unwrap().set_redis_config(config);
         let buffer = vec_strings!["key", "value1", "value2"];
         Sadd.run(buffer, &mut database).unwrap();
-        database.take_snapshot(None).unwrap();
+        database.lock().unwrap().take_snapshot().unwrap();
 
         assert_eq!(
             fs::read("database_10.rdb").unwrap(),
-            b":0\r\n:2\r\n+key\r\n*2\r\n$6\r\nvalue1\r\n$6\r\nvalue2\r\n"
+            b":-1\r\n:2\r\n+key\r\n*2\r\n$6\r\nvalue1\r\n$6\r\nvalue2\r\n"
         );
     }
 
@@ -667,13 +669,13 @@ mod test_database {
             .unwrap(),
         ));
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let mut original_database = Arc::new(Mutex::new(Database::new(notifier)));
-        original_database.set_redis_config(config1);
+        let mut original_database = Database::new(notifier.clone());
+        original_database.set_redis_config(config1.clone());
         original_database.insert(
             "key1".to_string(),
             TypeSaved::String(String::from("value1")),
         );
-        original_database.take_snapshot(None).unwrap();
+        original_database.take_snapshot().unwrap();
 
         let filename2 = "database_11_b.rdb";
         let config2 = Arc::new(Mutex::new(
@@ -687,9 +689,9 @@ mod test_database {
             .unwrap(),
         ));
 
-        let mut restored_database = Database::new_from(filename1).unwrap();
+        let mut restored_database = Database::new_from(config1, notifier).unwrap();
         restored_database.set_redis_config(config2);
-        restored_database.take_snapshot(None).unwrap();
+        restored_database.take_snapshot().unwrap();
 
         assert_eq!(
             fs::read("database_11_a.rdb").unwrap(),
@@ -711,15 +713,15 @@ mod test_database {
             .unwrap(),
         ));
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let mut database = Arc::new(Mutex::new(Database::new(notifier)));
-        database.set_redis_config(config1);
+        let mut database = Arc::new(Mutex::new(Database::new(notifier.clone())));
+        database.lock().unwrap().set_redis_config(config1.clone());
         let buffer = vec_strings!["key", "value1", "value2", "value3", "value4"];
         RPush.run(buffer, &mut database).unwrap();
 
-        database.take_snapshot(None).unwrap();
+        database.lock().unwrap().take_snapshot().unwrap();
 
         let filename2 = "database_12_b.rdb";
-        let mut restored_database = Database::new_from(filename1).unwrap();
+        let mut restored_database = Database::new_from(config1, notifier).unwrap();
 
         let config2 = Arc::new(Mutex::new(
             RedisConfig::new(
@@ -733,7 +735,7 @@ mod test_database {
         ));
         restored_database.set_redis_config(config2);
 
-        restored_database.take_snapshot(None).unwrap();
+        restored_database.take_snapshot().unwrap();
 
         assert_eq!(
             fs::read("database_12_a.rdb").unwrap(),
@@ -756,13 +758,13 @@ mod test_database {
             .unwrap(),
         ));
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let mut database = Arc::new(Mutex::new(Database::new(notifier)));
-        database.set_redis_config(config1);
+        let mut database = Arc::new(Mutex::new(Database::new(notifier.clone())));
+        database.lock().unwrap().set_redis_config(config1.clone());
 
         let buffer: Vec<String> = vec_strings!["key", "value1", "value2"];
         Sadd.run(buffer, &mut database).unwrap();
 
-        database.take_snapshot(None).unwrap();
+        database.lock().unwrap().take_snapshot().unwrap();
 
         let filename2 = "database_13_b.rdb";
         let config2 = Arc::new(Mutex::new(
@@ -776,9 +778,10 @@ mod test_database {
             .unwrap(),
         ));
 
-        let mut restored_database = Database::new_from(filename1).unwrap();
-        restored_database.set_redis_config(config2);
-        restored_database.take_snapshot(None).unwrap();
+        let mut restored_database =
+            Arc::new(Mutex::new(Database::new_from(config1, notifier).unwrap()));
+        database.lock().unwrap().set_redis_config(config2);
+        database.lock().unwrap().take_snapshot().unwrap();
 
         let buffer_mock = vec_strings!["key", "value1"];
         let result_received = Sismember.run(buffer_mock, &mut restored_database);
@@ -808,13 +811,13 @@ mod test_database {
             .unwrap(),
         ));
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-        let mut original_database = Arc::new(Mutex::new(Database::new(notifier)));
+        let mut original_database = Database::new(notifier.clone());
         original_database.set_redis_config(config1);
 
         original_database.insert("key".to_string(), TypeSaved::String(String::from("value")));
         original_database.set_ttl("key", 5).unwrap();
 
-        original_database.take_snapshot(None).unwrap();
+        original_database.take_snapshot().unwrap();
 
         let filename2 = "database_14_b.rdb";
         let config2 = Arc::new(Mutex::new(
@@ -827,15 +830,96 @@ mod test_database {
             )
             .unwrap(),
         ));
-        let mut restored_database = Database::new_from(filename1).unwrap();
+        let mut restored_database = Database::new_from(config2.clone(), notifier).unwrap();
         restored_database.set_redis_config(config2);
-
-        restored_database.take_snapshot(None).unwrap();
+        restored_database.take_snapshot().unwrap();
 
         assert_eq!(
             fs::read("database_14_a.rdb").unwrap(),
             fs::read("database_14_b.rdb").unwrap()
         );
     }
+
+    #[test]
+    fn test15_persist_different_values_at_file() {
+        let filename = "database_15.rdb";
+        let config = Arc::new(Mutex::new(
+            RedisConfig::new(
+                String::new(),
+                String::new(),
+                String::from("log.txt"),
+                String::from(filename),
+                0,
+            )
+            .unwrap(),
+        ));
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut original_database = Arc::new(Mutex::new(Database::new(notifier.clone())));
+        original_database
+            .lock()
+            .unwrap()
+            .set_redis_config(config.clone());
+
+        let buffer1 = vec_strings!["key1", "value1"];
+        Set.run(buffer1, &mut original_database).unwrap();
+
+        let buffer2 = vec_strings!["key2", "value1", "value2", "value3", "value4"];
+        RPush.run(buffer2, &mut original_database).unwrap();
+
+        let buffer3 = vec_strings!["key3", "value1"];
+        Sadd.run(buffer3, &mut original_database).unwrap();
+
+        // This test won't always assert because there's a hashmap iteration
+        /*
+        assert_eq!(
+            fs::read("database_15.rdb").unwrap(),
+            b":-1\r\n:0\r\n+key1\r\n+value1\r\n
+              :-1\r\n:1\r\n+key2\r\n*4\r\n$6\r\nvalue1\r\n$6\r\nvalue2\r\n$6\r\nvalue3\r\n$6\r\nvalue4\r\n
+              :-1\r\n:2\r\n+key3\r\n*1\r\n$6\r\nvalue1\r\n"
+        );
+        */
+        let mut restored_database = Arc::new(Mutex::new(
+            Database::new_from(config.clone(), notifier).unwrap(),
+        ));
+
+        // String value check
+        let obtained_value = Get
+            .run(vec_strings!["key1"], &mut restored_database)
+            .unwrap();
+        assert_eq!(obtained_value, RBulkString::encode("value1".to_string()));
+
+        // List value check
+        let len = Llen
+            .run(vec_strings!["key2"], &mut restored_database)
+            .unwrap();
+        assert_eq!(len, ":4\r\n".to_string());
+
+        let first_value = LPop
+            .run(vec_strings!["key2"], &mut restored_database)
+            .unwrap();
+        assert_eq!(first_value, "$6\r\nvalue1\r\n".to_string());
+
+        let last_value = RPop
+            .run(vec_strings!["key2"], &mut restored_database)
+            .unwrap();
+        assert_eq!(last_value, "$6\r\nvalue4\r\n".to_string());
+
+        let value_2 = LPop
+            .run(vec_strings!["key2"], &mut restored_database)
+            .unwrap();
+        assert_eq!(value_2, "$6\r\nvalue2\r\n".to_string());
+
+        let value_3 = LPop
+            .run(vec_strings!["key2"], &mut restored_database)
+            .unwrap();
+        assert_eq!(value_3, "$6\r\nvalue3\r\n".to_string());
+
+        // Set value check
+        assert_eq!(
+            Sismember
+                .run(vec_strings!["key3", "value1"], &mut restored_database)
+                .unwrap(),
+            RInteger::encode(1)
+        );
+    }
 }
-*/

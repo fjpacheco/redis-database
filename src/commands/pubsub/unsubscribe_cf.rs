@@ -8,9 +8,9 @@ use crate::tcp_protocol::client_atributes::client_fields::ClientFields;
 use std::sync::Arc;
 use std::sync::Mutex;
 
-pub struct UnsubscribeCF;
+pub struct UnsubscribeCf;
 
-impl Runnable<Arc<Mutex<ClientFields>>> for UnsubscribeCF {
+impl Runnable<Arc<Mutex<ClientFields>>> for UnsubscribeCf {
     fn run(
         &self,
         buffer: Vec<String>,

@@ -52,9 +52,9 @@ pub fn close_thread(
                 let _ = notifer.send_log(LogMessage::theard_panic(name)); // I'm not interested ... I retired with the forced Shutdown!
                 ErrorStruct::from(redis_messages::thread_panic(name))
             })?
-            .and_then(|result| {
+            .and_then(|_| {
                 notifer.send_log(LogMessage::theard_closed(name))?;
-                Ok(result)
+                Ok(())
             })
     } else {
         Ok(())

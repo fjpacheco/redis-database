@@ -78,7 +78,7 @@ pub fn replace_element_at(
         Ok(RSimpleString::encode("OK".to_string()))
     }
 }
-/*
+
 #[cfg(test)]
 pub mod test_lset {
     use crate::commands::create_notifier;
@@ -86,22 +86,20 @@ pub mod test_lset {
     use crate::vec_strings;
 
     use super::*;
-    use std::collections::{vec_deque::Iter, VecDeque};
+    use std::collections::VecDeque;
 
     #[test]
     fn test01_lset_list_with_one_element_positive_indexing() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut data = Arc::new(Mutex::new(Database::new(notifier)));
-        let c_data = Arc::clone(&data);
 
         let mut new_list = VecDeque::new();
         new_list.push_back("value".to_string());
 
         let key = "key".to_string();
         let key_cpy = key.clone();
-        let mut c_db = c_data.lock().unwrap();
 
-        c_db.insert(key, TypeSaved::List(new_list));
+        data.lock().unwrap().insert(key, TypeSaved::List(new_list));
 
         let buffer = vec_strings!["key", "0", "new_value"];
         let encoded = Lset.run(buffer, &mut data);
@@ -109,30 +107,29 @@ pub mod test_lset {
         // Check return value is simple string OK
         assert_eq!(encoded.unwrap(), "+OK\r\n".to_string());
 
-        let mut iter = None;
-        if let TypeSaved::List(values_list) = c_db.get_mut(&key_cpy).unwrap() {
-            iter = Some(values_list.iter());
-        }
-        assert_eq!(
-            iter.unwrap().next().unwrap().to_string(),
-            "new_value".to_string()
-        );
+        if let TypeSaved::List(values_list) = data.lock().unwrap().get_mut(&key_cpy).unwrap() {
+            let iter = Some(values_list.iter());
+            assert_eq!(
+                iter.unwrap().next().unwrap().to_string(),
+                "new_value".to_string()
+            );
+        } else {
+            panic!();
+        };
     }
 
     #[test]
     fn test02_lset_list_with_one_element_negative_indexing() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut data = Arc::new(Mutex::new(Database::new(notifier)));
-        let c_data = Arc::clone(&data);
 
         let mut new_list = VecDeque::new();
         new_list.push_back("value".to_string());
 
         let key = "key".to_string();
         let key_cpy = key.clone();
-        let mut c_db = c_data.lock().unwrap();
 
-        c_db.insert(key, TypeSaved::List(new_list));
+        data.lock().unwrap().insert(key, TypeSaved::List(new_list));
 
         let buffer = vec_strings!["key", "-1", "new_value"];
         let encoded = Lset.run(buffer, &mut data);
@@ -140,14 +137,15 @@ pub mod test_lset {
         // Check return value is simple string OK
         assert_eq!(encoded.unwrap(), "+OK\r\n".to_string());
 
-        let mut iter = None;
-        if let TypeSaved::List(values_list) = c_db.get_mut(&key_cpy).unwrap() {
-            iter = Some(values_list.iter());
-        }
-        assert_eq!(
-            iter.unwrap().next().unwrap().to_string(),
-            "new_value".to_string()
-        );
+        if let TypeSaved::List(values_list) = data.lock().unwrap().get_mut(&key_cpy).unwrap() {
+            let iter = Some(values_list.iter());
+            assert_eq!(
+                iter.unwrap().next().unwrap().to_string(),
+                "new_value".to_string()
+            );
+        } else {
+            panic!();
+        };
     }
     #[test]
     fn test03_lset_list_with_out_of_range_positive_index() {
@@ -225,7 +223,6 @@ pub mod test_lset {
     fn test07_lset_list_with_many_elements_at_top() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut data = Arc::new(Mutex::new(Database::new(notifier)));
-        let c_data = Arc::clone(&data);
 
         let mut new_list = VecDeque::new();
         new_list.push_back("value1".to_string());
@@ -234,9 +231,8 @@ pub mod test_lset {
 
         let key = "key".to_string();
         let key_cpy = key.clone();
-        let mut c_db = c_data.lock().unwrap();
 
-        c_db.insert(key, TypeSaved::List(new_list));
+        data.lock().unwrap().insert(key, TypeSaved::List(new_list));
 
         let buffer = vec_strings!["key", "0", "new_value"];
         let encoded = Lset.run(buffer, &mut data);
@@ -244,21 +240,21 @@ pub mod test_lset {
         // Check return value is simple string OK
         assert_eq!(encoded.unwrap(), "+OK\r\n".to_string());
 
-        let mut iter = None;
-        if let TypeSaved::List(values_list) = c_db.get_mut(&key_cpy).unwrap() {
-            iter = Some(values_list.iter());
-        }
-        assert_eq!(
-            iter.unwrap().next().unwrap().to_string(),
-            "new_value".to_string()
-        );
+        if let TypeSaved::List(values_list) = data.lock().unwrap().get_mut(&key_cpy).unwrap() {
+            let iter = Some(values_list.iter());
+            assert_eq!(
+                iter.unwrap().next().unwrap().to_string(),
+                "new_value".to_string()
+            );
+        } else {
+            panic!();
+        };
     }
 
     #[test]
     fn test08_lset_list_with_many_elements_at_middle() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut data = Arc::new(Mutex::new(Database::new(notifier)));
-        let c_data = Arc::clone(&data);
 
         let mut new_list = VecDeque::new();
         new_list.push_back("value1".to_string());
@@ -267,9 +263,8 @@ pub mod test_lset {
 
         let key = "key".to_string();
         let key_cpy = key.clone();
-        let mut c_db = c_data.lock().unwrap();
 
-        c_db.insert(key, TypeSaved::List(new_list));
+        data.lock().unwrap().insert(key, TypeSaved::List(new_list));
 
         let buffer = vec_strings!["key", "1", "new_value"];
         let encoded = Lset.run(buffer, &mut data);
@@ -277,18 +272,19 @@ pub mod test_lset {
         // Check return value is simple string OK
         assert_eq!(encoded.unwrap(), "+OK\r\n".to_string());
 
-        if let TypeSaved::List(values_list) = c_db.get_mut(&key_cpy).unwrap() {
-            let mut iter: Iter<String> = values_list.iter();
+        if let TypeSaved::List(values_list) = data.lock().unwrap().get_mut(&key_cpy).unwrap() {
+            let mut iter = values_list.iter();
             iter.next();
             assert_eq!(iter.next().unwrap().to_string(), "new_value".to_string());
-        }
+        } else {
+            panic!();
+        };
     }
 
     #[test]
     fn test09_lset_list_with_many_elements_at_bottom() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut data = Arc::new(Mutex::new(Database::new(notifier)));
-        let c_data = Arc::clone(&data);
 
         let mut new_list = VecDeque::new();
         new_list.push_back("value1".to_string());
@@ -297,9 +293,8 @@ pub mod test_lset {
 
         let key = "key".to_string();
         let key_cpy = key.clone();
-        let mut c_db = c_data.lock().unwrap();
 
-        c_db.insert(key, TypeSaved::List(new_list));
+        data.lock().unwrap().insert(key, TypeSaved::List(new_list));
 
         let buffer = vec_strings!["key", "2", "new_value"];
         let encoded = Lset.run(buffer, &mut data);
@@ -307,12 +302,14 @@ pub mod test_lset {
         // Check return value is simple string OK
         assert_eq!(encoded.unwrap(), "+OK\r\n".to_string());
 
-        if let TypeSaved::List(values_list) = c_db.get_mut(&key_cpy).unwrap() {
-            let mut iter: Iter<String> = values_list.iter();
+        if let TypeSaved::List(values_list) = data.lock().unwrap().get_mut(&key_cpy).unwrap() {
+            let mut iter = values_list.iter();
             iter.next();
             iter.next();
             assert_eq!(iter.next().unwrap().to_string(), "new_value".to_string());
-        }
+        } else {
+            panic!();
+        };
     }
 
     #[test]
@@ -387,4 +384,3 @@ pub mod test_lset {
         );
     }
 }
-*/

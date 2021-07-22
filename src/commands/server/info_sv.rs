@@ -5,9 +5,9 @@ use crate::{
     native_types::{RArray, RedisType},
 };
 
-pub struct InfoSV;
+pub struct InfoSv;
 
-impl Runnable<ServerRedisAtributes> for InfoSV {
+impl Runnable<ServerRedisAtributes> for InfoSv {
     fn run(
         &self,
         _buffer: Vec<String>,

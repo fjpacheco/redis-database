@@ -116,29 +116,28 @@ impl ClientFields {
 
     pub fn add_subscriptions(&mut self, channels: Vec<String>) -> Result<isize, ErrorStruct> {
         match self.status {
-            Status::Executor => self.as_case_executor(channels),
-            Status::Subscriber => self.as_case_subscriber(channels),
+            Status::Executor => Ok(self.as_case_executor(channels)),
+            Status::Subscriber => Ok(self.as_case_subscriber(channels)),
             _ => Err(ErrorStruct::from(unexpected_behaviour(
                 "Dead client (or monitor) is trying to execute invalid command",
             ))),
         }
     }
 
-    fn as_case_executor(&mut self, channels: Vec<String>) -> Result<isize, ErrorStruct> {
+    fn as_case_executor(&mut self, channels: Vec<String>) -> isize {
         let added = self.add_channels(channels);
         self.replace_status(Status::Subscriber);
-        Ok(added)
+        added
     }
 
-    fn as_case_subscriber(&mut self, channels: Vec<String>) -> Result<isize, ErrorStruct> {
-        let added = self.add_channels(channels);
-        Ok(added)
+    fn as_case_subscriber(&mut self, channels: Vec<String>) -> isize {
+        self.add_channels(channels)
     }
 
     pub fn remove_subscriptions(&mut self, channels: Vec<String>) -> Result<isize, ErrorStruct> {
         match &self.status {
             Status::Executor => Ok(0),
-            Status::Subscriber => self.rs_case_subscriber(channels),
+            Status::Subscriber => Ok(self.rs_case_subscriber(channels)),
             _ => Err(ErrorStruct::new(
                 unexpected_behaviour(
                     "Dead client (or monitor) is trying to execute invalid command",
@@ -152,7 +151,7 @@ impl ClientFields {
         }
     }
 
-    fn rs_case_subscriber(&mut self, channels: Vec<String>) -> Result<isize, ErrorStruct> {
+    fn rs_case_subscriber(&mut self, channels: Vec<String>) -> isize {
         if channels.is_empty() {
             self.status.replace(Status::Executor);
             self.subscriptions.clear();
@@ -162,7 +161,7 @@ impl ClientFields {
                 self.replace_status(Status::Executor);
             }
         }
-        Ok(self.subscriptions.len() as isize)
+        self.subscriptions.len() as isize
     }
 
     fn add_channels(&mut self, new_channels: Vec<String>) -> isize {

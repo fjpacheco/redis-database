@@ -5,10 +5,10 @@ use crate::{
     native_types::{RArray, RedisType},
     Database,
 };
-pub struct InfoDB;
+pub struct InfoDb;
 use crate::native_types::error_severity::ErrorSeverity;
 use std::sync::{Arc, Mutex};
-impl Runnable<Arc<Mutex<Database>>> for InfoDB {
+impl Runnable<Arc<Mutex<Database>>> for InfoDb {
     fn run(
         &self,
         _buffer: Vec<String>,

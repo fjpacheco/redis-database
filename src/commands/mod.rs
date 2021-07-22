@@ -19,8 +19,8 @@ pub mod sets;
 pub mod strings;
 pub use keys::{clean::Clean, expire::Expire};
 pub use pubsub::{
-    publish::Publish, subscribe_cf::SubscribeCF, subscribe_cl::SubscribeCL,
-    unsubscribe_cf::UnsubscribeCF, unsubscribe_cl::UnsubscribeCL,
+    publish::Publish, subscribe_cf::SubscribeCf, subscribe_cl::SubscribeCl,
+    unsubscribe_cf::UnsubscribeCf, unsubscribe_cl::UnsubscribeCl,
 };
 pub use server::{config::Config, notify_monitors::NotifyMonitors, shutdown::Shutdown};
 pub use strings::{
