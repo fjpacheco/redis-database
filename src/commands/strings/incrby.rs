@@ -8,13 +8,21 @@ use crate::native_types::error_severity::ErrorSeverity;
 use std::sync::{Arc, Mutex};
 pub struct Incrby;
 
-/// Increments the number stored at key by increment. If the key does not exist, it is set
-/// to 0 before performing the operation. An error is returned if the key contains a value
-/// of the wrong type or contains a string that can not be represented as integer.
-///
-/// This operation is limited to 64 bit signed integers.
-
 impl Runnable<Arc<Mutex<Database>>> for Incrby {
+    /// Increments the number stored at **key** by increment. If the **key** does not exist, it is set
+    /// to 0 before performing the operation.
+    ///
+    /// This operation is limited to 64 bit signed integers.
+    ///
+    /// # Return value
+    /// [String] _encoded_ in [RInteger]: the value of **key** after the increment.
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * The key contains a value of the wrong type or contains a string that can not be represented as integer.
+    /// * The buffer [Vec]<[String]> more than two elements is received or empty.
+    /// * [Database] received in <[Arc]<[Mutex]>> is poisoned.
     fn run(
         &self,
         buffer: Vec<String>,

@@ -10,11 +10,18 @@ use crate::messages::redis_messages;
 use crate::native_types::{error::ErrorStruct, integer::RInteger, redis_type::RedisType};
 pub struct Strlen;
 
-/// Returns the length of the string value stored at key. An error is returned when key holds a non-string value.
-///
-/// Return value: Integer reply: the length of the string at key, or 0 when key does not exist.
-
 impl Runnable<Arc<Mutex<Database>>> for Strlen {
+    /// Returns the length of the string value stored at **key**.
+    ///
+    /// # Return value
+    /// [String] _encoded_ in [RInteger]:  the length of the string at key, or 0 when key does not exist.
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * Key holds a non-string value.
+    /// * The buffer [Vec]<[String]> more than one element is received or empty.
+    /// * [Database]  received in <[Arc]<[Mutex]>> is poisoned.
     fn run(
         &self,
         mut buffer: Vec<String>,

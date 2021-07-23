@@ -10,6 +10,17 @@ use crate::{
 pub struct Set;
 
 impl Runnable<Arc<Mutex<Database>>> for Set {
+    /// Set key to hold the string value. If key already holds a value, it is overwritten, regardless of its type.
+    /// Any previous time to live associated with the key is discarded on successful SET operation.
+    ///
+    /// # Return value
+    /// [String] _encoded_ in [RSimpleString]: OK if SET was executed correctly.
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * The buffer [Vec]<[String]> more than two elements is received or empty.
+    /// * [Database] received in <[Arc]<[Mutex]>> is poisoned.
     fn run(
         &self,
         buffer: Vec<String>,

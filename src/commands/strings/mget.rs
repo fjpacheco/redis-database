@@ -9,6 +9,17 @@ use std::sync::{Arc, Mutex};
 pub struct Mget;
 
 impl Runnable<Arc<Mutex<Database>>> for Mget {
+    /// Returns the values of all specified keys.
+    /// For every key that does not hold a string value or does not exist, the special value nil is returned.
+    ///
+    /// # Return value
+    /// [String] _encoded_ in [RArray]: list of values at the specified keys.
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * The buffer [Vec]<[String]> is empty.
+    /// * [Database] received in <[Arc]<[Mutex]>> is poisoned.
     fn run(
         &self,
         buffer: Vec<String>,
@@ -40,15 +51,6 @@ impl Runnable<Arc<Mutex<Database>>> for Mget {
 
 fn check_error_cases(buffer: &[String]) -> Result<(), ErrorStruct> {
     check_empty(buffer, "mget")?;
-
-    if buffer.len() == 1 {
-        // never "mget" alone
-        let error_message = redis_messages::arguments_invalid_to("mget");
-        return Err(ErrorStruct::new(
-            error_message.get_prefix(),
-            error_message.get_message(),
-        ));
-    }
 
     Ok(())
 }

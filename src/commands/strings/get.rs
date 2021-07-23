@@ -10,6 +10,17 @@ use std::sync::{Arc, Mutex};
 pub struct Get;
 
 impl Runnable<Arc<Mutex<Database>>> for Get {
+    /// Get the value of **key**. If the key does not exist the special value nil is returned.
+    ///
+    /// # Return value
+    /// [String] _encoded_ in [RBulkString]: the value of **key**, or **nil** when key does not exist.
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * The value stored at **key** is not a string, because GET only handles string values.
+    /// * The buffer [Vec]<[String]> more than one element is received or empty.
+    /// * [Database]  received in <[Arc]<[Mutex]>> is poisoned.
     fn run(
         &self,
         buffer: Vec<String>,

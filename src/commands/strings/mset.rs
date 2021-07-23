@@ -9,6 +9,17 @@ use std::sync::{Arc, Mutex};
 pub struct Mset;
 
 impl Runnable<Arc<Mutex<Database>>> for Mset {
+    /// Sets the given keys to their respective values.
+    /// MSET replaces existing values with new values, just as regular SET.
+    ///
+    /// # Return value
+    /// [String] _encoded_ in [RSimpleString]: OK if MSET was executed correctly.
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * The buffer [Vec]<[String]> is empty or received any key without value.
+    /// * [Database] received in <[Arc]<[Mutex]>> is poisoned.
     fn run(
         &self,
         buffer: Vec<String>,

@@ -10,6 +10,18 @@ use std::sync::{Arc, Mutex};
 
 pub struct Append;
 impl Runnable<Arc<Mutex<Database>>> for Append {
+    /// If **key** already exists and is a string, this command appends the value at the end of the string.
+    /// If key does not exist it is created and set as an empty string, so APPEND will be similar to SET in this special case.
+    ///
+    /// # Return value
+    /// [String] _encoded_ in [RInteger]: the length of the string after the append operation.
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * Key holds a non-string value.
+    /// * The buffer [Vec]<[String]> more than two element is received or empty.
+    /// * [Database] received in <[Arc]<[Mutex]>> is poisoned.
     fn run(
         &self,
         mut buffer: Vec<String>,

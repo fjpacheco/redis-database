@@ -14,7 +14,7 @@ fn int_test_01_sadd_key_with_members_return_ok() -> Result<(), ErrorStruct> {
     let mut connection_client = server.get_connection_client()?;
 
     let received: Result<usize, RedisError> =
-        connection_client.sadd("key", vec!["member1", "member2"]);
+        connection_client.sadd("key_1", vec!["member_1", "member_2"]);
 
     assert!(received.is_ok());
     assert_eq!(received, Ok(2));
