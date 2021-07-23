@@ -72,7 +72,7 @@ mod test_file_manager {
     };
 
     #[test]
-    fn test01_write_line() {
+    fn test_01_write_line() {
         let file_manager = FileManager::new();
         let text = "This is a line to be written".to_string();
         let file = File::create("file_manager_01.txt").unwrap();
@@ -87,7 +87,7 @@ mod test_file_manager {
     }
 
     #[test]
-    fn test02_write_many_lines() {
+    fn test_02_write_many_lines() {
         let file_manager = FileManager::new();
         let file = File::create("file_manager_02.txt").unwrap();
         // file.set_len(0);
@@ -107,7 +107,7 @@ mod test_file_manager {
     }
 
     #[test]
-    fn test03_read_line() {
+    fn test_03_read_line() {
         let file_manager = FileManager::new();
         let text = "This is a line to be written".to_string();
         let file = File::create("file_manager_03.txt").unwrap();

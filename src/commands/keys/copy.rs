@@ -62,7 +62,7 @@ mod test_copy_function {
     use super::*;
 
     #[test]
-    fn test01_copy_value_string_of_key_source_existent_into_key_destiny_non_existent_return_success_one(
+    fn test_01_copy_value_string_of_key_source_existent_into_key_destiny_non_existent_return_success_one(
     ) {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut database_mock = Arc::new(Mutex::new(Database::new(notifier)));
@@ -88,8 +88,8 @@ mod test_copy_function {
     }
 
     #[test]
-    fn test02_copy_value_string_of_key_source_existent_into_key_destiny_existent_return_error_zero()
-    {
+    fn test_02_copy_value_string_of_key_source_existent_into_key_destiny_existent_return_error_zero(
+    ) {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut database_mock = Arc::new(Mutex::new(Database::new(notifier)));
         database_mock
@@ -109,7 +109,7 @@ mod test_copy_function {
     }
 
     #[test]
-    fn test03_copy_value_string_of_key_source_non_existent_into_key_destiny_non_existent_return_error_zero(
+    fn test_03_copy_value_string_of_key_source_non_existent_into_key_destiny_non_existent_return_error_zero(
     ) {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut database_mock = Arc::new(Mutex::new(Database::new(notifier)));
@@ -126,7 +126,7 @@ mod test_copy_function {
     }
 
     #[test]
-    fn test04_copy_value_set_of_key_source_existent_into_key_destiny_non_existent_return_success_one(
+    fn test_04_copy_value_set_of_key_source_existent_into_key_destiny_non_existent_return_success_one(
     ) {
         let mut set = HashSet::new();
         set.insert(String::from("m1"));
@@ -160,7 +160,7 @@ mod test_copy_function {
     }
 
     #[test]
-    fn test06_copy_value_list_of_key_source_existent_into_key_destiny_non_existent_return_success_one(
+    fn test_06_copy_value_list_of_key_source_existent_into_key_destiny_non_existent_return_success_one(
     ) {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut database_mock = Arc::new(Mutex::new(Database::new(notifier)));

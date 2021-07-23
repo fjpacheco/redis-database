@@ -33,7 +33,7 @@ pub mod test_rpop {
     use super::*;
     use std::collections::VecDeque;
     #[test]
-    fn test01_lpop_one_value_from_an_existing_list() {
+    fn test_01_lpop_one_value_from_an_existing_list() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
 
         let mut new_list: VecDeque<String> = VecDeque::new();
@@ -63,7 +63,7 @@ pub mod test_rpop {
     }
 
     #[test]
-    fn test02_lpop_many_values_from_an_existing_list() {
+    fn test_02_lpop_many_values_from_an_existing_list() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
 
         let mut new_list: VecDeque<String> = VecDeque::new();
@@ -93,7 +93,7 @@ pub mod test_rpop {
     }
 
     #[test]
-    fn test03_lpop_value_from_a_non_existing_list() {
+    fn test_03_lpop_value_from_a_non_existing_list() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut data = Arc::new(Mutex::new(Database::new(notifier)));
         let buffer = vec_strings!["key"];
@@ -103,7 +103,7 @@ pub mod test_rpop {
     }
 
     #[test]
-    fn test04_lpop_with_no_key() {
+    fn test_04_lpop_with_no_key() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut data = Arc::new(Mutex::new(Database::new(notifier)));
         let buffer = vec_strings![];

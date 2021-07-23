@@ -40,7 +40,7 @@ mod test_exists {
     use crate::database::TypeSaved;
 
     #[test]
-    fn test01_exists_existing_key() {
+    fn test_01_exists_existing_key() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut database = Arc::new(Mutex::new(Database::new(notifier)));
         database
@@ -53,7 +53,7 @@ mod test_exists {
     }
 
     #[test]
-    fn test02_exists_non_existing_key() {
+    fn test_02_exists_non_existing_key() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut database = Arc::new(Mutex::new(Database::new(notifier)));
         database

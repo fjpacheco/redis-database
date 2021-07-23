@@ -170,7 +170,7 @@ pub mod test_log_center {
     use std::{fs::File, sync::mpsc};
 
     #[test]
-    fn test01_sending_a_log_message() {
+    fn test_01_sending_a_log_message() {
         let _ = File::create("logcenter_01.txt").unwrap();
         let config = Arc::new(Mutex::new(
             RedisConfig::new(
@@ -198,7 +198,7 @@ pub mod test_log_center {
     }
 
     #[test]
-    fn test02_sending_a_log_message_and_drop_log_center() {
+    fn test_02_sending_a_log_message_and_drop_log_center() {
         {
             let _ = File::create("logcenter_02.txt").unwrap();
             let config = Arc::new(Mutex::new(
@@ -233,7 +233,7 @@ pub mod test_log_center {
     }
 
     #[test]
-    fn test03_changing_logfile_name() {
+    fn test_03_changing_logfile_name() {
         let _ = File::create("logcenter_03.txt").unwrap();
         let config = Arc::new(Mutex::new(
             RedisConfig::new(

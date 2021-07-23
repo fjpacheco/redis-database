@@ -72,7 +72,7 @@ impl CommandSubDelegator {
     {
         for packed_raw_command in rcv_cmd.iter() {
             if let Some((mut command_input_user, sender_to_client, _)) = packed_raw_command {
-                let command_type = command_input_user.remove(0);
+                let command_type = command_input_user.remove(0).to_lowercase();
                 if let Some(runnable_command) = runnables_map.get(&command_type) {
                     let err_critical = is_critical(run_command(
                         runnable_command,
@@ -170,7 +170,7 @@ pub mod test_database_command_delegator {
 
     #[test]
 
-    fn test01_set_get_strlen() {
+    fn test_01_set_get_strlen() {
         let mut map: HashMap<String, Arc<BoxedCommand<Arc<Mutex<Database>>>>> = HashMap::new();
         map.insert(String::from("set"), Arc::new(Box::new(Set)));
         map.insert(String::from("get"), Arc::new(Box::new(Get)));
@@ -231,7 +231,7 @@ pub mod test_database_command_delegator {
     }
 
     #[test]
-    fn test02_get_command_does_not_exist() {
+    fn test_02_get_command_does_not_exist() {
         let mut map: HashMap<String, Arc<BoxedCommand<Arc<Mutex<Database>>>>> = HashMap::new();
         map.insert(String::from("set"), Arc::new(Box::new(Set)));
         let runnables_map = RunnablesMap::new(map);
@@ -280,7 +280,7 @@ pub mod test_database_command_delegator {
     }
 
     #[test]
-    fn test03_rpush_rpop_llen() {
+    fn test_03_rpush_rpop_llen() {
         let mut map: HashMap<String, Arc<BoxedCommand<Arc<Mutex<Database>>>>> = HashMap::new();
         map.insert(String::from("rpush"), Arc::new(Box::new(RPush)));
         map.insert(String::from("rpop"), Arc::new(Box::new(RPop)));

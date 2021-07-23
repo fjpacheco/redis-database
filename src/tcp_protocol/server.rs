@@ -90,7 +90,7 @@ impl ServerRedis {
                 notifier.clone(),
             )?;
 
-        let mut collector = GarbageCollector::new(snd_cmd_dat, 4, 20, notifier.clone());
+        let mut collector = GarbageCollector::new(snd_cmd_dat, 1, 20, notifier.clone());
 
         /*let quit_notifier = Mutex::new(notifier.clone());
         let quit: JoinHandle<Result<(), ErrorStruct>> = thread::spawn(move ||{

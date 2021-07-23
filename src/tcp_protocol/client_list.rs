@@ -168,7 +168,7 @@ mod test_client_list {
     use std::sync::mpsc;
 
     #[test]
-    fn test01_get_register() {
+    fn test_01_get_register() {
         let (sender, _) = mpsc::channel();
         let mut list = ClientList::new(sender);
 

@@ -61,7 +61,7 @@ mod test_mset_function {
     use super::*;
 
     #[test]
-    fn test01_mset_reemplace_value_old_of_key_and_insert_more_elements() {
+    fn test_01_mset_reemplace_value_old_of_key_and_insert_more_elements() {
         let buffer_mock2 = vec_strings!["key1", "value1_new", "key2", "value2"];
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut database_mock = Arc::new(Mutex::new(Database::new(notifier)));
@@ -89,7 +89,7 @@ mod test_mset_function {
     }
 
     #[test]
-    fn test02_mset_with_bad_args_return_err() {
+    fn test_02_mset_with_bad_args_return_err() {
         let buffer_mock = vec_strings!["key1", "value1_new", "key2"];
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut database_mock = Arc::new(Mutex::new(Database::new(notifier)));

@@ -46,7 +46,7 @@ pub mod test_incrby {
     use super::*;
 
     #[test]
-    fn test01_incrby_existing_key() {
+    fn test_01_incrby_existing_key() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut data = Arc::new(Mutex::new(Database::new(notifier)));
         // redis> SET mykey 10
@@ -65,7 +65,7 @@ pub mod test_incrby {
     }
 
     #[test]
-    fn test02_incrby_existing_key_by_negative_integer() {
+    fn test_02_incrby_existing_key_by_negative_integer() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut data = Arc::new(Mutex::new(Database::new(notifier)));
         // redis> SET mykey 10
@@ -84,7 +84,7 @@ pub mod test_incrby {
     }
 
     #[test]
-    fn test03_incrby_existing_key_with_negative_integer_value() {
+    fn test_03_incrby_existing_key_with_negative_integer_value() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut data = Arc::new(Mutex::new(Database::new(notifier)));
         // redis> SET mykey -10
@@ -103,7 +103,7 @@ pub mod test_incrby {
     }
 
     #[test]
-    fn test04_incrby_existing_key_with_negative_integer_value_by_negative_integer() {
+    fn test_04_incrby_existing_key_with_negative_integer_value_by_negative_integer() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut data = Arc::new(Mutex::new(Database::new(notifier)));
         // redis> SET mykey -10
@@ -122,7 +122,7 @@ pub mod test_incrby {
     }
 
     #[test]
-    fn test05_incrby_non_existing_key() {
+    fn test_05_incrby_non_existing_key() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut data = Arc::new(Mutex::new(Database::new(notifier)));
         let buffer = vec_strings!["mykey", "3"];
@@ -136,7 +136,7 @@ pub mod test_incrby {
     }
 
     #[test]
-    fn test06_incrby_existing_key_with_non_decrementable_value() {
+    fn test_06_incrby_existing_key_with_non_decrementable_value() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut data = Arc::new(Mutex::new(Database::new(notifier)));
         // redis> SET mykey value
@@ -154,7 +154,7 @@ pub mod test_incrby {
     }
 
     #[test]
-    fn test07_decrby_existing_key_by_non_integer() {
+    fn test_07_decrby_existing_key_by_non_integer() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut data = Arc::new(Mutex::new(Database::new(notifier)));
         // redis> SET mykey 10

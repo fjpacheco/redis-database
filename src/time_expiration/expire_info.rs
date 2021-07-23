@@ -33,7 +33,7 @@ impl ExpireInfo {
     }
 
     /// Evaluates if the timeout has ended.
-    //#[allow(clippy::branches_sharing_code)]
+    #[allow(clippy::branches_sharing_code)]
     pub fn is_expired(&mut self, notifier: Option<Arc<Mutex<Notifier>>>, key_name: &str) -> bool {
         if self.timeout.is_some() {
             let _ = self.update(notifier, key_name);
@@ -114,16 +114,16 @@ mod test_clock {
     use std::thread::sleep;
 
     #[test]
-    #[ignore]
-    fn test01_new_expireinfo_does_not_have_timeout() {
+    #[ignore = "Long test"]
+    fn long_test_01_new_expireinfo_does_not_have_timeout() {
         let mut info = ExpireInfo::new();
         assert!(!info.is_expired(None, "key"));
         assert_eq!(info.ttl(), None);
     }
 
     #[test]
-    #[ignore]
-    fn test02_setting_ten_seconds_of_timeout() {
+    #[ignore = "Long test"]
+    fn long_test_02_setting_ten_seconds_of_timeout() {
         let mut info = ExpireInfo::new();
         info.set_timeout(10).unwrap();
         assert_eq!(info.ttl(), Some(10));
@@ -136,8 +136,8 @@ mod test_clock {
     }
 
     #[test]
-    #[ignore]
-    fn test03_setting_five_seconds_of_timeout_with_unix_timestamp() {
+    #[ignore = "Long test"]
+    fn long_test_03_setting_five_seconds_of_timeout_with_unix_timestamp() {
         let mut info = ExpireInfo::new();
         match SystemTime::now().duration_since(UNIX_EPOCH - Duration::new(5, 0)) {
             Ok(dura) => info.set_timeout_unix_timestamp(dura.as_secs()).unwrap(),

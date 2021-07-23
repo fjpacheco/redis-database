@@ -40,7 +40,7 @@ mod test_del {
     use crate::{database::TypeSaved, vec_strings};
 
     #[test]
-    fn test01_del_existing_key() {
+    fn test_01_del_existing_key() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut database = Arc::new(Mutex::new(Database::new(notifier)));
         database
@@ -53,7 +53,7 @@ mod test_del {
     }
 
     #[test]
-    fn test02_del_non_existing_key() {
+    fn test_02_del_non_existing_key() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut database = Arc::new(Mutex::new(Database::new(notifier)));
         database
@@ -66,7 +66,7 @@ mod test_del {
     }
 
     #[test]
-    fn test01_del_key_just_deleted() {
+    fn test_01_del_key_just_deleted() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut database = Arc::new(Mutex::new(Database::new(notifier)));
         database

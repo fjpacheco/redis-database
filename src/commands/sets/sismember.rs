@@ -67,7 +67,7 @@ mod test_sismember_function {
     use super::*;
 
     #[test]
-    fn test01_sismember_return_number_one_if_member_is_contained_in_set() {
+    fn test_01_sismember_return_number_one_if_member_is_contained_in_set() {
         let mut set = HashSet::new();
         set.insert(String::from("m1"));
         set.insert(String::from("m2"));
@@ -90,7 +90,7 @@ mod test_sismember_function {
     }
 
     #[test]
-    fn test02_sismember_return_number_zero_if_member_is_not_contained_in_set() {
+    fn test_02_sismember_return_number_zero_if_member_is_not_contained_in_set() {
         let mut set = HashSet::new();
         set.insert(String::from("m1"));
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
@@ -108,7 +108,7 @@ mod test_sismember_function {
     }
 
     #[test]
-    fn test03_sismember_return_number_zero_if_the_key_of_set_dont_exist_in_database() {
+    fn test_03_sismember_return_number_zero_if_the_key_of_set_dont_exist_in_database() {
         // TODO: revisar nombres de tests... "in database" ...
         let mut set = HashSet::new();
         set.insert(String::from("m1"));
@@ -127,7 +127,7 @@ mod test_sismember_function {
     }
 
     #[test]
-    fn test04_sismember_return_error_wrongtype_if_execute_with_key_of_string() {
+    fn test_04_sismember_return_error_wrongtype_if_execute_with_key_of_string() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut database_mock = Arc::new(Mutex::new(Database::new(notifier)));
         database_mock.lock().unwrap().insert(
@@ -146,7 +146,7 @@ mod test_sismember_function {
     }
 
     #[test]
-    fn test05_sismember_return_error_wrongtype_if_execute_with_key_of_list() {
+    fn test_05_sismember_return_error_wrongtype_if_execute_with_key_of_list() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut database_mock = Arc::new(Mutex::new(Database::new(notifier)));
         let mut new_list = VecDeque::new();
@@ -169,7 +169,7 @@ mod test_sismember_function {
     }
 
     #[test]
-    fn test06_sismember_return_error_arguments_invalid_ifbuffer_has_more_than_3_arguments() {
+    fn test_06_sismember_return_error_arguments_invalid_ifbuffer_has_more_than_3_arguments() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut database_mock = Arc::new(Mutex::new(Database::new(notifier)));
         let buffer_mock = vec_strings!["arg1", "arg2", "arg3"];

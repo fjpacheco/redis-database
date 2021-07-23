@@ -36,7 +36,7 @@ pub mod test_lpushx {
     use super::*;
 
     #[test]
-    fn test01_lpushx_values_on_an_existing_list() {
+    fn test_01_lpushx_values_on_an_existing_list() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut data = Arc::new(Mutex::new(Database::new(notifier)));
         let c_data = Arc::clone(&data);
@@ -69,7 +69,7 @@ pub mod test_lpushx {
     }
 
     #[test]
-    fn test02_lpushx_values_on_a_non_existing_list() {
+    fn test_02_lpushx_values_on_a_non_existing_list() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut data = Arc::new(Mutex::new(Database::new(notifier)));
         let buffer = vec_strings!["key", "this", "is", "a", "list"];

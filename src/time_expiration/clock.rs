@@ -119,7 +119,7 @@ mod test_clock {
     use super::*;
 
     #[test]
-    fn test01_waiting_five_seconds(){
+    fn test_01_waiting_five_seconds(){
 
         let mut clock = Clock::new();
         let time1 = clock.get_now();

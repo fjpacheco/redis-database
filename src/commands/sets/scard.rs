@@ -60,7 +60,7 @@ mod test_scard_function {
     use super::*;
 
     #[test]
-    fn test01_scard_return_number_of_set_members() {
+    fn test_01_scard_return_number_of_set_members() {
         let mut set = HashSet::new();
         set.insert(String::from("m1"));
         set.insert(String::from("m2"));
@@ -80,7 +80,7 @@ mod test_scard_function {
     }
 
     #[test]
-    fn test02_scard_return_number_of_set_members_but_not_repeated() {
+    fn test_02_scard_return_number_of_set_members_but_not_repeated() {
         let mut set = HashSet::new();
         set.insert(String::from("m1"));
         set.insert(String::from("m2"));
@@ -109,7 +109,7 @@ mod test_scard_function {
     }
 
     #[test]
-    fn test03_scard_return_zero_if_the_set_is_empty() {
+    fn test_03_scard_return_zero_if_the_set_is_empty() {
         let set: HashSet<String> = HashSet::new();
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut database_mock = Arc::new(Mutex::new(Database::new(notifier)));
@@ -126,7 +126,7 @@ mod test_scard_function {
     }
 
     #[test]
-    fn test04_scard_return_zero_if_the_set_dont_exist() {
+    fn test_04_scard_return_zero_if_the_set_dont_exist() {
         let set: HashSet<String> = HashSet::new();
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut database_mock = Arc::new(Mutex::new(Database::new(notifier)));
@@ -143,7 +143,7 @@ mod test_scard_function {
     }
 
     #[test]
-    fn test05_scard_return_error_wrongtype_if_execute_with_key_of_string() {
+    fn test_05_scard_return_error_wrongtype_if_execute_with_key_of_string() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut database_mock = Arc::new(Mutex::new(Database::new(notifier)));
         database_mock.lock().unwrap().insert(
@@ -162,7 +162,7 @@ mod test_scard_function {
     }
 
     #[test]
-    fn test06_scard_return_error_wrongtype_if_execute_with_key_of_lists() {
+    fn test_06_scard_return_error_wrongtype_if_execute_with_key_of_lists() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut database_mock = Arc::new(Mutex::new(Database::new(notifier)));
         let mut new_list = VecDeque::new();
@@ -184,7 +184,7 @@ mod test_scard_function {
     }
 
     #[test]
-    fn test07_scard_return_error_arguments_invalid_ifbuffer_has_many_one_key() {
+    fn test_07_scard_return_error_arguments_invalid_ifbuffer_has_many_one_key() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut database_mock = Arc::new(Mutex::new(Database::new(notifier)));
         let buffer_mock = vec_strings!["key1", "key2", "key3"];

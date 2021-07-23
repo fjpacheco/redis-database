@@ -64,7 +64,7 @@ mod test_set_function {
 
     use super::*;
     #[test]
-    fn test01_set_key_and_value_return_ok() {
+    fn test_01_set_key_and_value_return_ok() {
         let buffer_mock = vec_strings!["key", "value"];
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut database_mock = Arc::new(Mutex::new(Database::new(notifier)));
@@ -76,7 +76,7 @@ mod test_set_function {
     }
 
     #[test]
-    fn test02_set_key_and_value_save_correctly_in_database_mock() {
+    fn test_02_set_key_and_value_save_correctly_in_database_mock() {
         let buffer_mock_set = vec_strings!["key", "value"];
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut database_mock = Arc::new(Mutex::new(Database::new(notifier)));
@@ -92,7 +92,7 @@ mod test_set_function {
     }
 
     #[test]
-    fn test03_set_key_and_value_but_get_another_key_return_none() {
+    fn test_03_set_key_and_value_but_get_another_key_return_none() {
         let buffer_mock = vec_strings!["key", "value"];
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut database_mock = Arc::new(Mutex::new(Database::new(notifier)));
@@ -113,7 +113,7 @@ mod test_set_function {
     }
 
     #[test]
-    fn test04_set_without_value_and_key_return_err_syntax() {
+    fn test_04_set_without_value_and_key_return_err_syntax() {
         let buffer_mock = vec_strings!["set", "set", "set", "set"];
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut database_mock = Arc::new(Mutex::new(Database::new(notifier)));

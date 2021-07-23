@@ -88,8 +88,8 @@ mod test_clean {
     }
 
     #[test]
-    //#[ignore]
-    fn test01_cleaning_some_keys() {
+    //#[ignore = "Long test"]
+    fn test_01_cleaning_some_keys() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut database = Database::new(notifier);
 

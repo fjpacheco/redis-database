@@ -62,7 +62,7 @@ mod test_get {
     use super::*;
 
     #[test]
-    fn test01_mget_value_of_key_correct_is_success() {
+    fn test_01_mget_value_of_key_correct_is_success() {
         let buffer_mock_get = vec_strings!["key2", "asd", "key1"];
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut database_mock = Arc::new(Mutex::new(Database::new(notifier)));
@@ -88,7 +88,7 @@ mod test_get {
     }
 
     #[test]
-    fn test02_mget_does_not_maintain_order() {
+    fn test_02_mget_does_not_maintain_order() {
         let buffer_mock_get1 = vec_strings!["key2", "asd", "key1"];
         let buffer_mock_get2 = vec_strings!["asd", "key2", "key1"];
         let buffer_mock_get3 = vec_strings!["key1", "key2", "asd"];

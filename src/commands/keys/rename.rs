@@ -55,7 +55,7 @@ mod test_rename {
     };
 
     #[test]
-    fn test01_rename_existing_key_with_new_key() {
+    fn test_01_rename_existing_key_with_new_key() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut database = Arc::new(Mutex::new(Database::new(notifier)));
         database
@@ -71,7 +71,7 @@ mod test_rename {
     }
 
     #[test]
-    fn test02_rename_non_existing_key() {
+    fn test_02_rename_non_existing_key() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut database = Arc::new(Mutex::new(Database::new(notifier)));
         database
@@ -84,7 +84,7 @@ mod test_rename {
     }
 
     #[test]
-    fn test03_rename_existing_key_with_existing_key() {
+    fn test_03_rename_existing_key_with_existing_key() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut database = Arc::new(Mutex::new(Database::new(notifier)));
         database

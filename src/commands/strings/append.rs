@@ -60,7 +60,7 @@ pub mod test_append {
     };
 
     #[test]
-    fn test01_append_to_an_existing_key() {
+    fn test_01_append_to_an_existing_key() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut data = Arc::new(Mutex::new(Database::new(notifier)));
 
@@ -79,7 +79,7 @@ pub mod test_append {
     }
 
     #[test]
-    fn test02_append_to_a_non_existing_key() {
+    fn test_02_append_to_a_non_existing_key() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut data = Arc::new(Mutex::new(Database::new(notifier)));
         let buffer = vec_strings!["key", "newValue"];
@@ -93,7 +93,7 @@ pub mod test_append {
     }
 
     #[test]
-    fn test03_wrong_number_of_arguments() {
+    fn test_03_wrong_number_of_arguments() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut data = Arc::new(Mutex::new(Database::new(notifier)));
 

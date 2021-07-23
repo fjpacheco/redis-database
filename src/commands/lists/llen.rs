@@ -55,7 +55,7 @@ pub mod test_llen {
     use std::collections::VecDeque;
 
     #[test]
-    fn test01_llen_an_existing_list_of_one_element() {
+    fn test_01_llen_an_existing_list_of_one_element() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut data = Arc::new(Mutex::new(Database::new(notifier)));
 
@@ -72,7 +72,7 @@ pub mod test_llen {
     }
 
     #[test]
-    fn test02_llen_an_existing_list_of_many_elements() {
+    fn test_02_llen_an_existing_list_of_many_elements() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut data = Arc::new(Mutex::new(Database::new(notifier)));
 
@@ -92,7 +92,7 @@ pub mod test_llen {
     }
 
     #[test]
-    fn test03_llen_to_key_storing_non_list() {
+    fn test_03_llen_to_key_storing_non_list() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut data = Arc::new(Mutex::new(Database::new(notifier)));
         // redis> SET mykey 10

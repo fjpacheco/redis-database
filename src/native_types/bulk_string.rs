@@ -38,14 +38,14 @@ mod test_bulk_string {
     use super::*;
     use std::io::BufReader;
     #[test]
-    fn test04_encoding_of_a_bulk_string() {
+    fn test_04_encoding_of_a_bulk_string() {
         let bulk = String::from("Hello world");
         let encoded = RBulkString::encode(bulk);
         assert_eq!(encoded, "$11\r\nHello world\r\n".to_string());
     }
 
     #[test]
-    fn test02_bulk_string_decoding() {
+    fn test_02_bulk_string_decoding() {
         let encoded = RBulkString::encode(String::from("Hello world"));
         let mut bufreader = BufReader::new(encoded.as_bytes());
         let mut first_lecture = String::new();
@@ -58,7 +58,7 @@ mod test_bulk_string {
     }
     /*
     #[test]
-    fn test03_bulk_string_decoding_empties_original_string() {
+    fn test_03_bulk_string_decoding_empties_original_string() {
         let mut encoded = RBulkString::encode(String::from("Hello world"));
         encoded.remove(0);
         let _decoded = RBulkString::decode(&mut encoded.as_bytes());
@@ -66,7 +66,7 @@ mod test_bulk_string {
     }
     */
     #[test]
-    fn test08_bad_decoding_of_bulk_string_throws_a_parsing_error() {
+    fn test_08_bad_decoding_of_bulk_string_throws_a_parsing_error() {
         let encoded = "$Good Morning".to_string();
         let mut bufreader = BufReader::new(encoded.as_bytes());
         let mut first_lecture = String::new();
@@ -122,7 +122,7 @@ mod test_bulk_string {
 
     /*
     #[test]
-    fn test10_set_key_value_simulation() {
+    fn test_10_set_key_value_simulation() {
         let input = "SET ping pong";
         let mut v: Vec<&str> = input.rsplit(' ').collect();
         let command = v.pop().unwrap().to_string();

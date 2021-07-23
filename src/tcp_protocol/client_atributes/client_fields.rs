@@ -201,13 +201,13 @@ mod test_client_status {
     use std::net::Ipv4Addr;
 
     #[test]
-    fn test01_initial_state() {
+    fn test_01_initial_state() {
         let status = ClientFields::new(SocketAddrV4::new(Ipv4Addr::new(127, 0, 0, 1), 8080));
         assert_eq!(status.status(), Some(&Status::Executor));
     }
 
     #[test]
-    fn test02_add_subscriptions() {
+    fn test_02_add_subscriptions() {
         let mut status = ClientFields::new(SocketAddrV4::new(Ipv4Addr::new(127, 0, 0, 1), 8080));
         let added = status.add_subscriptions(vec!["telefe".to_string(), "trece".to_string()]);
         assert_eq!(added.unwrap(), 2);
@@ -215,7 +215,7 @@ mod test_client_status {
     }
 
     #[test]
-    fn test03_remove_not_all_subscriptions() {
+    fn test_03_remove_not_all_subscriptions() {
         let mut status = ClientFields::new(SocketAddrV4::new(Ipv4Addr::new(127, 0, 0, 1), 8080));
         let added = status.add_subscriptions(vec![
             "telefe".to_string(),
@@ -232,7 +232,7 @@ mod test_client_status {
     }
 
     #[test]
-    fn test04_remove_all_subscriptions() {
+    fn test_04_remove_all_subscriptions() {
         let mut status = ClientFields::new(SocketAddrV4::new(Ipv4Addr::new(127, 0, 0, 1), 8080));
         let added = status.add_subscriptions(vec![
             "telefe".to_string(),
@@ -252,7 +252,7 @@ mod test_client_status {
     }
 
     #[test]
-    fn test05_remove_all_subscriptions_by_default_empty_vec() {
+    fn test_05_remove_all_subscriptions_by_default_empty_vec() {
         let mut status = ClientFields::new(SocketAddrV4::new(Ipv4Addr::new(127, 0, 0, 1), 8080));
         let added = status.add_subscriptions(vec![
             "telefe".to_string(),

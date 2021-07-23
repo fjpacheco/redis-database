@@ -125,7 +125,7 @@ pub mod test_lset {
 
     use super::*;
     #[test]
-    fn test01_lrem_negative_count() {
+    fn test_01_lrem_negative_count() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut data = Arc::new(Mutex::new(Database::new(notifier)));
 
@@ -155,7 +155,7 @@ pub mod test_lset {
     }
 
     #[test]
-    fn test02_lrem_positive_count() {
+    fn test_02_lrem_positive_count() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut data = Arc::new(Mutex::new(Database::new(notifier)));
 
@@ -186,7 +186,7 @@ pub mod test_lset {
     }
 
     #[test]
-    fn test02_lrem_count_equals_zero() {
+    fn test_02_lrem_count_equals_zero() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut data = Arc::new(Mutex::new(Database::new(notifier)));
 

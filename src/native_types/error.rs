@@ -96,7 +96,7 @@ mod test_error {
     use super::*;
     use std::io::BufReader;
     #[test]
-    fn test05_encoding_and_decoding_of_an_error() {
+    fn test_05_encoding_and_decoding_of_an_error() {
         let error = ErrorStruct::new("ERR".to_string(), "esto es un error generico".to_string());
         let encoded = RError::encode(error);
         assert_eq!(encoded, "-ERR esto es un error generico\r\n".to_string());

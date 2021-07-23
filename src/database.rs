@@ -477,7 +477,7 @@ mod test_database {
     use super::*;
 
     #[test]
-    fn test01_insert_a_key() {
+    fn test_01_insert_a_key() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut database = Database::new(notifier);
         let value = TypeSaved::String(String::from("hola"));
@@ -492,7 +492,7 @@ mod test_database {
     }
 
     #[test]
-    fn test02_remove_a_key() {
+    fn test_02_remove_a_key() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut database = Database::new(notifier);
         let value = TypeSaved::String(String::from("hola"));
@@ -503,7 +503,7 @@ mod test_database {
     }
 
     #[test]
-    fn test03_database_contains_key() {
+    fn test_03_database_contains_key() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut database = Database::new(notifier);
         assert!(!database.contains_key("key"));
@@ -513,7 +513,7 @@ mod test_database {
     }
 
     #[test]
-    fn test04_set_timeout_for_existing_key() {
+    fn test_04_set_timeout_for_existing_key() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut database = Database::new(notifier);
         let value = TypeSaved::String(String::from("hola"));
@@ -523,7 +523,7 @@ mod test_database {
     }
 
     #[test]
-    fn test05_set_timeout_for_non_existing_key() {
+    fn test_05_set_timeout_for_non_existing_key() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut database = Database::new(notifier);
         match database.set_ttl("key", 10) {
@@ -536,7 +536,7 @@ mod test_database {
     }
 
     #[test]
-    fn test06_set_timeout_for_key_and_let_it_persist() {
+    fn test_06_set_timeout_for_key_and_let_it_persist() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut database = Database::new(notifier);
         let value = TypeSaved::String(String::from("hola"));
@@ -547,7 +547,7 @@ mod test_database {
     }
 
     #[test]
-    fn test07_persist_string_values_at_file() {
+    fn test_07_persist_string_values_at_file() {
         let filename = "database_01.rdb";
         let config = Arc::new(Mutex::new(
             RedisConfig::new(
@@ -576,7 +576,7 @@ mod test_database {
     }
 
     #[test]
-    fn test08_persist_expirable_string_values_at_file() {
+    fn test_08_persist_expirable_string_values_at_file() {
         let filename = "database_08.rdb";
         let config = Arc::new(Mutex::new(
             RedisConfig::new(
@@ -603,7 +603,7 @@ mod test_database {
     }
 
     #[test]
-    fn test09_persist_list_values_at_file() {
+    fn test_09_persist_list_values_at_file() {
         let filename = "database_09.rdb";
         let config = Arc::new(Mutex::new(
             RedisConfig::new(
@@ -630,7 +630,7 @@ mod test_database {
 
     #[ignore]
     #[test]
-    fn test10_persist_set_values_at_file() {
+    fn test_10_persist_set_values_at_file() {
         let filename = "database_10.rdb";
         let config = Arc::new(Mutex::new(
             RedisConfig::new(
@@ -656,7 +656,7 @@ mod test_database {
     }
 
     #[test]
-    fn test11_restore_string_values_from_file() {
+    fn test_11_restore_string_values_from_file() {
         let filename1 = "database_11_a.rdb";
         let config1 = Arc::new(Mutex::new(
             RedisConfig::new(
@@ -700,7 +700,7 @@ mod test_database {
     }
 
     #[test]
-    fn test12_restore_list_values_from_file() {
+    fn test_12_restore_list_values_from_file() {
         let filename1 = "database_12_a.rdb";
         let config1 = Arc::new(Mutex::new(
             RedisConfig::new(
@@ -743,9 +743,9 @@ mod test_database {
         );
     }
 
-    // #[ignore] // El orden de las keys de los sets no es siempre el mismo
+    // #[ignore = "Long test"]// El orden de las keys de los sets no es siempre el mismo
     #[test]
-    fn test13_restore_set_values_from_file() {
+    fn test_13_restore_set_values_from_file() {
         let filename1 = "database_13_a.rdb";
         let config1 = Arc::new(Mutex::new(
             RedisConfig::new(
@@ -798,7 +798,7 @@ mod test_database {
 
     #[ignore]
     #[test]
-    fn test14_restore_expirable_string_values_from_file() {
+    fn test_14_restore_expirable_string_values_from_file() {
         let filename1 = "database_14_a.rdb";
         let config1 = Arc::new(Mutex::new(
             RedisConfig::new(
@@ -815,7 +815,7 @@ mod test_database {
         original_database.set_redis_config(config1);
 
         original_database.insert("key".to_string(), TypeSaved::String(String::from("value")));
-        original_database.set_ttl("key", 5).unwrap();
+        original_database.set_ttl("key", 2).unwrap();
 
         original_database.take_snapshot().unwrap();
 
@@ -839,9 +839,8 @@ mod test_database {
             fs::read("database_14_b.rdb").unwrap()
         );
     }
-
     #[test]
-    fn test15_persist_different_values_at_file() {
+    fn test_15_persist_different_values_at_file() {
         let filename = "database_15.rdb";
         let config = Arc::new(Mutex::new(
             RedisConfig::new(
@@ -869,6 +868,7 @@ mod test_database {
         let buffer3 = vec_strings!["key3", "value1"];
         Sadd.run(buffer3, &mut original_database).unwrap();
 
+        let _ = original_database.lock().unwrap().take_snapshot();
         // This test won't always assert because there's a hashmap iteration
         /*
         assert_eq!(

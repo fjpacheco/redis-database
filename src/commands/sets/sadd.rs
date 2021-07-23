@@ -80,7 +80,7 @@ mod test_sadd_function {
     use std::collections::VecDeque;
 
     #[test]
-    fn test01_sadd_insert_and_return_amount_insertions() {
+    fn test_01_sadd_insert_and_return_amount_insertions() {
         let buffer_mock = vec_strings!["key", "member1", "member2"];
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut database_mock = Arc::new(Mutex::new(Database::new(notifier)));
@@ -93,7 +93,7 @@ mod test_sadd_function {
     }
 
     #[test]
-    fn test02_sadd_does_not_insert_repeated_elements() {
+    fn test_02_sadd_does_not_insert_repeated_elements() {
         let buffer_mock = vec_strings![
             "key", "member2", "member1", "member1", "member3", "member2", "member1", "member1",
             "member3"
@@ -109,7 +109,7 @@ mod test_sadd_function {
     }
 
     #[test]
-    fn test03_sadd_does_not_insert_elements_over_an_existing_key_string() {
+    fn test_03_sadd_does_not_insert_elements_over_an_existing_key_string() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut database_mock = Arc::new(Mutex::new(Database::new(notifier)));
         database_mock
@@ -127,7 +127,7 @@ mod test_sadd_function {
     }
 
     #[test]
-    fn test04_sadd_does_not_insert_elements_over_an_existing_key_list() {
+    fn test_04_sadd_does_not_insert_elements_over_an_existing_key_list() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut database_mock = Arc::new(Mutex::new(Database::new(notifier)));
         let mut new_list = VecDeque::new();

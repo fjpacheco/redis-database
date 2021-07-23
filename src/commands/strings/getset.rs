@@ -50,7 +50,7 @@ pub mod test_getset {
         vec_strings,
     };
     #[test]
-    fn test01_getset_of_an_existing_key() {
+    fn test_01_getset_of_an_existing_key() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut data = Arc::new(Mutex::new(Database::new(notifier)));
         data.lock()
@@ -68,7 +68,7 @@ pub mod test_getset {
     }
 
     #[test]
-    fn test02_getset_of_a_non_existing_key() {
+    fn test_02_getset_of_a_non_existing_key() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut data = Arc::new(Mutex::new(Database::new(notifier)));
         let buffer = vec_strings!["key", "newValue"];
@@ -82,7 +82,7 @@ pub mod test_getset {
     }
 
     #[test]
-    fn test03_wrong_number_of_arguments() {
+    fn test_03_wrong_number_of_arguments() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut data = Arc::new(Mutex::new(Database::new(notifier)));
 

@@ -48,7 +48,7 @@ pub mod test_strlen {
     use super::*;
 
     #[test]
-    fn test01_strlen_existing_key() {
+    fn test_01_strlen_existing_key() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut data = Arc::new(Mutex::new(Database::new(notifier)));
         // redis> SET mykey somevalue ---> "OK"
@@ -64,7 +64,7 @@ pub mod test_strlen {
     }
 
     #[test]
-    fn test02_srlen_non_existing_key() {
+    fn test_02_srlen_non_existing_key() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut data = Arc::new(Mutex::new(Database::new(notifier)));
         // redis> STRLEN nonexisting ---> (integer) 0

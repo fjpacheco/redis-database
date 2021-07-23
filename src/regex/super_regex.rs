@@ -31,7 +31,7 @@ pub mod test_super_regex {
     use super::*;
 
     #[test]
-    pub fn test01_one_character() {
+    pub fn test_01_one_character() {
         let regex = SuperRegex::from("h?llo").unwrap();
         assert!(regex.is_match("hello"));
         assert!(regex.is_match("hallo"));
@@ -43,7 +43,7 @@ pub mod test_super_regex {
     }
 
     #[test]
-    pub fn test02_many_character() {
+    pub fn test_02_many_character() {
         let regex = SuperRegex::from("h*llo").unwrap();
         assert!(regex.is_match("hello"));
         assert!(regex.is_match("hallo"));
@@ -55,7 +55,7 @@ pub mod test_super_regex {
     }
 
     #[test]
-    pub fn test03_left_side_characters() {
+    pub fn test_03_left_side_characters() {
         let regex = SuperRegex::from("*hello").unwrap();
         assert!(regex.is_match("hello"));
         assert!(!regex.is_match("hallo"));
@@ -67,7 +67,7 @@ pub mod test_super_regex {
     }
 
     #[test]
-    pub fn test04_right_side_characters() {
+    pub fn test_04_right_side_characters() {
         let regex = SuperRegex::from("hello*").unwrap();
         assert!(regex.is_match("hello"));
         assert!(!regex.is_match("hallo"));
@@ -79,7 +79,7 @@ pub mod test_super_regex {
     }
 
     #[test]
-    pub fn test05_all() {
+    pub fn test_05_all() {
         let regex = SuperRegex::from("*").unwrap();
         assert!(regex.is_match("hello"));
         assert!(regex.is_match("hallo"));
@@ -91,7 +91,7 @@ pub mod test_super_regex {
     }
 
     #[test]
-    pub fn test06_matches_with_ae() {
+    pub fn test_06_matches_with_ae() {
         let regex = SuperRegex::from("h[ae]llo").unwrap();
         assert!(regex.is_match("hello"));
         assert!(regex.is_match("hallo"));
@@ -103,7 +103,7 @@ pub mod test_super_regex {
     }
 
     #[test]
-    pub fn test07_doesnt_matches_with_i() {
+    pub fn test_07_doesnt_matches_with_i() {
         let regex = SuperRegex::from("h[^i]llo").unwrap();
         assert!(regex.is_match("hello"));
         assert!(regex.is_match("hallo"));
@@ -115,7 +115,7 @@ pub mod test_super_regex {
     }
 
     #[test]
-    pub fn test08_matches_in_a_range() {
+    pub fn test_08_matches_in_a_range() {
         let regex = SuperRegex::from("h[a-f]llo").unwrap();
         assert!(regex.is_match("hallo"));
         assert!(regex.is_match("hbllo"));

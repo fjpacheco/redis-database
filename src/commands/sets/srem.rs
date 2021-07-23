@@ -70,7 +70,7 @@ mod test_srem_function {
     use super::*;
 
     #[test]
-    fn test01_srem_remove_members_of_set_and_return_the_eliminated_amount() {
+    fn test_01_srem_remove_members_of_set_and_return_the_eliminated_amount() {
         let mut set = HashSet::new();
         set.insert(String::from("m2")); // m2
         set.insert(String::from("m1")); // m1
@@ -108,7 +108,7 @@ mod test_srem_function {
         };
     }
     #[test]
-    fn test02_srem_accepts_multiples_member_arguments_to_remove() {
+    fn test_02_srem_accepts_multiples_member_arguments_to_remove() {
         let mut set = HashSet::new();
         set.insert(String::from("m1")); // m1
         set.insert(String::from("m2")); // m2
@@ -133,7 +133,7 @@ mod test_srem_function {
     }
 
     #[test]
-    fn test03_srem_return_zero_if_there_are_no_members_at_the_set_for_remove() {
+    fn test_03_srem_return_zero_if_there_are_no_members_at_the_set_for_remove() {
         let mut set = HashSet::new();
         set.insert(String::from("m1")); // m1
         set.insert(String::from("m2")); // m2
@@ -158,7 +158,7 @@ mod test_srem_function {
     }
 
     #[test]
-    fn test04_srem_return_zero_if_key_does_not_exist_in_database() {
+    fn test_04_srem_return_zero_if_key_does_not_exist_in_database() {
         let set = HashSet::new();
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut database_mock = Arc::new(Mutex::new(Database::new(notifier)));
@@ -175,7 +175,7 @@ mod test_srem_function {
     }
 
     #[test]
-    fn test05_srem_return_error_wrongtype_if_execute_with_key_of_string() {
+    fn test_05_srem_return_error_wrongtype_if_execute_with_key_of_string() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut database_mock = Arc::new(Mutex::new(Database::new(notifier)));
         database_mock.lock().unwrap().insert(
@@ -194,7 +194,7 @@ mod test_srem_function {
     }
 
     #[test]
-    fn test06_srem_return_error_wrongtype_if_execute_with_key_of_list() {
+    fn test_06_srem_return_error_wrongtype_if_execute_with_key_of_list() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut database_mock = Arc::new(Mutex::new(Database::new(notifier)));
         let mut new_list = VecDeque::new();
@@ -217,7 +217,7 @@ mod test_srem_function {
     }
 
     #[test]
-    fn test07_srem_return_zero_if_set_is_empty() {
+    fn test_07_srem_return_zero_if_set_is_empty() {
         let set = HashSet::new();
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut database_mock = Arc::new(Mutex::new(Database::new(notifier)));

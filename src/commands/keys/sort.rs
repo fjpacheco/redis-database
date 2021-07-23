@@ -63,7 +63,7 @@ pub mod test_llen {
     use super::*;
 
     #[test]
-    fn test01_sorting_a_list() {
+    fn test_01_sorting_a_list() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut db = Arc::new(Mutex::new(Database::new(notifier)));
         let _ = LPush.run(

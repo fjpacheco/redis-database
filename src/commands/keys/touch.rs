@@ -39,7 +39,7 @@ pub mod test_touch {
     use super::*;
 
     #[test]
-    fn test01_three_keys_touch_three() {
+    fn test_01_three_keys_touch_three() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut db = Database::new(notifier);
 
@@ -57,7 +57,7 @@ pub mod test_touch {
     }
 
     #[test]
-    fn test02_three_keys_touch_two() {
+    fn test_02_three_keys_touch_two() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut db = Database::new(notifier);
 
@@ -73,7 +73,7 @@ pub mod test_touch {
     }
 
     #[test]
-    fn test03_three_keys_touch_four() {
+    fn test_03_three_keys_touch_four() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut db = Database::new(notifier);
 
@@ -96,7 +96,7 @@ pub mod test_touch {
     }
 
     #[test]
-    fn test04_three_keys_touch_zero() {
+    fn test_04_three_keys_touch_zero() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut db = Database::new(notifier);
 

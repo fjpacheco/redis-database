@@ -86,7 +86,7 @@ pub mod test_lpush {
     use std::collections::VecDeque;
 
     #[test]
-    fn test01_lindex_positive_from_an_existing_list() {
+    fn test_01_lindex_positive_from_an_existing_list() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut data = Arc::new(Mutex::new(Database::new(notifier)));
         let mut new_list = VecDeque::new();
@@ -104,7 +104,7 @@ pub mod test_lpush {
     }
 
     #[test]
-    fn test02_lindex_negative_from_an_existing_list() {
+    fn test_02_lindex_negative_from_an_existing_list() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut data = Arc::new(Mutex::new(Database::new(notifier)));
         let mut new_list = VecDeque::new();
@@ -122,7 +122,7 @@ pub mod test_lpush {
     }
 
     #[test]
-    fn test03_lindex_from_a_non_existing_list() {
+    fn test_03_lindex_from_a_non_existing_list() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut data = Arc::new(Mutex::new(Database::new(notifier)));
         let buffer = vec_strings!["key", "4"];
@@ -132,7 +132,7 @@ pub mod test_lpush {
     }
 
     #[test]
-    fn test04_lindex_out_of_index_from_an_existing_list() {
+    fn test_04_lindex_out_of_index_from_an_existing_list() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut data = Arc::new(Mutex::new(Database::new(notifier)));
         let mut new_list = VecDeque::new();

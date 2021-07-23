@@ -137,8 +137,8 @@ mod test_garbage_collector {
     // se dropeo el Garbage Collector
 
     #[test]
-    #[ignore]
-    fn test01_garbage_collector_is_dropped_safely() {
+    #[ignore = "Long test"]
+    fn long_test_01_garbage_collector_is_dropped_safely() {
         let (snd_col_test, _rcv_col_test) = mpsc::channel();
 
         let (snd_test_cmd, _rcv_test_cmd): (
@@ -154,14 +154,14 @@ mod test_garbage_collector {
             Arc::new(AtomicBool::new(false)),
             "test_addr".into(),
         );
-        let _collector = GarbageCollector::new(snd_col_test, 4, 20, notifier);
+        let _collector = GarbageCollector::new(snd_col_test, 1, 20, notifier);
 
         assert_eq!(4, 4);
     }
 
     #[test]
-    #[ignore]
-    fn test02_garbage_collector_send_the_correct_command() {
+    #[ignore = "Long test"]
+    fn long_test_02_garbage_collector_send_the_correct_command() {
         let (snd_col_test, rcv_col_test) = mpsc::channel();
 
         let (snd_test_cmd, _rcv_test_cmd) = mpsc::channel();
@@ -174,7 +174,7 @@ mod test_garbage_collector {
             Arc::new(AtomicBool::new(false)),
             "test_addr".into(),
         );
-        let _collector = GarbageCollector::new(snd_col_test, 4, 20, notifier);
+        let _collector = GarbageCollector::new(snd_col_test, 1, 20, notifier);
         let (command, sender, _) = rcv_col_test.recv().unwrap().unwrap();
 
         assert_eq!(&command[0], "clean");
@@ -185,8 +185,8 @@ mod test_garbage_collector {
     }
 
     #[test]
-    #[ignore]
-    fn test03_returning_an_error_drops_the_garbage_collector() {
+    #[ignore = "Long test"]
+    fn long_test_03_returning_an_error_drops_the_garbage_collector() {
         let (snd_col_test, rcv_col_test) = mpsc::channel();
         let (snd_test_cmd, _rcv_test_cmd) = mpsc::channel();
 
@@ -198,7 +198,7 @@ mod test_garbage_collector {
             Arc::new(AtomicBool::new(false)),
             "test_addr".into(),
         );
-        let _collector = GarbageCollector::new(snd_col_test, 4, 20, notifier);
+        let _collector = GarbageCollector::new(snd_col_test, 1, 20, notifier);
         let (_command, sender, _) = rcv_col_test.recv().unwrap().unwrap();
         sender
             .send(Err(ErrorStruct::new(

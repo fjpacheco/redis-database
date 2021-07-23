@@ -70,9 +70,9 @@ impl CommandDelegator {
         for packed_raw_command in command_delegator_recv.iter() {
             if let Some(raw_command) = packed_raw_command {
                 let default = String::from("UNKNOWN");
-                let command_type: &str = raw_command.0.get(0).unwrap_or(&default);
+                let command_type = raw_command.0.get(0).unwrap_or(&default).to_lowercase();
                 let err_critical;
-                if let Some(command_dest) = commands_map.get(command_type) {
+                if let Some(command_dest) = commands_map.get(&command_type) {
                     err_critical = is_critical(delegate_jobs(raw_command, command_dest))
                 } else {
                     let error = command_not_found(command_type.to_string(), raw_command.0);
@@ -241,7 +241,7 @@ pub mod test_command_delegator {
     use crate::tcp_protocol::runnables_map::RunnablesMap;
 
     #[test]
-    fn test01_lpush_lpop_lset() {
+    fn test_01_lpush_lpop_lset() {
         // ARRANGE
 
         let mut map: HashMap<String, Arc<BoxedCommand<Arc<Mutex<Database>>>>> = HashMap::new();
@@ -353,7 +353,7 @@ pub mod test_command_delegator {
     }
 
     #[test]
-    fn test02_lpush_lpop_lset() {
+    fn test_02_lpush_lpop_lset() {
         // ARRANGE
 
         let mut map: HashMap<String, Arc<BoxedCommand<Arc<Mutex<Database>>>>> = HashMap::new();

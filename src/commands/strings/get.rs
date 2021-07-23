@@ -59,7 +59,7 @@ mod test_get {
     use super::*;
 
     #[test]
-    fn test01_get_value_of_key_correct_is_success() {
+    fn test_01_get_value_of_key_correct_is_success() {
         let buffer_mock_get = vec_strings!["key"];
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut database_mock = Arc::new(Mutex::new(Database::new(notifier)));
@@ -75,7 +75,7 @@ mod test_get {
     }
 
     #[test]
-    fn test02_get_value_of_key_inorrect_return_result_ok_with_nil() {
+    fn test_02_get_value_of_key_inorrect_return_result_ok_with_nil() {
         let buffer_mock_get = vec_strings!["key_other"];
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut database_mock = Arc::new(Mutex::new(Database::new(notifier)));

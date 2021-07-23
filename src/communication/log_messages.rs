@@ -161,7 +161,7 @@ pub mod test_log_messages {
     use super::*;
 
     #[test]
-    fn test01_print_a_log_message() {
+    fn test_01_print_a_log_message() {
         let message = LogMessage::new(3, "This is a test".to_string());
         let verbose = 4;
         assert_eq!(
@@ -171,14 +171,14 @@ pub mod test_log_messages {
     }
 
     #[test]
-    fn test02_can_not_print_because_of_greater_verbose() {
+    fn test_02_can_not_print_because_of_greater_verbose() {
         let message = LogMessage::new(3, "This is a test".to_string());
         let verbose = 2;
         assert_eq!(message.is_verbosely_printable(&verbose), None);
     }
 
     #[test]
-    fn test03_get_the_message_no_matter_which_verbose() {
+    fn test_03_get_the_message_no_matter_which_verbose() {
         let mut message = LogMessage::new(3, "This is a test".to_string());
         assert_eq!(message.take_message(), Some("This is a test".to_string()));
         assert_eq!(message.take_message(), None);

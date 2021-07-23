@@ -119,7 +119,7 @@ pub mod test_lrange {
     use std::collections::VecDeque;
 
     #[test]
-    fn test01_lrange_list_with_one_element_positive_indexing() {
+    fn test_01_lrange_list_with_one_element_positive_indexing() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut data = Arc::new(Mutex::new(Database::new(notifier)));
 
@@ -145,7 +145,7 @@ pub mod test_lrange {
     }
 
     #[test]
-    fn test02_lrange_list_with_one_element_negative_indexing() {
+    fn test_02_lrange_list_with_one_element_negative_indexing() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut data = Arc::new(Mutex::new(Database::new(notifier)));
 
@@ -165,7 +165,7 @@ pub mod test_lrange {
     }
 
     #[test]
-    fn test03_lrange_to_key_storing_non_list() {
+    fn test_03_lrange_to_key_storing_non_list() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut data = Arc::new(Mutex::new(Database::new(notifier)));
         // redis> SET mykey 10
@@ -182,7 +182,7 @@ pub mod test_lrange {
     }
 
     #[test]
-    fn test04_lrange_positive_range_start_bigger_than_stop() {
+    fn test_04_lrange_positive_range_start_bigger_than_stop() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut data = Arc::new(Mutex::new(Database::new(notifier)));
 
@@ -200,7 +200,7 @@ pub mod test_lrange {
     }
 
     #[test]
-    fn test05_lrange_negative_range_start_bigger_than_stop() {
+    fn test_05_lrange_negative_range_start_bigger_than_stop() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut data = Arc::new(Mutex::new(Database::new(notifier)));
 
@@ -218,7 +218,7 @@ pub mod test_lrange {
     }
 
     #[test]
-    fn test06_lrange_list_with_many_elements_positive_range() {
+    fn test_06_lrange_list_with_many_elements_positive_range() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut data = Arc::new(Mutex::new(Database::new(notifier)));
 
@@ -241,7 +241,7 @@ pub mod test_lrange {
     }
 
     #[test]
-    fn test07_lrange_list_with_many_elements_from_negative_first_index_to_zero() {
+    fn test_07_lrange_list_with_many_elements_from_negative_first_index_to_zero() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut data = Arc::new(Mutex::new(Database::new(notifier)));
 
@@ -263,7 +263,7 @@ pub mod test_lrange {
     }
 
     #[test]
-    fn test08_lrange_list_with_many_elements_from_zero_to_negative_last_index() {
+    fn test_08_lrange_list_with_many_elements_from_zero_to_negative_last_index() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut data = Arc::new(Mutex::new(Database::new(notifier)));
 
@@ -286,7 +286,7 @@ pub mod test_lrange {
     }
 
     #[test]
-    fn test09_lrange_list_with_many_elements_from_negative_out_of_range_number_to_valid_negative_index(
+    fn test_09_lrange_list_with_many_elements_from_negative_out_of_range_number_to_valid_negative_index(
     ) {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut data = Arc::new(Mutex::new(Database::new(notifier)));
@@ -310,7 +310,7 @@ pub mod test_lrange {
     }
 
     #[test]
-    fn test10_lrange_list_with_many_elements_from_negative_out_of_range_number_to_invalid_negative_index(
+    fn test_10_lrange_list_with_many_elements_from_negative_out_of_range_number_to_invalid_negative_index(
     ) {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut data = Arc::new(Mutex::new(Database::new(notifier)));
@@ -331,7 +331,7 @@ pub mod test_lrange {
     }
 
     #[test]
-    fn test11_lrange_list_with_many_elements_from_negative_out_of_range_number_to_number_bigger_than_len(
+    fn test_11_lrange_list_with_many_elements_from_negative_out_of_range_number_to_number_bigger_than_len(
     ) {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut data = Arc::new(Mutex::new(Database::new(notifier)));
@@ -356,7 +356,7 @@ pub mod test_lrange {
     }
 
     #[test]
-    fn test12_lrange_list_with_many_elements_from_negative_out_of_range_number_to_list_bottom() {
+    fn test_12_lrange_list_with_many_elements_from_negative_out_of_range_number_to_list_bottom() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut data = Arc::new(Mutex::new(Database::new(notifier)));
 
@@ -380,7 +380,7 @@ pub mod test_lrange {
     }
 
     #[test]
-    fn test13_lrange_list_many_element_negative_indexing() {
+    fn test_13_lrange_list_many_element_negative_indexing() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut data = Arc::new(Mutex::new(Database::new(notifier)));
 
@@ -402,7 +402,7 @@ pub mod test_lrange {
     }
 
     #[test]
-    fn test14_lrange_list_many_element_from_negative_index_to_zero() {
+    fn test_14_lrange_list_many_element_from_negative_index_to_zero() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut data = Arc::new(Mutex::new(Database::new(notifier)));
 

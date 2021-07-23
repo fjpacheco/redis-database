@@ -36,7 +36,7 @@ pub mod test_rpush {
     use super::*;
 
     #[test]
-    fn test01_rpush_values_on_an_existing_list() {
+    fn test_01_rpush_values_on_an_existing_list() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
 
         let mut new_list = VecDeque::new();
@@ -68,7 +68,7 @@ pub mod test_rpush {
     }
 
     #[test]
-    fn test02_rpush_values_on_a_non_existing_list() {
+    fn test_02_rpush_values_on_a_non_existing_list() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut data = Arc::new(Mutex::new(Database::new(notifier)));
         let c_data = Arc::clone(&data);

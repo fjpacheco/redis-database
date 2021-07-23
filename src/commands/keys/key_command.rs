@@ -66,7 +66,7 @@ mod test_keys {
 
     #[test]
 
-    fn test01_match_one_character() {
+    fn test_01_match_one_character() {
         let db = default_database();
 
         let mut matched = db.match_pattern("C?mo").unwrap();
@@ -81,7 +81,7 @@ mod test_keys {
 
     #[test]
 
-    fn test02_match_a_range_of_character() {
+    fn test_02_match_a_range_of_character() {
         let db = default_database();
 
         let mut matched = db.match_pattern("H*").unwrap();

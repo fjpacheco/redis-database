@@ -89,7 +89,7 @@ pub mod test_lset {
     use std::collections::VecDeque;
 
     #[test]
-    fn test01_lset_list_with_one_element_positive_indexing() {
+    fn test_01_lset_list_with_one_element_positive_indexing() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut data = Arc::new(Mutex::new(Database::new(notifier)));
 
@@ -119,7 +119,7 @@ pub mod test_lset {
     }
 
     #[test]
-    fn test02_lset_list_with_one_element_negative_indexing() {
+    fn test_02_lset_list_with_one_element_negative_indexing() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut data = Arc::new(Mutex::new(Database::new(notifier)));
 
@@ -148,7 +148,7 @@ pub mod test_lset {
         };
     }
     #[test]
-    fn test03_lset_list_with_out_of_range_positive_index() {
+    fn test_03_lset_list_with_out_of_range_positive_index() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut data = Arc::new(Mutex::new(Database::new(notifier)));
 
@@ -167,7 +167,7 @@ pub mod test_lset {
     }
 
     #[test]
-    fn test04_lset_list_with_out_of_range_negative_index() {
+    fn test_04_lset_list_with_out_of_range_negative_index() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut data = Arc::new(Mutex::new(Database::new(notifier)));
 
@@ -186,7 +186,7 @@ pub mod test_lset {
     }
 
     #[test]
-    fn test05_lset_list_non_existent_key() {
+    fn test_05_lset_list_non_existent_key() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut data = Arc::new(Mutex::new(Database::new(notifier)));
 
@@ -203,7 +203,7 @@ pub mod test_lset {
     }
 
     #[test]
-    fn test06_lset_non_list() {
+    fn test_06_lset_non_list() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut data = Arc::new(Mutex::new(Database::new(notifier)));
         // redis> SET mykey 10
@@ -220,7 +220,7 @@ pub mod test_lset {
     }
 
     #[test]
-    fn test07_lset_list_with_many_elements_at_top() {
+    fn test_07_lset_list_with_many_elements_at_top() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut data = Arc::new(Mutex::new(Database::new(notifier)));
 
@@ -252,7 +252,7 @@ pub mod test_lset {
     }
 
     #[test]
-    fn test08_lset_list_with_many_elements_at_middle() {
+    fn test_08_lset_list_with_many_elements_at_middle() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut data = Arc::new(Mutex::new(Database::new(notifier)));
 
@@ -282,7 +282,7 @@ pub mod test_lset {
     }
 
     #[test]
-    fn test09_lset_list_with_many_elements_at_bottom() {
+    fn test_09_lset_list_with_many_elements_at_bottom() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut data = Arc::new(Mutex::new(Database::new(notifier)));
 
@@ -313,7 +313,7 @@ pub mod test_lset {
     }
 
     #[test]
-    fn test11_lset_with_zero_arguments() {
+    fn test_11_lset_with_zero_arguments() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut data = Arc::new(Mutex::new(Database::new(notifier)));
 
@@ -331,7 +331,7 @@ pub mod test_lset {
     }
 
     #[test]
-    fn test12_lset_with_wrong_number_of_arguments() {
+    fn test_12_lset_with_wrong_number_of_arguments() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut data = Arc::new(Mutex::new(Database::new(notifier)));
 
@@ -349,7 +349,7 @@ pub mod test_lset {
     }
 
     #[test]
-    fn test13_lset_with_wrong_number_of_arguments() {
+    fn test_13_lset_with_wrong_number_of_arguments() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut data = Arc::new(Mutex::new(Database::new(notifier)));
 
@@ -367,7 +367,7 @@ pub mod test_lset {
     }
 
     #[test]
-    fn test14_lset_with_wrong_number_of_arguments() {
+    fn test_14_lset_with_wrong_number_of_arguments() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut data = Arc::new(Mutex::new(Database::new(notifier)));
 

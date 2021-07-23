@@ -49,7 +49,7 @@ mod test_type {
     };
 
     #[test]
-    fn test01_type_of_string_key() {
+    fn test_01_type_of_string_key() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut database = Arc::new(Mutex::new(Database::new(notifier)));
         database
@@ -62,7 +62,7 @@ mod test_type {
     }
 
     #[test]
-    fn test02_type_of_set_key() {
+    fn test_02_type_of_set_key() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut database = Arc::new(Mutex::new(Database::new(notifier)));
         let buffer1 = vec_strings!["key", "member1", "member2"];
@@ -74,7 +74,7 @@ mod test_type {
     }
 
     #[test]
-    fn test03_type_of_list_key() {
+    fn test_03_type_of_list_key() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut database = Arc::new(Mutex::new(Database::new(notifier)));
 
@@ -94,7 +94,7 @@ mod test_type {
     }
 
     #[test]
-    fn test01_type_of_non_existent_string_key() {
+    fn test_01_type_of_non_existent_string_key() {
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
         let mut database = Arc::new(Mutex::new(Database::new(notifier)));
         database
