@@ -64,6 +64,11 @@ impl LogMessage {
     // mensajes que queremos logear.
 
     /// COMMAND --> KEY: VALUE
+
+    pub fn init_server() -> LogMessage {
+        LogMessage::new(9, "Server is on now!".to_string())
+    }
+
     pub fn database_correctly_updated(formatted_data: String) -> LogMessage {
         LogMessage::new(9, format!("Database update: {}", formatted_data))
     }

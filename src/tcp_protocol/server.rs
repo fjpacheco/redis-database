@@ -1,13 +1,11 @@
 use std::sync::{atomic::AtomicBool, mpsc::channel, Arc, Mutex};
 
-use crate::messages::redis_messages;
 use crate::native_types::error_severity::ErrorSeverity;
 use crate::tcp_protocol::server_redis_atributes::ServerRedisAtributes;
 use crate::{
     file_manager::FileManager,
     joinable::Joinable,
     logs::log_center::LogCenter,
-    memory_checker::garbage_collector::GarbageCollector,
     native_types::ErrorStruct,
     redis_config::RedisConfig,
     tcp_protocol::{
@@ -16,6 +14,7 @@ use crate::{
     },
     Database,
 };
+use crate::{memory_checker::periodic_executor::PeriodicExecutor, messages::redis_messages};
 
 use super::{
     client_list::ClientList, command_subdelegator::CommandSubDelegator, commands_map::CommandsMap,
@@ -67,11 +66,12 @@ impl ServerRedis {
 
         // ################## 7° Initialization structures: STRUCTS WITH THREADS ##################
         let mut log_center = LogCenter::new(
-            sender_log,
+            sender_log.clone(),
             receiver,
             Arc::clone(&config),
             FileManager::new(),
         )?;
+
         let mut command_delegator =
             CommandDelegator::start(command_delegator_recv, commands_map, notifier.clone())?;
         let mut command_sub_delegator_databse = CommandSubDelegator::start::<Arc<Mutex<Database>>>(
@@ -80,6 +80,7 @@ impl ServerRedis {
             runnables_database,
             Arc::clone(&c_database),
             notifier.clone(),
+            "database",
         )?;
         let mut command_sub_delegator_server_atributes =
             CommandSubDelegator::start::<ServerRedisAtributes>(
@@ -88,9 +89,15 @@ impl ServerRedis {
                 runnables_server,
                 server_redis.clone(),
                 notifier.clone(),
+                "server atributes",
             )?;
 
-        let mut collector = GarbageCollector::new(snd_cmd_dat, 1, 20, notifier.clone());
+        let clean = vec!["clean".to_string(), "20".to_string()];
+        let mut garbage_collector =
+            PeriodicExecutor::new(clean, 10, notifier.clone(), "garbage collector");
+
+        let save = vec!["save".to_string()];
+        let mut saver = PeriodicExecutor::new(save, 90, notifier.clone(), "saver");
 
         /*let quit_notifier = Mutex::new(notifier.clone());
         let quit: JoinHandle<Result<(), ErrorStruct>> = thread::spawn(move ||{
@@ -123,7 +130,8 @@ impl ServerRedis {
 
         // ################## FINISH SERVER ##################
         command_delegator.join()?;
-        collector.join()?;
+        garbage_collector.join()?;
+        saver.join()?;
         command_sub_delegator_databse.join()?;
         command_sub_delegator_server_atributes.join()?;
         drop_shared_clients

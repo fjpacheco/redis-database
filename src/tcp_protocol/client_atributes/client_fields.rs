@@ -190,7 +190,7 @@ impl ClientFields {
 
 impl Default for ClientFields {
     fn default() -> ClientFields {
-        ClientFields::new(SocketAddrV4::new(Ipv4Addr::new(1, 0, 0, 127), 8080))
+        ClientFields::new(SocketAddrV4::new(Ipv4Addr::new(1, 0, 0, 1), 8080))
     }
 }
 

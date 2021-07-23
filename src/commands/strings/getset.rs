@@ -10,7 +10,7 @@ use std::sync::{Arc, Mutex};
 pub struct Getset;
 
 impl Runnable<Arc<Mutex<Database>>> for Getset {
-    /// Atomically sets **key** to **value** and returns the old value stored at **key**. 
+    /// Atomically sets **key** to **value** and returns the old value stored at **key**.
     /// Any previous time to live associated with the key is discarded on successful SET operation.
     ///
     /// # Return value
@@ -19,7 +19,7 @@ impl Runnable<Arc<Mutex<Database>>> for Getset {
     /// # Error
     /// Return an [ErrorStruct] if:
     ///
-    /// * Key exists but does not hold a string value. 
+    /// * Key exists but does not hold a string value.
     /// * The buffer [Vec]<[String]> more than two elements is received or empty.
     /// * [Database] received in <[Arc]<[Mutex]>> is poisoned.
     fn run(

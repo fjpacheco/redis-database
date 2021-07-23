@@ -198,7 +198,7 @@ fn int_test_07_incrby() -> Result<(), ErrorStruct> {
     let received_4: Result<isize, RedisError> = redis::cmd("incrby")
         .arg("key_4")
         .arg("10")
-        .query(&mut connection_client); 
+        .query(&mut connection_client);
     let received_5: Result<isize, RedisError> = redis::cmd("incrby")
         .arg("key_5")
         .arg("10")
@@ -253,7 +253,7 @@ fn int_test_07_decrby() -> Result<(), ErrorStruct> {
     let received_4: Result<isize, RedisError> = redis::cmd("decrby")
         .arg("key_4")
         .arg("10")
-        .query(&mut connection_client); 
+        .query(&mut connection_client);
     let received_5: Result<isize, RedisError> = redis::cmd("decrby")
         .arg("key_5")
         .arg("10")
@@ -279,7 +279,6 @@ fn int_test_07_decrby() -> Result<(), ErrorStruct> {
     server.shutdown()?;
     Ok(())
 }
-
 
 #[ignore = "Integration Test"]
 #[test]
@@ -322,7 +321,7 @@ fn int_test_09_getdel() -> Result<(), ErrorStruct> {
     let received_2: Result<String, RedisError> = redis::cmd("getdel")
         .arg("key_2")
         .query(&mut connection_client);
-        
+
     let received_3: Result<String, RedisError> = redis::cmd("getdel")
         .arg("key_3")
         .query(&mut connection_client);

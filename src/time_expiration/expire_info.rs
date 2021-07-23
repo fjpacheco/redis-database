@@ -108,7 +108,7 @@ fn duration_since(time: &SystemTime, previous_time: SystemTime) -> Result<Durati
 }
 
 #[cfg(test)]
-mod test_clock {
+mod test_expire_info {
 
     use super::*;
     use std::thread::sleep;

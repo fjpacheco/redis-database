@@ -24,15 +24,6 @@ use redis_rust::{native_types::ErrorStruct, tcp_protocol::server::ServerRedis};
 fn main() -> Result<(), ErrorStruct> {
     let argv: Vec<String> = env::args().collect();
     ServerRedis::start(argv)?;
+    println!("Bye bye!");
     Ok(())
 }
-
-/*
-fn main() {
-    for line in stdin().lock().lines() {
-        match line {
-            Ok(line) => process(&*line),
-            Err(e) => panic!("{}", e),
-        }
-    }
-}*/

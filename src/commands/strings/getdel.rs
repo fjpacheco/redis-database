@@ -11,7 +11,7 @@ use std::sync::{Arc, Mutex};
 pub struct Getdel;
 
 impl Runnable<Arc<Mutex<Database>>> for Getdel {
-    /// Get the **value** of **key** and delete the **key**. 
+    /// Get the **value** of **key** and delete the **key**.
     /// This command is similar to GET, except for the fact that it also deletes the key on success (if and only if the key's value type is a string).
     ///
     /// # Return value
@@ -40,15 +40,17 @@ impl Runnable<Arc<Mutex<Database>>> for Getdel {
         if let Some(value) = database.get(&key) {
             match value {
                 TypeSaved::String(_) => (),
-                _ => return Err(ErrorStruct::new(
-                    String::from("ERR"),
-                    String::from("key provided is not from string"),
-                )),
+                _ => {
+                    return Err(ErrorStruct::new(
+                        String::from("ERR"),
+                        String::from("key provided is not from string"),
+                    ))
+                }
             }
-        }else{
+        } else {
             return Ok(RBulkString::encode("(nil)".to_string()));
         }
-        
+
         if let Some(value) = database.remove(&key) {
             match value {
                 TypeSaved::String(value) => Ok(RBulkString::encode(value)),

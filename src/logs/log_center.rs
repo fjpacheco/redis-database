@@ -26,8 +26,6 @@ pub struct LogCenter {
 
 impl Joinable<()> for LogCenter {
     fn join(&mut self) -> Result<(), ErrorStruct> {
-        println!("LOG CENTER: PODER DECIR ADIÓS ES CRECER");
-
         let _ = self.sender_log.send(None);
 
         if let Some(handle) = self.handler.take() {

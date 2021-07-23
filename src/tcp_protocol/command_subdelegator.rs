@@ -19,6 +19,7 @@ pub struct CommandSubDelegator {
     sender: Sender<Option<RawCommand>>,
     join: Option<JoinHandle<Result<(), ErrorStruct>>>,
     notifier: Notifier,
+    name: String,
 }
 /// Interprets commands and delegates tasks
 
@@ -27,7 +28,7 @@ impl Joinable<()> for CommandSubDelegator {
         let _ = self.sender.send(None);
         close_thread(
             self.join.take(),
-            "Command Subdelegator",
+            &format!("Command Subdelegator ({})", self.name),
             self.notifier.clone(),
         )
     }
@@ -39,6 +40,7 @@ impl CommandSubDelegator {
         runnables_map: RunnablesMap<T>,
         data: T,
         notifier: Notifier,
+        name: &str,
     ) -> Result<Self, ErrorStruct>
     where
         T: Send + Sync,
@@ -58,6 +60,7 @@ impl CommandSubDelegator {
             sender: snd_cmd,
             join: Some(command_sub_delegator_handler),
             notifier,
+            name: String::from(name),
         })
     }
 
@@ -189,6 +192,7 @@ pub mod test_database_command_delegator {
             runnables_map,
             database,
             notifier.clone(),
+            "database",
         );
 
         let (tx2, rx2): (Sender<Response>, Receiver<Response>) = mpsc::channel();
@@ -247,6 +251,7 @@ pub mod test_database_command_delegator {
             runnables_map,
             database,
             notifier.clone(),
+            "database",
         );
 
         let (tx2, rx2): (Sender<Response>, Receiver<Response>) = mpsc::channel();
@@ -309,6 +314,7 @@ pub mod test_database_command_delegator {
             runnables_map,
             database,
             notifier.clone(),
+            "database",
         );
         let (tx2, rx2): (Sender<Response>, Receiver<Response>) = mpsc::channel();
         let buffer_mock = vec![

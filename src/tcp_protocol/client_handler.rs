@@ -152,7 +152,6 @@ fn read_socket(
         error
     });
 
-    println!("😢 UN CLIENTE SE FUE 😢 => LE PONGO STATUS DEAD :) ");
     c_shared_fields
         .lock()
         .map_err(|_| {
@@ -353,8 +352,6 @@ impl Joinable<()> for ClientHandler {
             "read socket",
             self.notifier.clone(),
         ));
-
-        println!("ME ELIMINE -- DROP//JOIN SUCCESS");
         state
     }
 }

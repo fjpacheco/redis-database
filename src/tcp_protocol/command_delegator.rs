@@ -25,8 +25,6 @@ pub struct CommandDelegator {
 
 impl Joinable<()> for CommandDelegator {
     fn join(&mut self) -> Result<(), ErrorStruct> {
-        println!("BYE COMMAND DELEGATOR!");
-
         let _ = self.notifier.send_command_delegator(None);
 
         /*match self.sender.send(None) {
@@ -282,6 +280,7 @@ pub mod test_command_delegator {
             runnables_map,
             Arc::clone(&database),
             notifier.clone(),
+            "database",
         )
         .unwrap();
 
@@ -395,6 +394,7 @@ pub mod test_command_delegator {
             runnables_map,
             database,
             notifier.clone(),
+            "database",
         )
         .unwrap();
 
