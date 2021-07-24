@@ -1,4 +1,4 @@
-use crate::tcp_protocol::server_redis_atributes::ServerRedisAtributes;
+use crate::tcp_protocol::server_redis_attributes::ServerRedisAttributes;
 use crate::{
     commands::Runnable,
     native_types::ErrorStruct,
@@ -7,11 +7,11 @@ use crate::{
 
 pub struct InfoSv;
 
-impl Runnable<ServerRedisAtributes> for InfoSv {
+impl Runnable<ServerRedisAttributes> for InfoSv {
     fn run(
         &self,
         _buffer: Vec<String>,
-        server: &mut ServerRedisAtributes,
+        server: &mut ServerRedisAttributes,
     ) -> Result<String, ErrorStruct> {
         Ok(RArray::encode(server.info()?))
     }

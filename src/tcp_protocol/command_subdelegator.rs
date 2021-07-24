@@ -34,6 +34,16 @@ impl Joinable<()> for CommandSubDelegator {
     }
 }
 impl CommandSubDelegator {
+    /// a
+    ///
+    /// # Return value
+    /// [String] _encoded_ in [RSimpleString]: .
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * The buffer [Vec]<[String]> more than two elements is received or empty.
+    /// * [Database] received in <[Arc]<[Mutex]>> is poisoned.
     pub fn start<T: 'static>(
         snd_cmd: Sender<Option<RawCommand>>,
         rcv_cmd: Receiver<Option<RawCommand>>,

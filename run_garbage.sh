@@ -11,6 +11,8 @@ counter = 0
 while echo "set key value"; do
   ((counter=counter+1))
   echo "set" $counter "1"
+  echo "lpush" "lista" $counter
+  echo "sadd" "set" $counter
   #echo "expire" $counter 10
   echo "get" $counter
  done > >(nc localhost 6379)

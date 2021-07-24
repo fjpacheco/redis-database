@@ -1,4 +1,4 @@
-use crate::tcp_protocol::server_redis_atributes::ServerRedisAtributes;
+use crate::tcp_protocol::server_redis_attributes::ServerRedisAttributes;
 use crate::{
     commands::{
         check_empty,
@@ -13,11 +13,11 @@ use crate::{
 
 pub struct ConfigSet;
 
-impl Runnable<ServerRedisAtributes> for ConfigSet {
+impl Runnable<ServerRedisAttributes> for ConfigSet {
     fn run(
         &self,
         mut buffer: Vec<String>,
-        server: &mut ServerRedisAtributes,
+        server: &mut ServerRedisAttributes,
     ) -> Result<String, ErrorStruct> {
         check_empty(&buffer, "config set")?;
 

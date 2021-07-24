@@ -1,4 +1,4 @@
-use crate::tcp_protocol::server_redis_atributes::ServerRedisAtributes;
+use crate::tcp_protocol::server_redis_attributes::ServerRedisAttributes;
 use crate::{
     commands::Runnable,
     native_types::{ErrorStruct, RBulkString, RedisType},
@@ -6,11 +6,11 @@ use crate::{
 
 pub struct SubscribeCl;
 
-impl Runnable<ServerRedisAtributes> for SubscribeCl {
+impl Runnable<ServerRedisAttributes> for SubscribeCl {
     fn run(
         &self,
         buffer: Vec<String>,
-        server: &mut ServerRedisAtributes,
+        server: &mut ServerRedisAttributes,
     ) -> Result<String, ErrorStruct> {
         server
             .get_client_list()

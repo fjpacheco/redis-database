@@ -1,7 +1,7 @@
 use std::sync::{atomic::AtomicBool, mpsc::channel, Arc, Mutex};
 
 use crate::native_types::error_severity::ErrorSeverity;
-use crate::tcp_protocol::server_redis_atributes::ServerRedisAtributes;
+use crate::tcp_protocol::server_redis_attributes::ServerRedisAttributes;
 use crate::{
     file_manager::FileManager,
     joinable::Joinable,
@@ -50,7 +50,7 @@ impl ServerRedis {
         // and
         // ################## 6° Initialization structures: Notifier ##################
         let server_redis =
-            ServerRedisAtributes::new(Arc::clone(&config), status_listener.clone(), shared_clients);
+            ServerRedisAttributes::new(Arc::clone(&config), status_listener.clone(), shared_clients);
 
         let notifier = Notifier::new(
             sender_log.clone(),
@@ -62,7 +62,7 @@ impl ServerRedis {
 
         let c_database = Arc::new(Mutex::new(database));
         let runnables_database = RunnablesMap::<Arc<Mutex<Database>>>::database();
-        let runnables_server = RunnablesMap::<ServerRedisAtributes>::server();
+        let runnables_server = RunnablesMap::<ServerRedisAttributes>::server();
 
         // ################## 7° Initialization structures: STRUCTS WITH THREADS ##################
         let mut log_center = LogCenter::new(
@@ -83,7 +83,7 @@ impl ServerRedis {
             "database",
         )?;
         let mut command_sub_delegator_server_atributes =
-            CommandSubDelegator::start::<ServerRedisAtributes>(
+            CommandSubDelegator::start::<ServerRedisAttributes>(
                 snd_cmd_sv,
                 rcv_cmd_sv,
                 runnables_server,
@@ -97,7 +97,7 @@ impl ServerRedis {
             PeriodicExecutor::new(clean, 10, notifier.clone(), "garbage collector");
 
         let save = vec!["save".to_string()];
-        let mut saver = PeriodicExecutor::new(save, 90, notifier.clone(), "saver");
+        let mut saver = PeriodicExecutor::new(save, 60, notifier.clone(), "saver");
 
         /*let quit_notifier = Mutex::new(notifier.clone());
         let quit: JoinHandle<Result<(), ErrorStruct>> = thread::spawn(move ||{
@@ -128,7 +128,7 @@ impl ServerRedis {
             })?
             .take_snapshot()?;
 
-        // ################## FINISH SERVER ##################
+            // ################## FINISH SERVER ##################
         command_delegator.join()?;
         garbage_collector.join()?;
         saver.join()?;

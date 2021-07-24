@@ -5,16 +5,16 @@ use crate::{
     },
     messages::redis_messages,
     native_types::ErrorStruct,
-    tcp_protocol::server_redis_atributes::ServerRedisAtributes,
+    tcp_protocol::server_redis_attributes::ServerRedisAttributes,
 };
 
 pub struct Pubsub;
 
-impl Runnable<ServerRedisAtributes> for Pubsub {
+impl Runnable<ServerRedisAttributes> for Pubsub {
     fn run(
         &self,
         mut buffer: Vec<String>,
-        server: &mut ServerRedisAtributes,
+        server: &mut ServerRedisAttributes,
     ) -> Result<String, ErrorStruct> {
         if !buffer.is_empty() {
             let mut subcommand = buffer.remove(0);

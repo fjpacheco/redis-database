@@ -11,19 +11,19 @@ use crate::redis_config::RedisConfig;
 use crate::tcp_protocol::client_list::ClientList;
 
 #[derive(Clone)]
-pub struct ServerRedisAtributes {
+pub struct ServerRedisAttributes {
     config: Arc<Mutex<RedisConfig>>,
     status_listener: Arc<AtomicBool>,
     shared_clients: Arc<Mutex<ClientList>>,
 }
 
-impl ServerRedisAtributes {
+impl ServerRedisAttributes {
     pub fn new(
         config: Arc<Mutex<RedisConfig>>,
         status_listener: Arc<AtomicBool>,
         shared_clients: Arc<Mutex<ClientList>>,
     ) -> Self {
-        ServerRedisAtributes {
+        ServerRedisAttributes {
             config,
             status_listener,
             shared_clients,
@@ -201,7 +201,7 @@ impl ServerRedisAtributes {
     }
 }
 
-impl fmt::Display for ServerRedisAtributes {
+impl fmt::Display for ServerRedisAttributes {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Server Redis Atributes")
     }

@@ -1,6 +1,6 @@
 use std::net::TcpListener;
 
-use crate::tcp_protocol::server_redis_atributes::ServerRedisAtributes;
+use crate::tcp_protocol::server_redis_attributes::ServerRedisAttributes;
 use crate::{
     communication::log_messages::LogMessage,
     messages::redis_messages,
@@ -15,7 +15,7 @@ use super::notifier::Notifier;
 pub struct ListenerProcessor;
 
 impl ListenerProcessor {
-    pub fn incoming(listener: TcpListener, server_redis: ServerRedisAtributes, notifier: Notifier) {
+    pub fn incoming(listener: TcpListener, server_redis: ServerRedisAttributes, notifier: Notifier) {
         let result = start_incoming(listener, &notifier, server_redis);
         if let Err(err) = result {
             if err.severity().eq(&Some(&ErrorSeverity::ShutdownServer)) {
@@ -45,7 +45,7 @@ impl ListenerProcessor {
 fn start_incoming(
     listener: TcpListener,
     notifier: &Notifier,
-    server_redis: ServerRedisAtributes,
+    server_redis: ServerRedisAttributes,
 ) -> Result<(), ErrorStruct> {
     welcome_message(&listener, &notifier)?;
     for stream in listener.incoming() {

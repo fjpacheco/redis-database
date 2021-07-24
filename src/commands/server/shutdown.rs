@@ -2,12 +2,12 @@ use std::net::TcpStream;
 
 use crate::messages::redis_messages;
 use crate::native_types::{RSimpleString, RedisType};
-use crate::tcp_protocol::server_redis_atributes::ServerRedisAtributes;
+use crate::tcp_protocol::server_redis_attributes::ServerRedisAttributes;
 use crate::{commands::Runnable, native_types::ErrorStruct};
 
 pub struct Shutdown;
 
-impl Runnable<ServerRedisAtributes> for Shutdown {
+impl Runnable<ServerRedisAttributes> for Shutdown {
     /// The command behavior is the following:
     /// * Disconnect all the clients.
     /// * A save of the database items.
@@ -23,7 +23,7 @@ impl Runnable<ServerRedisAtributes> for Shutdown {
     fn run(
         &self,
         _buffer: Vec<String>,
-        server: &mut ServerRedisAtributes,
+        server: &mut ServerRedisAttributes,
     ) -> Result<String, ErrorStruct> {
         server.store(true);
         match TcpStream::connect(server.get_addr()?) {

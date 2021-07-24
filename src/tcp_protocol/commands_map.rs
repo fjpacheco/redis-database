@@ -140,6 +140,7 @@ impl CommandsMap {
                 "strlen".to_string(),
                 "dbsize".to_string(),
                 "flushdb".to_string(),
+                "save".to_string(),
             ],
             snd_cmd_dat.clone(),
         );

@@ -20,7 +20,7 @@ pub mod listener_processor;
 pub mod notifier;
 pub mod runnables_map;
 pub mod server;
-pub mod server_redis_atributes;
+pub mod server_redis_attributes;
 
 pub type RawCommand = (Vec<String>, Sender<Response>, Arc<Mutex<ClientFields>>);
 pub type RawCommandTwo = Option<Arc<BoxedCommand<Arc<Mutex<ClientFields>>>>>;

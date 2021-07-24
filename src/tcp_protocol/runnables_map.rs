@@ -14,7 +14,7 @@ use crate::commands::{
     },
     server::{
         config::Config, dbsize::Dbsize, flushdb::FlushDb, info_db::InfoDb, info_sv::InfoSv,
-        monitor::Monitor, notify_monitors::NotifyMonitors, shutdown::Shutdown,
+        monitor::Monitor, notify_monitors::NotifyMonitors, shutdown::Shutdown, save::Save
     },
     sets::{sadd::Sadd, scard::Scard, sismember::Sismember, smembers::Smembers, srem::Srem},
     strings::{
@@ -31,7 +31,7 @@ use std::sync::Arc;
 use std::sync::Mutex;
 
 use super::client_atributes::client_fields::ClientFields;
-use crate::tcp_protocol::server_redis_atributes::ServerRedisAtributes;
+use crate::tcp_protocol::server_redis_attributes::ServerRedisAttributes;
 
 pub struct RunnablesMap<T> {
     elements: HashMap<String, Arc<BoxedCommand<T>>>,
@@ -69,7 +69,7 @@ impl<T> RunnablesMap<T> {
             map, Type, Clean, Copy, Del, Exists, Expire, ExpireAt, Keys, Persist, Rename, Sort,
             Touch, Ttl, LIndex, Llen, LPop, LPush, LPushx, Lrange, Lrem, Lset, RPop, RPush, RPushx,
             Dbsize, FlushDb, Sadd, Scard, Sismember, Smembers, Srem, Append, Decrby, Get, Getdel,
-            Getset, Incrby, Mget, Mset, Set, Strlen
+            Getset, Incrby, Mget, Mset, Set, Strlen, Save
         );
         map.insert(
             "info".to_string().to_lowercase(),
@@ -78,8 +78,8 @@ impl<T> RunnablesMap<T> {
         RunnablesMap { elements: map }
     }
 
-    pub fn server() -> RunnablesMap<ServerRedisAtributes> {
-        let mut map: HashMap<String, Arc<BoxedCommand<ServerRedisAtributes>>> = HashMap::new();
+    pub fn server() -> RunnablesMap<ServerRedisAttributes> {
+        let mut map: HashMap<String, Arc<BoxedCommand<ServerRedisAttributes>>> = HashMap::new();
 
         /*map.insert(
             String::from("shutdown"),

@@ -39,7 +39,7 @@ fn concatenate_words_of_vec(mut buffer: Vec<String>) -> String {
 }*/
 
 use crate::native_types::RInteger;
-use crate::tcp_protocol::server_redis_atributes::ServerRedisAtributes;
+use crate::tcp_protocol::server_redis_attributes::ServerRedisAttributes;
 use crate::{
     commands::Runnable,
     native_types::{error::ErrorStruct, redis_type::RedisType},
@@ -47,11 +47,11 @@ use crate::{
 
 pub struct Publish;
 
-impl Runnable<ServerRedisAtributes> for Publish {
+impl Runnable<ServerRedisAttributes> for Publish {
     fn run(
         &self,
         mut buffer: Vec<String>,
-        server: &mut ServerRedisAtributes,
+        server: &mut ServerRedisAttributes,
     ) -> Result<String, ErrorStruct> {
         let channel = buffer.remove(0);
         let message = concatenate_words_of_vec(buffer);

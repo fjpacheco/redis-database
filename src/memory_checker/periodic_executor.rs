@@ -77,6 +77,7 @@ impl PeriodicExecutor {
                 return Ok(());
             } else if counter == period {
                 counter = 0;
+                println!("OLAAAAAAAAAAAAAAAAAA ENVIARÉ 🎃🎃🎃🎃🎃: {:?}", command);
                 notifier.send_command_delegator(Some((
                     command.clone(),
                     snd_rsp.clone(),
@@ -165,12 +166,13 @@ mod test_periodic_executor {
         );
 
         let command = vec!["clean".to_string(), "20".to_string()];
-        let collector = PeriodicExecutor::new(command, 10, notifier.clone(), "clean");
+        let mut collector = PeriodicExecutor::new(command, 10, notifier.clone(), "clean");
 
         assert_eq!(4, 4);
         drop(notifier);
-        drop(collector);
         drop(rcv_test_cmd);
+        let _ = collector.join();
+        drop(collector);
         let _ = rcv_notifier.join();
         Ok(())
     }

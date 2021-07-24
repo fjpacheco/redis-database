@@ -1,5 +1,5 @@
 use crate::native_types::error_severity::ErrorSeverity;
-use crate::tcp_protocol::server_redis_atributes::ServerRedisAtributes;
+use crate::tcp_protocol::server_redis_attributes::ServerRedisAttributes;
 use crate::{
     commands::Runnable,
     messages::redis_messages,
@@ -8,7 +8,7 @@ use crate::{
 
 pub struct NotifyMonitors;
 
-impl Runnable<ServerRedisAtributes> for NotifyMonitors {
+impl Runnable<ServerRedisAttributes> for NotifyMonitors {
     /// Notifies each client of the [ClientList] of the commands issued by the server.
     ///
     /// # Return value
@@ -21,7 +21,7 @@ impl Runnable<ServerRedisAtributes> for NotifyMonitors {
     fn run(
         &self,
         mut buffer: Vec<String>,
-        server: &mut ServerRedisAtributes,
+        server: &mut ServerRedisAttributes,
     ) -> Result<String, ErrorStruct> {
         let addr = buffer.pop();
         server

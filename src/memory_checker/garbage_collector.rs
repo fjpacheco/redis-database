@@ -110,15 +110,12 @@ impl GarbageCollector {
 
 impl Joinable<()> for GarbageCollector {
     fn join(&mut self) -> Result<(), ErrorStruct> {
-        println!("🥽🥽🥽🥽🥽");
         self.stop();
-        println!("🥽🥽🥽🥽🥽🥽🥽🥽🥽🥽🥽🥽🥽🥽🥽🥽🥽🥽🥽🥽");
         close_thread(
             self.handle.take(),
             "Garbage collector",
             self.notifier.clone(),
         )?;
-        println!("🥽🥽🥽🥽🥽🥽Garbage collector has been shutted down!");
         Ok(())
     }
 }
