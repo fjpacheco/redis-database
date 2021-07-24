@@ -154,14 +154,14 @@ mod test_periodic_executor {
         let rcv_log_test = Mutex::new(rcv_log_test);
         let rcv_notifier = thread::spawn(move || {
             let rcv_log_test = rcv_log_test.lock().unwrap();
-            for _usless in rcv_log_test.iter() {}
+            for _useless in rcv_log_test.iter() {}
         });
 
         let notifier = Notifier::new(
             snd_log_test,
             snd_test_cmd,
             Arc::new(AtomicBool::new(false)),
-            "test_addr_usless".into(),
+            "test_addr_useless".into(),
         );
 
         let command = vec!["clean".to_string(), "20".to_string()];
@@ -185,7 +185,7 @@ mod test_periodic_executor {
         let rcv_log_test = Mutex::new(rcv_log_test);
         let rcv_notifier = thread::spawn(move || {
             let rcv_log_test = rcv_log_test.lock().unwrap();
-            for _usless in rcv_log_test.iter() {}
+            for _useless in rcv_log_test.iter() {}
         });
         let notifier = Notifier::new(
             snd_log_test,
@@ -223,7 +223,7 @@ mod test_periodic_executor {
         let rcv_log_test = Mutex::new(rcv_log_test);
         let rcv_notifier = thread::spawn(move || {
             let rcv_log_test = rcv_log_test.lock().unwrap();
-            for _usless in rcv_log_test.iter() {}
+            for _useless in rcv_log_test.iter() {}
         });
         let notifier = Notifier::new(
             snd_log_test,

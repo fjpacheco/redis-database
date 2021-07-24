@@ -11,6 +11,19 @@ use std::sync::{Arc, Mutex};
 pub struct Sadd;
 
 impl Runnable<Arc<Mutex<Database>>> for Sadd {
+    /// Add the specified members to the set stored at **key**. Specified members that are already a member of this set are ignored.
+    /// If **key** does not exist, a new set is created before adding the specified members.
+    /// An error is returned when the value stored at key is not a set
+    ///
+    /// # Return value
+    /// [String] _encoded_ in [RInteger]: the number of elements that were added to the set, not including all the elements already present in the set.
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * The value stored at **key** is not a set.
+    /// * Buffer [Vec]<[String]> is received empty, or received with only one element.
+    /// * [Database] received in <[Arc]<[Mutex]>> is poisoned.
     fn run(
         &self,
         buffer: Vec<String>,

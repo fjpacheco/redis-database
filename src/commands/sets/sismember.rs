@@ -10,6 +10,19 @@ use std::sync::{Arc, Mutex};
 pub struct Sismember;
 
 impl Runnable<Arc<Mutex<Database>>> for Sismember {
+    /// Returns if member is a member of the set stored at key.
+    ///
+    /// # Return value
+    /// [String] _encoded_ in [RInteger]: specifically:
+    /// * 1 if the element is a member of the set.
+    /// * 0 if the element is not a member of the set, or if **key** does not exist.
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * The value stored at **key** is not a set.
+    /// * Buffer [Vec]<[String]> is received empty, or not received with only two element.
+    /// * [Database] received in <[Arc]<[Mutex]>> is poisoned.       
     fn run(
         &self,
         buffer: Vec<String>,

@@ -10,6 +10,18 @@ use std::sync::{Arc, Mutex};
 pub struct Srem;
 
 impl Runnable<Arc<Mutex<Database>>> for Srem {
+    /// Remove the specified members from the set stored at key. Specified members that are not a member of this set are ignored.
+    /// If key does not exist, it is treated as an empty set and this command returns 0.
+    ///
+    /// # Return value
+    /// [String] _encoded_ in [RInteger]: the number of members that were removed from the set, not including non existing members.
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * The value stored at **key** is not a set.
+    /// * Buffer [Vec]<[String]> is received empty, or received with only one element.
+    /// * [Database] received in <[Arc]<[Mutex]>> is poisoned.    
     fn run(
         &self,
         buffer: Vec<String>,

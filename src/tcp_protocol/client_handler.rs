@@ -175,19 +175,21 @@ fn listen_while_client(
     notifier: &Notifier,
     response_snd: mpsc::Sender<Option<String>>,
 ) -> Result<(), ErrorStruct> {
+    let mut response_critical;
     while let Some(received) = lines.next() {
         match received {
             Ok(input) => {
                 if input.starts_with('*') {
-                    process_command_redis(
+                    response_critical = process_command_redis(
                         input,
                         &mut lines,
                         c_shared_fields,
                         notifier,
                         &response_snd,
-                    )?;
+                    );
                 } else {
-                    process_other(input, c_shared_fields, notifier, &response_snd)?;
+                    response_critical =
+                        process_other(input, c_shared_fields, notifier, &response_snd);
                 }
             }
             Err(err) => match err.kind() {
@@ -201,6 +203,20 @@ fn listen_while_client(
                     ))
                 }
             },
+        }
+
+        match response_critical {
+            Ok(_) => {}
+            Err(error) => {
+                if let Some(severity) = error.severity() {
+                    match severity {
+                        ErrorSeverity::Comunicate => {
+                            send_response(error.print_it(), &response_snd)?;
+                        }
+                        _ => return Err(error),
+                    }
+                }
+            }
         }
     }
     Ok(())

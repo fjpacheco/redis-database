@@ -10,6 +10,17 @@ use std::sync::{Arc, Mutex};
 pub struct Smembers;
 
 impl Runnable<Arc<Mutex<Database>>> for Smembers {
+    /// Returns all the members of the set value stored at **key**.
+    ///
+    /// # Return value
+    /// [String] _encoded_ in [RArray]: all elements of the set.
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * The value stored at **key** is not a set.
+    /// * Buffer [Vec]<[String]> is received empty, or not received with only one element.
+    /// * [Database] received in <[Arc]<[Mutex]>> is poisoned.    
     fn run(
         &self,
         buffer: Vec<String>,

@@ -149,7 +149,7 @@ mod test_garbage_collector {
         let rcv_log_test = Mutex::new(rcv_log_test);
         let rcv_notifier = thread::spawn(move || {
             let rcv_log_test = rcv_log_test.lock().unwrap();
-            for _usless in rcv_log_test.iter() {}
+            for _useless in rcv_log_test.iter() {}
         });
         let notifier = Notifier::new(
             snd_log_test,
@@ -179,7 +179,7 @@ mod test_garbage_collector {
         let rcv_log_test = Mutex::new(rcv_log_test);
         let rcv_notifier = thread::spawn(move || {
             let rcv_log_test = rcv_log_test.lock().unwrap();
-            for _usless in rcv_log_test.iter() {}
+            for _useless in rcv_log_test.iter() {}
         });
 
         let notifier = Notifier::new(
@@ -215,7 +215,7 @@ mod test_garbage_collector {
         let rcv_log_test = Mutex::new(rcv_log_test);
         let rcv_notifier = thread::spawn(move || {
             let rcv_log_test = rcv_log_test.lock().unwrap();
-            for _usless in rcv_log_test.iter() {}
+            for _useless in rcv_log_test.iter() {}
         });
 
         let notifier = Notifier::new(

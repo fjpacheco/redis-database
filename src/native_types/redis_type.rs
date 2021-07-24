@@ -91,7 +91,18 @@ pub fn fill_bulk_string_vector<G>(
 where
     G: BufRead,
 {
-    let mut first_lecture = rest.next().unwrap().unwrap();
+    let mut first_lecture = rest
+        .next()
+        .ok_or_else(|| {
+            ErrorStruct::new("ERR".to_string(), "Failed to parse Redis Type".to_string())
+        })?
+        .map_err(|err| {
+            ErrorStruct::new(
+                "ERR".to_string(),
+                format!("Error received in next line.\nDetail: {:?}", err),
+            )
+        })?;
+
     match first_lecture.remove(0) {
         // Redis Type inference
         '$' => {
@@ -140,7 +151,15 @@ where
     G: BufRead,
 {
     match rest_of.next() {
-        Some(item) => verify_b_string_size(size, item.unwrap()),
+        Some(item) => verify_b_string_size(
+            size,
+            item.map_err(|err| {
+                ErrorStruct::new(
+                    "ERR".to_string(),
+                    format!("Error received in next line.\nDetail: {:?}", err),
+                )
+            })?,
+        ),
         None => Err(ErrorStruct::new(
             "ERR_PARSE".to_string(),
             "Failed to parse redis bulk string".to_string(),

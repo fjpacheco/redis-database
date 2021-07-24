@@ -9,7 +9,7 @@ mod setup;
 
 #[test]
 #[ignore = "Integration Test"]
-fn int_test_01_set_key_with_value_return_ok() -> Result<(), ErrorStruct> {
+fn int_test_01_set() -> Result<(), ErrorStruct> {
     let mut server = setup::ServerTest::start()?;
     let mut connection_client = server.get_connection_client()?;
 
@@ -26,7 +26,7 @@ fn int_test_01_set_key_with_value_return_ok() -> Result<(), ErrorStruct> {
 
 #[test]
 #[ignore = "Integration Test"]
-fn int_test_02_get_return_a_value() -> Result<(), ErrorStruct> {
+fn int_test_02_get() -> Result<(), ErrorStruct> {
     let mut server = setup::ServerTest::start()?;
     let mut connection_client = server.get_connection_client()?;
     let _: Result<String, RedisError> = connection_client.set("key_1", "value");
@@ -48,7 +48,7 @@ fn int_test_02_get_return_a_value() -> Result<(), ErrorStruct> {
 
 #[test]
 #[ignore = "Integration Test"]
-fn int_test_03_strlen_return_a_length_of_the_string_at_key() -> Result<(), ErrorStruct> {
+fn int_test_03_strlen() -> Result<(), ErrorStruct> {
     let mut server = setup::ServerTest::start()?;
     let mut connection_client = server.get_connection_client()?;
     let _: Result<String, RedisError> = connection_client.set("key_1", "four");
@@ -227,7 +227,7 @@ fn int_test_07_incrby() -> Result<(), ErrorStruct> {
 
 #[ignore = "Integration Test"]
 #[test]
-fn int_test_07_decrby() -> Result<(), ErrorStruct> {
+fn int_test_08_decrby() -> Result<(), ErrorStruct> {
     let mut server = setup::ServerTest::start()?;
     let mut connection_client = server.get_connection_client()?;
     let _: Result<String, RedisError> = connection_client.set("key_1", "10");
@@ -282,7 +282,7 @@ fn int_test_07_decrby() -> Result<(), ErrorStruct> {
 
 #[ignore = "Integration Test"]
 #[test]
-fn int_test_08_getset() -> Result<(), ErrorStruct> {
+fn int_test_09_getset() -> Result<(), ErrorStruct> {
     let mut server = setup::ServerTest::start()?;
     let mut connection_client = server.get_connection_client()?;
     let _: Result<String, RedisError> = connection_client.set("key_1", "value_1_old");
@@ -306,7 +306,7 @@ fn int_test_08_getset() -> Result<(), ErrorStruct> {
 
 #[ignore = "Integration Test"]
 #[test]
-fn int_test_09_getdel() -> Result<(), ErrorStruct> {
+fn int_test_10_getdel() -> Result<(), ErrorStruct> {
     let mut server = setup::ServerTest::start()?;
     let mut connection_client = server.get_connection_client()?;
     let _: Result<String, RedisError> = connection_client.set("key_1", "value_1");

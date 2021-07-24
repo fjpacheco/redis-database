@@ -10,6 +10,17 @@ use std::sync::{Arc, Mutex};
 pub struct Scard;
 
 impl Runnable<Arc<Mutex<Database>>> for Scard {
+    /// Returns the set cardinality (number of elements) of the set stored at **key**.
+    ///
+    /// # Return value
+    /// [String] _encoded_ in [RInteger]: the cardinality (number of elements) of the set, or **0** if **key** does not exist.
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * The value stored at **key** is not a set.
+    /// * Buffer [Vec]<[String]> is received empty, or not received with only one element.
+    /// * [Database] received in <[Arc]<[Mutex]>> is poisoned.    
     fn run(
         &self,
         mut buffer: Vec<String>,
