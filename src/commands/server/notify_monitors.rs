@@ -1,3 +1,4 @@
+use crate::native_types::error_severity::ErrorSeverity;
 use crate::tcp_protocol::server_redis_atributes::ServerRedisAtributes;
 use crate::{
     commands::Runnable,
@@ -8,6 +9,15 @@ use crate::{
 pub struct NotifyMonitors;
 
 impl Runnable<ServerRedisAtributes> for NotifyMonitors {
+    /// Notifies each client of the [ClientList] of the commands issued by the server.
+    ///
+    /// # Return value
+    /// [String] _encoded_ in [RSimpleString]: OK if MONITOR was executed correctly.
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * [ServerRedisAtributes] has poisoned methods.
     fn run(
         &self,
         mut buffer: Vec<String>,
@@ -17,7 +27,12 @@ impl Runnable<ServerRedisAtributes> for NotifyMonitors {
         server
             .get_client_list()
             .lock()
-            .unwrap()
+            .map_err(|_| {
+                ErrorStruct::from(redis_messages::poisoned_lock(
+                    "Client List",
+                    ErrorSeverity::ShutdownServer,
+                ))
+            })?
             .notify_monitors(addr.unwrap(), buffer);
         Ok(RSimpleString::encode(redis_messages::ok()))
     }

@@ -146,9 +146,20 @@ pub fn create_notifier() -> (
     )
 }
 
-/*
-let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-let mut db = Arc::new(Mutex::new(Database::new(notifier)));
-30,22:         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
-let mut db = Arc::new(Mutex::new(Database::new(notifier)));
-*/
+fn check_error_cases_without_elements(
+    buffer: &[String],
+    name_command: &str,
+    elements: usize,
+) -> Result<(), ErrorStruct> {
+    check_empty(&buffer, name_command)?;
+
+    if buffer.len() != elements {
+        let error_message = redis_messages::arguments_invalid_to(name_command);
+        return Err(ErrorStruct::new(
+            error_message.get_prefix(),
+            error_message.get_message(),
+        ));
+    }
+
+    Ok(())
+}
