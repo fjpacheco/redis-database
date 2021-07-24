@@ -11,14 +11,17 @@ use crate::native_types::ErrorStruct;
 
 use crate::tcp_protocol::Response;
 
-use std::sync::mpsc::{self, Receiver};
 use std::sync::Arc;
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Mutex,
 };
-use std::thread::{self, JoinHandle};
+use std::thread::JoinHandle;
 use std::time::Duration;
+use std::{
+    sync::mpsc::{self, Receiver},
+    thread::sleep,
+};
 
 /// This structure sleeps periodically and execute
 /// a given command. When it is needed, the loop
@@ -67,7 +70,7 @@ impl PeriodicExecutor {
         let mut counter = 0;
 
         loop {
-            thread::sleep(Duration::new(1, 0));
+            sleep(Duration::from_secs(1));
             counter += 1;
 
             if !still_working_clone.load(Ordering::Relaxed) {
@@ -130,7 +133,7 @@ impl Joinable<()> for PeriodicExecutor {
 
 mod test_periodic_executor {
 
-    use std::sync::mpsc::{Receiver, Sender};
+    use std::thread;
 
     use super::*;
     use crate::{
@@ -144,25 +147,32 @@ mod test_periodic_executor {
 
     #[test]
     #[ignore = "Long test"]
-    fn long_test_01_periodic_executor_is_dropped_safely() {
-        let (snd_test_cmd, _rcv_test_cmd): (
-            Sender<Option<RawCommand>>,
-            Receiver<Option<RawCommand>>,
-        ) = mpsc::channel();
+    fn long_test_01_periodic_executor_is_dropped_safely() -> Result<(), ErrorStruct> {
+        let (snd_test_cmd, rcv_test_cmd) = mpsc::channel();
+        let (snd_log_test, rcv_log_test) = mpsc::channel();
 
-        let (snd_log_test, _) = mpsc::channel();
+        let rcv_log_test = Mutex::new(rcv_log_test);
+        let rcv_notifier = thread::spawn(move || {
+            let rcv_log_test = rcv_log_test.lock().unwrap();
+            for _usless in rcv_log_test.iter() {}
+        });
 
         let notifier = Notifier::new(
-            snd_log_test.clone(),
-            snd_test_cmd.clone(),
+            snd_log_test,
+            snd_test_cmd,
             Arc::new(AtomicBool::new(false)),
-            "test_addr".into(),
+            "test_addr_usless".into(),
         );
 
         let command = vec!["clean".to_string(), "20".to_string()];
-        let _collector = PeriodicExecutor::new(command, 1, notifier, "clean");
+        let collector = PeriodicExecutor::new(command, 10, notifier.clone(), "clean");
 
         assert_eq!(4, 4);
+        drop(notifier);
+        drop(collector);
+        drop(rcv_test_cmd);
+        let _ = rcv_notifier.join();
+        Ok(())
     }
 
     #[test]
@@ -170,23 +180,38 @@ mod test_periodic_executor {
     fn long_test_02_garbage_collector_send_the_correct_command() {
         let (snd_test_cmd, rcv_test_cmd) = mpsc::channel();
 
-        let (snd_log_test, _) = mpsc::channel();
+        let (snd_log_test, rcv_log_test) = mpsc::channel();
 
+        let rcv_log_test = Mutex::new(rcv_log_test);
+        let rcv_notifier = thread::spawn(move || {
+            let rcv_log_test = rcv_log_test.lock().unwrap();
+            for _usless in rcv_log_test.iter() {}
+        });
         let notifier = Notifier::new(
-            snd_log_test.clone(),
-            snd_test_cmd.clone(),
+            snd_log_test,
+            snd_test_cmd,
             Arc::new(AtomicBool::new(false)),
             "test_addr".into(),
         );
         let command = vec!["clean".to_string(), "20".to_string()];
-        let _collector = PeriodicExecutor::new(command, 1, notifier, "clean");
-        let (command_recv, sender, _): RawCommand = rcv_test_cmd.recv().unwrap().unwrap();
+        let mut collector = PeriodicExecutor::new(command, 1, notifier.clone(), "clean");
+        let (command_recv, sender, rcv_client_fields): RawCommand =
+            rcv_test_cmd.recv().unwrap().unwrap();
 
         assert_eq!(&command_recv[0], "clean");
         assert_eq!(&command_recv[1], "20");
         sender
             .send(Ok(RSimpleString::encode("OK".to_string())))
             .unwrap();
+
+        // Correctly free channels
+        drop(notifier);
+        drop(rcv_test_cmd);
+        drop(rcv_client_fields);
+        drop(sender);
+        let _ = collector.join();
+        drop(collector);
+        let _ = rcv_notifier.join();
     }
 
     #[test]
@@ -194,17 +219,21 @@ mod test_periodic_executor {
     fn long_test_03_returning_an_error_drops_the_garbage_collector() {
         let (snd_test_cmd, rcv_test_cmd) = mpsc::channel();
 
-        let (snd_log_test, _) = mpsc::channel();
-
+        let (snd_log_test, rcv_log_test) = mpsc::channel();
+        let rcv_log_test = Mutex::new(rcv_log_test);
+        let rcv_notifier = thread::spawn(move || {
+            let rcv_log_test = rcv_log_test.lock().unwrap();
+            for _usless in rcv_log_test.iter() {}
+        });
         let notifier = Notifier::new(
-            snd_log_test.clone(),
-            snd_test_cmd.clone(),
+            snd_log_test,
+            snd_test_cmd,
             Arc::new(AtomicBool::new(false)),
             "test_addr".into(),
         );
         let command = vec!["clean".to_string(), "20".to_string()];
-        let _collector = PeriodicExecutor::new(command, 1, notifier, "clean");
-        let (_command, sender, _) = rcv_test_cmd.recv().unwrap().unwrap();
+        let mut collector = PeriodicExecutor::new(command, 1, notifier.clone(), "clean");
+        let (_command, sender, rcv_client_fields) = rcv_test_cmd.recv().unwrap().unwrap();
         sender
             .send(Err(ErrorStruct::new(
                 "ERR".to_string(),
@@ -213,5 +242,14 @@ mod test_periodic_executor {
             .unwrap();
 
         assert_eq!(4, 4);
+
+        // Correctly free channels
+        drop(notifier);
+        drop(rcv_test_cmd);
+        drop(rcv_client_fields);
+        drop(sender);
+        let _ = collector.join();
+        drop(collector);
+        let _ = rcv_notifier.join();
     }
 }

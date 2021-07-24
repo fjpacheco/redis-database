@@ -115,17 +115,20 @@ mod test_expire_info {
 
     #[test]
     #[ignore = "Long test"]
-    fn long_test_01_new_expireinfo_does_not_have_timeout() {
+    fn long_test_01_new_expireinfo_does_not_have_timeout() -> Result<(), ErrorStruct> {
         let mut info = ExpireInfo::new();
         assert!(!info.is_expired(None, "key"));
         assert_eq!(info.ttl(), None);
+        drop(info);
+        Ok(())
     }
 
     #[test]
     #[ignore = "Long test"]
-    fn long_test_02_setting_ten_seconds_of_timeout() {
+    fn long_test_02_setting_ten_seconds_of_timeout() -> Result<(), ErrorStruct> {
         let mut info = ExpireInfo::new();
-        info.set_timeout(10).unwrap();
+        info.set_timeout(10)
+            .map_err(|_| ErrorStruct::new("ERR_TEST".to_string(), "FAIL TEST".to_string()))?;
         assert_eq!(info.ttl(), Some(10));
         sleep(Duration::new(5, 0));
         assert!(!info.is_expired(None, "key"));
@@ -133,6 +136,7 @@ mod test_expire_info {
         sleep(Duration::new(6, 0));
         assert!(info.is_expired(None, "key"));
         assert_eq!(info.ttl(), None);
+        Ok(())
     }
 
     #[test]

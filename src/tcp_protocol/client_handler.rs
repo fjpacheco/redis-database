@@ -342,7 +342,7 @@ impl Joinable<()> for ClientHandler {
         let _ = self.stream.shutdown(Shutdown::Both);
         let _ = self.response_snd.send(None);
 
-        let state = close_thread(
+        close_thread(
             self.out_thread.take(),
             "write socket",
             self.notifier.clone(),
@@ -351,7 +351,6 @@ impl Joinable<()> for ClientHandler {
             self.in_thread.take(),
             "read socket",
             self.notifier.clone(),
-        ));
-        state
+        ))
     }
 }

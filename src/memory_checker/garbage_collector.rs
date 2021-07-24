@@ -122,7 +122,6 @@ impl Joinable<()> for GarbageCollector {
         Ok(())
     }
 }
-
 #[cfg(test)]
 
 mod test_garbage_collector {
@@ -139,42 +138,57 @@ mod test_garbage_collector {
     #[test]
     #[ignore = "Long test"]
     fn long_test_01_garbage_collector_is_dropped_safely() {
-        let (snd_col_test, _rcv_col_test) = mpsc::channel();
+        let (snd_col_test, rcv_col_test) = mpsc::channel();
 
-        let (snd_test_cmd, _rcv_test_cmd): (
+        let (snd_test_cmd, rcv_test_cmd): (
             Sender<Option<RawCommand>>,
             Receiver<Option<RawCommand>>,
         ) = mpsc::channel();
 
-        let (snd_log_test, _) = mpsc::channel();
-
+        let (snd_log_test, rcv_log_test) = mpsc::channel();
+        let rcv_log_test = Mutex::new(rcv_log_test);
+        let rcv_notifier = thread::spawn(move || {
+            let rcv_log_test = rcv_log_test.lock().unwrap();
+            for _usless in rcv_log_test.iter() {}
+        });
         let notifier = Notifier::new(
-            snd_log_test.clone(),
-            snd_test_cmd.clone(),
+            snd_log_test,
+            snd_test_cmd,
             Arc::new(AtomicBool::new(false)),
             "test_addr".into(),
         );
-        let _collector = GarbageCollector::new(snd_col_test, 1, 20, notifier);
+        let mut collector = GarbageCollector::new(snd_col_test, 1, 20, notifier.clone());
 
         assert_eq!(4, 4);
+
+        // Correctly free channels
+        drop(notifier);
+        drop(rcv_col_test);
+        drop(rcv_test_cmd);
+        let _ = collector.join();
+        drop(collector);
+        let _ = rcv_notifier.join();
     }
 
     #[test]
     #[ignore = "Long test"]
     fn long_test_02_garbage_collector_send_the_correct_command() {
         let (snd_col_test, rcv_col_test) = mpsc::channel();
-
-        let (snd_test_cmd, _rcv_test_cmd) = mpsc::channel();
-
-        let (snd_log_test, _) = mpsc::channel();
+        let (snd_test_cmd, rcv_test_cmd) = mpsc::channel();
+        let (snd_log_test, rcv_log_test) = mpsc::channel();
+        let rcv_log_test = Mutex::new(rcv_log_test);
+        let rcv_notifier = thread::spawn(move || {
+            let rcv_log_test = rcv_log_test.lock().unwrap();
+            for _usless in rcv_log_test.iter() {}
+        });
 
         let notifier = Notifier::new(
-            snd_log_test.clone(),
-            snd_test_cmd.clone(),
+            snd_log_test,
+            snd_test_cmd,
             Arc::new(AtomicBool::new(false)),
             "test_addr".into(),
         );
-        let _collector = GarbageCollector::new(snd_col_test, 1, 20, notifier);
+        let mut collector = GarbageCollector::new(snd_col_test, 1, 20, notifier.clone());
         let (command, sender, _) = rcv_col_test.recv().unwrap().unwrap();
 
         assert_eq!(&command[0], "clean");
@@ -182,6 +196,13 @@ mod test_garbage_collector {
         sender
             .send(Ok(RSimpleString::encode("OK".to_string())))
             .unwrap();
+
+        // Correctly free channels
+        drop(notifier);
+        drop(rcv_test_cmd);
+        let _ = collector.join();
+        drop(collector);
+        let _ = rcv_notifier.join();
     }
 
     #[test]
@@ -190,16 +211,21 @@ mod test_garbage_collector {
         let (snd_col_test, rcv_col_test) = mpsc::channel();
         let (snd_test_cmd, _rcv_test_cmd) = mpsc::channel();
 
-        let (snd_log_test, _) = mpsc::channel();
+        let (snd_log_test, rcv_log_test) = mpsc::channel();
+        let rcv_log_test = Mutex::new(rcv_log_test);
+        let rcv_notifier = thread::spawn(move || {
+            let rcv_log_test = rcv_log_test.lock().unwrap();
+            for _usless in rcv_log_test.iter() {}
+        });
 
         let notifier = Notifier::new(
-            snd_log_test.clone(),
-            snd_test_cmd.clone(),
+            snd_log_test,
+            snd_test_cmd,
             Arc::new(AtomicBool::new(false)),
             "test_addr".into(),
         );
-        let _collector = GarbageCollector::new(snd_col_test, 1, 20, notifier);
-        let (_command, sender, _) = rcv_col_test.recv().unwrap().unwrap();
+        let mut collector = GarbageCollector::new(snd_col_test, 1, 20, notifier.clone());
+        let (_command, sender, _client_fields) = rcv_col_test.recv().unwrap().unwrap();
         sender
             .send(Err(ErrorStruct::new(
                 "ERR".to_string(),
@@ -208,5 +234,10 @@ mod test_garbage_collector {
             .unwrap();
 
         assert_eq!(4, 4);
+        // Correctly free channels
+        drop(notifier);
+        let _ = collector.join();
+        drop(collector);
+        let _ = rcv_notifier.join();
     }
 }

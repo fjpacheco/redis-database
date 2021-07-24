@@ -66,7 +66,7 @@ impl ServerRedis {
 
         // ################## 7° Initialization structures: STRUCTS WITH THREADS ##################
         let mut log_center = LogCenter::new(
-            sender_log.clone(),
+            sender_log,
             receiver,
             Arc::clone(&config),
             FileManager::new(),
@@ -75,7 +75,7 @@ impl ServerRedis {
         let mut command_delegator =
             CommandDelegator::start(command_delegator_recv, commands_map, notifier.clone())?;
         let mut command_sub_delegator_databse = CommandSubDelegator::start::<Arc<Mutex<Database>>>(
-            snd_cmd_dat.clone(),
+            snd_cmd_dat,
             rcv_cmd_dat,
             runnables_database,
             Arc::clone(&c_database),
