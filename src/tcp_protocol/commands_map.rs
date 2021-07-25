@@ -2,6 +2,11 @@ use super::RawCommand;
 use std::collections::HashMap;
 use std::sync::mpsc::Sender;
 
+
+/// Associate a command's name with a sender to the structure
+/// where the command should be executed. If there is no sender
+/// associated, then the command would be executed in the given
+/// client fields.
 pub struct CommandsMap {
     channel_map: HashMap<String, Vec<Option<Sender<Option<RawCommand>>>>>,
 }
@@ -18,6 +23,8 @@ macro_rules! insert_in {
 }
 
 impl CommandsMap {
+
+    /// Drops all the senders contained in the map.
     pub fn kill_senders(&mut self) {
         self.channel_map.iter_mut().for_each(|x| {
             let senders = x.1;
@@ -27,66 +34,19 @@ impl CommandsMap {
         })
     }
 
+    /// Creates an empty instance of the commands map.
     pub fn new(
         channel_map: HashMap<String, Vec<Option<Sender<Option<RawCommand>>>>>,
     ) -> CommandsMap {
         CommandsMap { channel_map }
     }
 
+    /// Returns the associated sender with the given command's name.
     pub fn get(&self, string: &str) -> Option<&Vec<Option<Sender<Option<RawCommand>>>>> {
         self.channel_map.get(string)
     }
 
-    /*pub fn default() -> (
-        CommandsMap,
-        Receiver<RawCommand>,
-        Receiver<RawCommand>,
-        Sender<RawCommand>,
-    ) {
-        let (snd_cmd_dat, rcv_cmd_dat): (Sender<RawCommand>, Receiver<RawCommand>) =
-            mpsc::channel();
-
-        let (snd_cmd_server, rcv_cmd_server): (Sender<RawCommand>, Receiver<RawCommand>) =
-            mpsc::channel();
-
-        let mut channel_map: HashMap<String, Vec<Option<Sender<RawCommand>>>> = HashMap::new();
-        /*insert_in!(
-            channel_map,
-            snd_cmd_dat,
-            "set",
-            "get",
-            "strlen",
-            "mset",
-            "mget",
-            "getset",
-            "getdel",
-            "incrby",
-            "decrby",
-            "append",
-            "clean",
-            "expire"
-        );
-
-        insert_in!(
-            channel_map,
-            snd_cmd_server,
-            "config",
-            "clear_client",
-            "notifymonitors",
-            "shutdown"
-        );*/
-
-        channel_map.insert(String::from("publish"), vec![Some(snd_cmd_server)]);
-        channel_map.insert(String::from("monitor"), vec![None]);
-
-        (
-            CommandsMap { channel_map },
-            rcv_cmd_dat,
-            rcv_cmd_server,
-            snd_cmd_dat,
-        )
-    }*/
-
+    /// Creates an fully complete instance of the commands map.
     pub fn default(
         snd_cmd_dat: Sender<Option<RawCommand>>,
         snd_cmd_server: Sender<Option<RawCommand>>,
@@ -94,9 +54,7 @@ impl CommandsMap {
         let mut channel_map: HashMap<String, Vec<Option<Sender<Option<RawCommand>>>>> =
             HashMap::new();
 
-        // asociacion de comandos con database
-
-        Self::foo(
+        Self::insert(
             &mut channel_map,
             vec![
                 "clean".to_string(),
@@ -147,7 +105,7 @@ impl CommandsMap {
 
         // asociacion de comandos con server atributes
 
-        Self::foo(
+        Self::insert(
             &mut channel_map,
             vec![
                 "pubsub".to_string(),
@@ -176,7 +134,7 @@ impl CommandsMap {
         CommandsMap { channel_map }
     }
 
-    fn foo(
+    fn insert(
         map: &mut HashMap<String, Vec<Option<Sender<Option<RawCommand>>>>>,
         commands: Vec<String>,
         sender: Sender<Option<RawCommand>>,

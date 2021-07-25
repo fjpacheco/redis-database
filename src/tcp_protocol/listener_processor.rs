@@ -15,7 +15,11 @@ use super::notifier::Notifier;
 pub struct ListenerProcessor;
 
 impl ListenerProcessor {
-    pub fn incoming(listener: TcpListener, server_redis: ServerRedisAttributes, notifier: Notifier) {
+    pub fn incoming(
+        listener: TcpListener,
+        server_redis: ServerRedisAttributes,
+        notifier: Notifier,
+    ) {
         let result = start_incoming(listener, &notifier, server_redis);
         if let Err(err) = result {
             if err.severity().eq(&Some(&ErrorSeverity::ShutdownServer)) {

@@ -11,6 +11,8 @@ use std::time::SystemTime;
 use crate::communication::log_messages::LogMessage;
 use crate::tcp_protocol::client_handler::ClientHandler;
 
+/// This structure contain a list with all the
+/// client handlers that are active in the server.
 pub struct ClientList {
     list: Vec<Option<ClientHandler>>,
     channel_register: HashMap<String, usize>,
@@ -33,6 +35,11 @@ impl Joinable<()> for ClientList {
 }
 
 impl ClientList {
+    /// Return a new instance of the client list.
+    ///
+    /// # Return value
+    /// [ClientList].
+    ///
     pub fn new(log_channel: Sender<Option<LogMessage>>) -> ClientList {
         ClientList {
             list: Vec::new(),
@@ -41,6 +48,7 @@ impl ClientList {
         }
     }
 
+    /// Push info about the client list in a given compiler.
     pub fn info(&mut self, info_compiler: &mut Vec<String>) {
         self.drop_clients_dead();
         info_compiler.push(clients_connected(self.list.len()));
@@ -48,6 +56,7 @@ impl ClientList {
         info_compiler.push(String::new())
     }
 
+    /// Drops all the clients with a dead status.
     pub fn drop_clients_dead(&mut self) {
         self.list.iter_mut().for_each(|client_option| {
             if let Some(client) = client_option {
@@ -60,12 +69,20 @@ impl ClientList {
         self.list.retain(|client| client.is_some());
     }
 
+    /// Insert a new client handler.
     pub fn insert(&mut self, new_client: ClientHandler) {
         self.drop_clients_dead();
         self.list.push(Some(new_client));
         self.print_detail_clients().unwrap();
     }
 
+    /// Send the clients details to the Log Center.
+    ///
+    /// # Error
+    /// Return an [SendError] if:
+    ///
+    /// * Log channel is actually closed.
+    /// 
     pub fn print_detail_clients(&mut self) -> Result<(), SendError<Option<LogMessage>>> {
         let clients_detail = self
             .list
@@ -81,6 +98,8 @@ impl ClientList {
         Ok(())
     }
 
+    /// Notify the monitors about a succesfull command execution
+    ///
     pub fn notify_monitors(&mut self, addr: String, notification: Vec<String>) {
         self.list
             .iter_mut()
@@ -98,6 +117,11 @@ impl ClientList {
             });
     }
 
+    /// Send a message to all the subscribers of the given channel
+    ///
+    /// # Return value
+    /// [usize]: The number of clients that receive the message.
+    ///
     pub fn send_message_to_subscriptors(
         &mut self,
         channel: String,
@@ -119,6 +143,7 @@ impl ClientList {
             .count())
     }
 
+    /// Increase by one the number of subscribers of the given channels.
     pub fn increase_channels(&mut self, channels: Vec<String>) {
         for channel in channels.iter() {
             if let Some(counter) = self.channel_register.get_mut(channel) {
@@ -129,6 +154,7 @@ impl ClientList {
         }
     }
 
+        /// Decrease by one the number of subscribers of the given channels.
     pub fn decrease_channels(&mut self, channels: Vec<String>) {
         for channel in channels.iter() {
             let same_channel = String::from(channel);
@@ -141,6 +167,11 @@ impl ClientList {
         }
     }
 
+    /// Returns a list of channels that match the given pattern.
+    ///
+    /// # Return value
+    /// [Vec<[String]>]: The number of channels that have matched.
+    ///
     pub fn match_pattern(&self, matcher: SuperRegex) -> Vec<String> {
         self.channel_register
             .keys()
@@ -149,6 +180,11 @@ impl ClientList {
             .collect()
     }
 
+    /// Return a list of pair (channel, number of subscribers).
+    ///
+    /// # Return value
+    /// [Vec<[String]>].
+    ///
     pub fn get_register(&self) -> Vec<String> {
         let mut register: Vec<String> = Vec::new();
 

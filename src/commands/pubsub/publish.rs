@@ -1,50 +1,16 @@
-/*use crate::native_types::RInteger;
-use crate::native_types::RBulkString;
-use crate::{
-    commands::Runnable,
-    native_types::{error::ErrorStruct, redis_type::RedisType},
-    tcp_protocol::client_list::ClientList,
-};
-
-use super::pop_value;
-
-use std::sync::Arc;
-use std::sync::Mutex;
-
-pub struct Publish;
-
-impl Runnable<Arc<Mutex<ClientList>>> for Publish {
-    fn run(
-        &self,
-        mut buffer: Vec<String>,
-        clients: &mut Arc<Mutex<ClientList>>,
-    ) -> Result<String, ErrorStruct> {
-
-        let channel = pop_value(&mut buffer, "Publish")?;
-        let message = concatenate_words_of_vec(buffer);
-        Ok(RInteger::encode(clients.lock().unwrap().send_message_to_subscriptors(channel, message) as isize))
-
-    }
-}
-
-fn concatenate_words_of_vec(mut buffer: Vec<String>) -> String {
-    let mut message = String::new();
-
-    for word in buffer.iter() {
-        message.push(' ');
-        message.push_str(word)
-    }
-
-    message
-}*/
-
 use crate::native_types::RInteger;
 use crate::tcp_protocol::server_redis_attributes::ServerRedisAttributes;
 use crate::{
     commands::Runnable,
     native_types::{error::ErrorStruct, redis_type::RedisType},
 };
+use crate::{messages::redis_messages, native_types::error_severity::ErrorSeverity};
 
+/// Send a message to all the subscriber of
+/// a given channel.
+///
+/// # Return value
+/// [String] _encoded_ in [RInteger]: the number of clients that receive the message.
 pub struct Publish;
 
 impl Runnable<ServerRedisAttributes> for Publish {
@@ -58,7 +24,12 @@ impl Runnable<ServerRedisAttributes> for Publish {
         match server
             .get_client_list()
             .lock()
-            .unwrap()
+            .map_err(|_| {
+                ErrorStruct::from(redis_messages::poisoned_lock(
+                    "client list",
+                    ErrorSeverity::ShutdownServer,
+                ))
+            })?
             .send_message_to_subscriptors(channel, message)
         {
             Ok(count) => Ok(RInteger::encode(count as isize)),

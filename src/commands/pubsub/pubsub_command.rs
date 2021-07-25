@@ -8,6 +8,18 @@ use crate::{
     tcp_protocol::server_redis_attributes::ServerRedisAttributes,
 };
 
+/// Gives information about the pub sub stats.
+///
+/// # Sub Commands
+///
+/// * CHANNELS: Shows all the active channels.
+/// * NUMSUB: Shows all the active channels with the number of
+/// subscribers.
+///
+/// # Error
+/// Return an [ErrorStruct] if:
+///
+/// * User does not give a supported subcommand.
 pub struct Pubsub;
 
 impl Runnable<ServerRedisAttributes> for Pubsub {

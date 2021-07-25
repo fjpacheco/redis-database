@@ -16,12 +16,12 @@ use crate::native_types::error_severity::ErrorSeverity;
 use crate::native_types::ErrorStruct;
 use crate::tcp_protocol::close_thread;
 
+/// This structure interprets commands and delegates the
+/// the task to the apropiated structure of the server.
 pub struct CommandDelegator {
     join: Option<JoinHandle<Result<(), ErrorStruct>>>,
     notifier: Notifier,
 }
-
-/// Interprets commands and delegates tasks
 
 impl Joinable<()> for CommandDelegator {
     fn join(&mut self) -> Result<(), ErrorStruct> {
@@ -37,6 +37,15 @@ impl Joinable<()> for CommandDelegator {
 }
 
 impl CommandDelegator {
+    /// Return a new instance of the command delegator.
+    ///
+    /// # Return value
+    /// [CommandDelegator].
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * The OS failed to create the asociated thread.
     pub fn start(
         command_delegator_recv: Receiver<Option<RawCommand>>,
         commands_map: CommandsMap,
@@ -59,6 +68,16 @@ impl CommandDelegator {
         })
     }
 
+    /// Initializes the reception of raw commands that come from
+    /// client handlers.
+    ///
+
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * Some of the errors thrown before demands to close
+    /// the server.
+    /// * 
     fn init(
         command_delegator_recv: Receiver<Option<RawCommand>>,
         mut commands_map: CommandsMap,
@@ -96,14 +115,11 @@ impl CommandDelegator {
     }
 }
 
+    /// Determines if an error requiers some shutdown action.
+    /// If the error is critical, then it is returned.
+    /// Else, Ok() is returned
+    ///
 fn is_critical(potential_error: Result<(), ErrorStruct>) -> Result<(), ErrorStruct> {
-    /*
-     * Lista de errores que lanza delegate_jobs():
-     * - closed subdelegator channel -> Shutdown server
-     * - closed client channel -> Nothing happens
-     * - poisoned lock -> Shutdown server
-     * - normal error -> Nothing happens
-     */
 
     match potential_error {
         Ok(()) => Ok(()),
@@ -122,6 +138,18 @@ fn check_severity(error: ErrorStruct) -> Result<(), ErrorStruct> {
     }
 }
 
+
+    /// Delegates the raw command to the apropiate structure.
+    /// If there is no sender to the structure, then the command
+    /// should be run in the atributes of the client executor.
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * Any sender to any structure is closed.
+    /// * The client atributes's lock is poisoned.
+    /// * An error is thrown while running a command.
+    ///
 fn delegate_jobs(
     raw_command: RawCommand,
     sender_list: &[Option<Sender<Option<RawCommand>>>],
@@ -129,12 +157,12 @@ fn delegate_jobs(
     for sender in sender_list.iter() {
         let raw_command_clone = clone_raw_command(&raw_command);
         if let Some(snd_struct) = sender.as_ref() {
-            //Case SOME: El comando se envia al subdelegator indicado
+            /*Case SOME: El comando se envia al subdelegator indicado*/
             snd_struct.send(Some(raw_command_clone)).map_err(|_| {
                 ErrorStruct::from(redis_messages::closed_sender(ErrorSeverity::ShutdownServer))
             })?;
         } else {
-            //Case NONE: El comando se ejecuta sobre el client status
+            /*Case NONE: El comando se ejecuta sobre el client status*/
             case_client_status(
                 raw_command_clone.0,
                 raw_command_clone.1,

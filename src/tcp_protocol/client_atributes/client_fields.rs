@@ -15,6 +15,8 @@ use std::sync::Mutex;
 
 use std::net::SocketAddrV4;
 
+    /// Contains the atributes of one client.
+    /// Its behaviour depends on the client status.
 pub struct ClientFields {
     map: Option<RunnablesMap<Arc<Mutex<ClientFields>>>>,
     status: Status,
@@ -23,6 +25,13 @@ pub struct ClientFields {
 }
 
 impl ClientFields {
+
+
+    /// Return a new instance of the Client Fields
+    ///
+    /// # Return value
+    /// [ClientFields]
+    ///
     pub fn new(address: SocketAddrV4) -> ClientFields {
         ClientFields {
             map: Some(RunnablesMap::<Arc<Mutex<ClientFields>>>::executor()),
@@ -32,28 +41,60 @@ impl ClientFields {
         }
     }
 
+    /// Returns the address of the client.
+    ///
+    /// # Return value
+    /// [String]: the address of the client.
+    ///
     pub fn get_addr(&self) -> String {
         self.address.clone().to_string()
     }
 
+    /// Replace the status of the client with a new given one
+    ///
+    /// # Return value
+    /// [Status]: the last status.
+    ///
     pub fn replace_status(&mut self, new_status: Status) -> Status {
         let old_status = self.status.replace(new_status);
         self.update_map();
         old_status
     }
 
+    /// Returns a wrapped reference of the client's status.
+    ///
+    /// # Return value
+    /// [Option]: the wrapped status.
+    ///
     pub fn status(&self) -> Option<&Status> {
         Some(&self.status)
     }
 
+    /// Returns true if the client is subscripted to any channel.
+    ///
+    /// # Return value
+    /// [bool]
+    ///
     pub fn is_subscripted_to(&self, channel: &str) -> bool {
         self.subscriptions.contains(channel)
     }
 
+    /// Returns true if the client is dead.
+    ///
+    /// # Return value
+    /// [bool]
+    ///
     pub fn is_dead(&self) -> bool {
         self.status.eq(&Status::Dead)
     }
 
+    /// Check if the client could execute a given command.
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * Client is in monitor or dead status.
+    /// 
     pub fn is_allowed_to(&self, command: &str) -> Result<(), ErrorStruct> {
         match self.status {
             Status::Executor => Ok(()),
@@ -68,6 +109,15 @@ impl ClientFields {
         }
     }
 
+    /// Returns the requested runnable.
+    ///
+    /// # Return value
+    /// [RawCommandTwo]: The runnable
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * The client is not in a valid status to execute the command.
     pub fn review_command(&self, command: &[String]) -> Result<RawCommandTwo, ErrorStruct> {
         match self.status {
             Status::Executor => self.rc_case_executor(command),
@@ -80,6 +130,11 @@ impl ClientFields {
         }
     }
 
+    /// Returns true if the client is in monitor mode.
+    ///
+    /// # Return value
+    /// [bool]
+    ///
     pub fn is_monitor_notificable(&self) -> bool {
         self.status == Status::Monitor
     }
@@ -106,14 +161,19 @@ impl ClientFields {
 
     fn update_map(&mut self) {
         self.map = self.status.update_map();
-
-        /*if let Some(new_map) = self.status.update_map() {
-            self.map.replace(new_map);
-        } else {
-            self.map.take();
-        }*/
     }
 
+
+    /// Add the given channels to the subscription list.
+    ///
+    /// # Return value
+    /// [isize]: The number of channels which the client
+    /// was not subscribed.
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * The client is not in a valid status to execute the command.
     pub fn add_subscriptions(&mut self, channels: Vec<String>) -> Result<isize, ErrorStruct> {
         match self.status {
             Status::Executor => Ok(self.as_case_executor(channels)),
@@ -134,6 +194,15 @@ impl ClientFields {
         self.add_channels(channels)
     }
 
+    /// Remove the given channels of the subscription list.
+    ///
+    /// # Return value
+    /// [isize]: The number of channels which has been removed.
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * The client is not in a valid status to execute the command.
     pub fn remove_subscriptions(&mut self, channels: Vec<String>) -> Result<isize, ErrorStruct> {
         match &self.status {
             Status::Executor => Ok(0),
@@ -178,6 +247,16 @@ impl ClientFields {
         self.subscriptions.len() as isize
     }
 
+    /// Return the details of the client atributes.
+    ///
+    /// # Return value
+    /// [isize]: The number of channels which the client
+    /// was not subscribed.
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * The client is not in a valid status to execute the command.
     pub fn get_detail(&self) -> String {
         format!(
             "Client: {:?} -- Status: {:?} -- Subscriptions: {:?}",

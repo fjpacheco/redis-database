@@ -14,7 +14,7 @@ use crate::commands::{
     },
     server::{
         config::Config, dbsize::Dbsize, flushdb::FlushDb, info_db::InfoDb, info_sv::InfoSv,
-        monitor::Monitor, notify_monitors::NotifyMonitors, shutdown::Shutdown, save::Save
+        monitor::Monitor, notify_monitors::NotifyMonitors, save::Save, shutdown::Shutdown,
     },
     sets::{sadd::Sadd, scard::Scard, sismember::Sismember, smembers::Smembers, srem::Srem},
     strings::{
@@ -23,7 +23,6 @@ use crate::commands::{
     },
 };
 
-use crate::tcp_protocol::client_list::ClientList;
 use crate::tcp_protocol::BoxedCommand;
 use crate::Database;
 use std::collections::HashMap;
@@ -33,6 +32,7 @@ use std::sync::Mutex;
 use super::client_atributes::client_fields::ClientFields;
 use crate::tcp_protocol::server_redis_attributes::ServerRedisAttributes;
 
+/// Associate a command's name with a runnable.
 pub struct RunnablesMap<T> {
     elements: HashMap<String, Arc<BoxedCommand<T>>>,
 }
@@ -49,20 +49,28 @@ macro_rules! get_runnables {
 }
 
 impl<T> RunnablesMap<T> {
+
+    /// Creats an empty instance of the runnables map.
     pub fn new(map: HashMap<String, Arc<BoxedCommand<T>>>) -> Self {
         Self { elements: map }
     }
 
+    /// Returns the runnable associated with the given command's name.
     pub fn get(&self, string: &str) -> Option<Arc<BoxedCommand<T>>> {
         self.elements
             .get(string)
             .map(|summoner| Arc::clone(summoner))
     }
 
+    /// Indicates if the map contains the given command's name.
+    ///
+    /// # Return value
+    /// [bool]: true if the map contains the key.
     pub fn contains_key(&self, string: &str) -> bool {
         self.elements.contains_key(string)
     }
 
+    /// Creates a default instance with database runnables.
     pub fn database() -> RunnablesMap<Arc<Mutex<Database>>> {
         let mut map: HashMap<String, Arc<BoxedCommand<Arc<Mutex<Database>>>>> = HashMap::new();
         map = get_runnables!(
@@ -78,35 +86,10 @@ impl<T> RunnablesMap<T> {
         RunnablesMap { elements: map }
     }
 
+    /// Creates a default instance with server runnables.
     pub fn server() -> RunnablesMap<ServerRedisAttributes> {
         let mut map: HashMap<String, Arc<BoxedCommand<ServerRedisAttributes>>> = HashMap::new();
 
-        /*map.insert(
-            String::from("shutdown"),
-            Arc::new(Box::new(server::shutdown::Shutdown)),
-        );
-        map.insert(
-            String::from("config get"),
-            Arc::new(Box::new(server::config_get::ConfigGet)),
-        );
-        map.insert(
-            String::from("notifymonitors"),
-            Arc::new(Box::new(server::notify_monitors::NotifyMonitors)),
-        );
-        map.insert(
-            String::from("subscribe"),
-            Arc::new(Box::new(pubsub::subscribe_cl::SubscribeCL)),
-        );
-        map.insert(
-            String::from("unsubscribe"),
-            Arc::new(Box::new(pubsub::unsubscribe_cl::UnsubscribeCL)),
-        );
-        map.insert(
-            String::from("publish"),
-            Arc::new(Box::new(pubsub::publish::Publish)),
-        );
-
-        RunnablesMap { elements: map }*/
         map = get_runnables!(map, Publish, Pubsub, Config, NotifyMonitors, Shutdown);
         map.insert(
             "subscribe".to_string().to_lowercase(),
@@ -123,12 +106,7 @@ impl<T> RunnablesMap<T> {
         RunnablesMap { elements: map }
     }
 
-    pub fn client_list() -> RunnablesMap<Arc<Mutex<ClientList>>> {
-        let map: HashMap<String, Arc<BoxedCommand<Arc<Mutex<ClientList>>>>> = HashMap::new();
-        RunnablesMap { elements: map }
-    }
-
-    // Hace falta agregarle metodos de ejecutor
+    /// Creates a default instance with Executor runnables.
     pub fn executor() -> RunnablesMap<Arc<Mutex<ClientFields>>> {
         let mut map: HashMap<String, Arc<BoxedCommand<Arc<Mutex<ClientFields>>>>> = HashMap::new();
         map.insert(String::from("monitor"), Arc::new(Box::new(Monitor)));
@@ -140,6 +118,7 @@ impl<T> RunnablesMap<T> {
         RunnablesMap { elements: map }
     }
 
+    /// Creates a default instance with subscriber runnables.
     pub fn subscriber() -> RunnablesMap<Arc<Mutex<ClientFields>>> {
         let mut map: HashMap<String, Arc<BoxedCommand<Arc<Mutex<ClientFields>>>>> = HashMap::new();
         map.insert(String::from("subscribe"), Arc::new(Box::new(SubscribeCf)));

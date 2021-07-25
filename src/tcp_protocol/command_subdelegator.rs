@@ -15,13 +15,15 @@ use crate::tcp_protocol::runnables_map::RunnablesMap;
 
 use super::notifier::Notifier;
 use super::{RawCommand, Response};
+
+/// Interprets raw commands and gives runnables to execute
+/// in a predetermined structure.
 pub struct CommandSubDelegator {
     sender: Sender<Option<RawCommand>>,
     join: Option<JoinHandle<Result<(), ErrorStruct>>>,
     notifier: Notifier,
     name: String,
 }
-/// Interprets commands and delegates tasks
 
 impl Joinable<()> for CommandSubDelegator {
     fn join(&mut self) -> Result<(), ErrorStruct> {
@@ -34,16 +36,13 @@ impl Joinable<()> for CommandSubDelegator {
     }
 }
 impl CommandSubDelegator {
-    /// a
-    ///
-    /// # Return value
-    /// [String] _encoded_ in [RSimpleString]: .
-    ///
+    
+    /// Creates an instance of the command sub delegator
     /// # Error
     /// Return an [ErrorStruct] if:
     ///
-    /// * The buffer [Vec]<[String]> more than two elements is received or empty.
-    /// * [Database] received in <[Arc]<[Mutex]>> is poisoned.
+    /// * Some of the errors thrown before demands to close
+    /// the server.
     pub fn start<T: 'static>(
         snd_cmd: Sender<Option<RawCommand>>,
         rcv_cmd: Receiver<Option<RawCommand>>,
@@ -74,6 +73,13 @@ impl CommandSubDelegator {
         })
     }
 
+    /// Initializes the reception of raw commands.
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * The buffer [Vec]<[String]> more than two elements is received or empty.
+    /// * [Database] received in <[Arc]<[Mutex]>> is poisoned.
     fn init<T: 'static>(
         rcv_cmd: Receiver<Option<RawCommand>>,
         runnables_map: RunnablesMap<T>,
@@ -129,13 +135,6 @@ fn run_command<T: 'static>(
 }
 
 fn is_critical(potential_error: Result<(), ErrorStruct>) -> Result<(), ErrorStruct> {
-    /*
-     * Lista de errores que lanza delegate_jobs():
-     * - closed subdelegator channel -> Shutdown server
-     * - closed client channel -> Nothing happens
-     * - poisoned lock -> Shutdown server
-     * - normal error -> Nothing happens
-     */
 
     match potential_error {
         Ok(()) => Ok(()),

@@ -221,7 +221,7 @@ impl Default for RedisConfig {
 ///
 /// * **key** => *"name_config"*
 ///
-/// * **value** => *"estate_config"*
+/// * **value** => *"state_config"*
 ///
 /// ## Example
 ///

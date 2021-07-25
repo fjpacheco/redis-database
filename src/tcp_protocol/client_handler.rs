@@ -169,7 +169,6 @@ fn read_socket(
     status_while
 }
 
-
 fn listen_while_client(
     mut lines: Lines<BufReader<TcpStream>>,
     c_shared_fields: &Arc<Mutex<ClientFields>>,

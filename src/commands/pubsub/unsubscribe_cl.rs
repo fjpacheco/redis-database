@@ -4,6 +4,16 @@ use crate::{
     native_types::{ErrorStruct, RBulkString, RedisType},
 };
 
+/// Remove the given channels to the channels register.
+///
+/// # Return value
+/// [String] encoding a [isize]: the number of channels that have
+/// been removed.
+///
+/// # Error
+/// Return an [ErrorStruct] if:
+///
+/// * The list's lock is poisoned.
 pub struct UnsubscribeCl;
 
 impl Runnable<ServerRedisAttributes> for UnsubscribeCl {
