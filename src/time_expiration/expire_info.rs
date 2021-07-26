@@ -54,7 +54,6 @@ impl ExpireInfo {
         self.last_touch = SystemTime::now();
         if let Some(ttl) = self.timeout {
             let difference = duration_since(&self.last_touch, previous_touch)?;
-            //let difference =  self.last_touch.duration_since(previous_touch).unwrap();
             self.timeout = ttl.checked_sub(difference);
         }
         if let Some(notifier) = wrapped_notifier {

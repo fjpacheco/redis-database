@@ -119,14 +119,13 @@ mod test_clock {
     use super::*;
 
     #[test]
-    fn test_01_waiting_five_seconds(){
+    fn test_01_waiting_five_seconds() {
 
         let mut clock = Clock::new();
         let time1 = clock.get_now();
         thread::sleep(Duration::new(5, 0));
         let time2 = clock.get_now();
         let diff = time2.duration_since(time1).unwrap();
-        //println!("IMPRIMIIIII LA CONCHA DE TU MADRE: {:?}", diff.as_secs_f32());
         assert!(4.99 < diff.as_secs_f32());
         assert!(diff.as_secs_f32() < 5.01);
 

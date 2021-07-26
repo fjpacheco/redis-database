@@ -162,7 +162,6 @@ impl ServerRedis {
             })?
             .join()?;
         log_center.join()?;
-        //quit.join();
 
         Ok(())
     }

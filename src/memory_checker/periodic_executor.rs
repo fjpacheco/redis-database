@@ -45,12 +45,12 @@ impl PeriodicExecutor {
         let still_working_clone = Arc::clone(&still_working);
         let c_notifier = notifier.clone();
 
-        let garbage_collector_handle = std::thread::spawn(move || {
+        let periodic_executor_handle = std::thread::spawn(move || {
             PeriodicExecutor::init(command, period, c_notifier, still_working_clone)
         });
 
         PeriodicExecutor {
-            handle: Some(garbage_collector_handle),
+            handle: Some(periodic_executor_handle),
             still_working,
             notifier,
             name: String::from(name),
