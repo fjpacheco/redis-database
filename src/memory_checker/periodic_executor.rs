@@ -77,7 +77,6 @@ impl PeriodicExecutor {
                 return Ok(());
             } else if counter == period {
                 counter = 0;
-                println!("OLAAAAAAAAAAAAAAAAAA ENVIARÉ 🎃🎃🎃🎃🎃: {:?}", command);
                 notifier.send_command_delegator(Some((
                     command.clone(),
                     snd_rsp.clone(),

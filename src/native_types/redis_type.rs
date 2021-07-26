@@ -21,8 +21,14 @@ pub trait RedisType<T> {
 }
 
 pub fn remove_first_cr_lf(slice: &mut String) -> Option<String> {
+    if slice.is_empty() {
+        return None;
+    }
     if let Some(first_cr) = slice.find('\r') {
         if slice.remove(first_cr + 1) == '\n' {
+            if slice.is_empty() {
+                return None;
+            }
             slice.remove(first_cr);
             let rest = slice.split_off(first_cr);
             let swap = slice.to_string();
@@ -103,6 +109,12 @@ where
             )
         })?;
 
+    if first_lecture.is_empty() {
+        return Err(ErrorStruct::new(
+            "ERR".to_string(),
+            "Failed to parse Redis Type".to_string(),
+        ));
+    }
     match first_lecture.remove(0) {
         // Redis Type inference
         '$' => {
