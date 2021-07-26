@@ -122,7 +122,6 @@ mod test_sismember_function {
 
     #[test]
     fn test_03_sismember_return_number_zero_if_the_key_of_set_dont_exist_in_database() {
-        // TODO: revisar nombres de tests... "in database" ...
         let mut set = HashSet::new();
         set.insert(String::from("m1"));
         let (notifier, _log_rcv, _cmd_rcv) = create_notifier();

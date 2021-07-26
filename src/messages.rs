@@ -7,28 +7,31 @@ pub struct MessageRedis {
 }
 
 impl MessageRedis {
+    /// Prefix getter
     pub fn get_prefix(&self) -> String {
         self.prefix.to_string()
     }
+
+    /// Message getter
     pub fn get_message(&self) -> String {
         self.message.to_string()
     }
 
+    /// Severity getter
     pub fn get_severity(&self) -> ErrorSeverity {
         self.severity.clone()
     }
 
-    // Para tests... investigar si existe una macro así: #[metodo_para_test]
+    /// Complete message getter
     pub fn get_message_complete(&self) -> String {
         self.prefix.to_owned() + " " + &self.message
     }
 }
 
 pub mod redis_messages {
+    use super::MessageRedis;
     use crate::native_types::error_severity::ErrorSeverity;
     use crate::native_types::ErrorStruct;
-
-    use super::MessageRedis;
 
     pub fn ok() -> String {
         String::from("OK")
@@ -90,6 +93,14 @@ pub mod redis_messages {
         MessageRedis {
             prefix: "KEYNOTFOUND".to_string(),
             message: "Session does not exist or has timed out".to_string(),
+            severity: ErrorSeverity::Comunicate,
+        }
+    }
+
+    pub fn write_error() -> MessageRedis {
+        MessageRedis {
+            prefix: "ERR_WRITE".to_string(),
+            message: "File write failed".to_string(),
             severity: ErrorSeverity::Comunicate,
         }
     }
@@ -221,6 +232,14 @@ pub mod redis_messages {
             prefix: "BROKENFIELDS".to_string(),
             message: "Client's fields are in a broken state".to_string(),
             severity: ErrorSeverity::CloseClient,
+        }
+    }
+
+    pub fn file_read_error() -> MessageRedis {
+        MessageRedis {
+            prefix: "ERR".to_string(),
+            message: "Something interrupted file read".to_string(),
+            severity: ErrorSeverity::Comunicate,
         }
     }
 

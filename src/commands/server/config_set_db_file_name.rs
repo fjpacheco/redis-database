@@ -1,4 +1,9 @@
-use crate::tcp_protocol::server_redis_attributes::ServerRedisAttributes;
+use crate::{
+    commands::check_empty,
+    messages::redis_messages,
+    native_types::{RSimpleString, RedisType},
+    tcp_protocol::server_redis_attributes::ServerRedisAttributes,
+};
 use crate::{commands::Runnable, native_types::ErrorStruct};
 
 pub struct ConfigSetDbFileName;
@@ -16,9 +21,13 @@ impl Runnable<ServerRedisAttributes> for ConfigSetDbFileName {
     /// * [ServerRedisAttributes](crate::tcp_protocol::server_redis_attributes::ServerRedisAttributes) has poisoned methods.
     fn run(
         &self,
-        _buffer: Vec<String>,
-        _server: &mut ServerRedisAttributes,
+        buffer: Vec<String>,
+        server: &mut ServerRedisAttributes,
     ) -> Result<String, ErrorStruct> {
-        Ok("+TODO ConfigSetDbFileName\r\n".to_string())
+        check_empty(&buffer, "config set dbfile")?;
+
+        let new_file_name = buffer.get(0).unwrap().to_string(); // no empty!
+        server.change_dump_filename(new_file_name)?;
+        Ok(RSimpleString::encode(redis_messages::ok()))
     }
 }

@@ -43,14 +43,13 @@ impl Database {
         }
     }
 
-    // Setter
+    /// Database Redis Config setter
     pub fn set_redis_config(&mut self, redis_config: Arc<Mutex<RedisConfig>>) {
-        // TODO
         self.redis_config = Some(redis_config);
     }
 
-    // Creates a new instance of the Database given a specified RedisConfig
-    // This function playes an important role for restoring the Database.
+    /// Creates a new instance of the Database given a specified RedisConfig
+    /// This method playes an important role for restoring the Database.
     pub fn new_from(
         config: Arc<Mutex<RedisConfig>>,
         notifier: Notifier,
@@ -82,14 +81,9 @@ impl Database {
                     let type_decoded = decode_case(&mut lines)?;
                     let key_decoded = decode_key(&mut lines)?;
                     let value_decoded = decode_value(&mut lines, type_decoded)?;
-                    elements.insert(key_decoded, (expire_info, value_decoded)); //TODO
+                    elements.insert(key_decoded, (expire_info, value_decoded));
                 }
-                Err(_) => {
-                    return Err(ErrorStruct::new(
-                        "ERR".to_string(),
-                        "Some error".to_string(), // TODO
-                    ));
-                }
+                Err(_) => return Err(ErrorStruct::from(redis_messages::file_read_error())),
             }
         }
 
@@ -100,8 +94,8 @@ impl Database {
         })
     }
 
-    // Returns a vector with a title for the database and its number
-    // of keys.
+    /// Returns a vector with a title for the database and its number
+    /// of keys.
     pub fn info(&self) -> Result<Vec<String>, ErrorStruct> {
         Ok(vec![
             info_db_formatter::title(),
@@ -109,12 +103,12 @@ impl Database {
         ])
     }
 
-    // Database size getter
+    /// Database size getter
     pub fn size(&self) -> usize {
         self.elements.len()
     }
 
-    // Removes a specified key from the database.
+    /// Removes a specified key from the database.
     pub fn remove(&mut self, key: &str) -> Option<TypeSaved> {
         if let Some((_, value)) = self.elements.remove(key) {
             Some(value)
@@ -123,7 +117,7 @@ impl Database {
         }
     }
 
-    // Inserts a key-value pair to the database.
+    /// Inserts a key-value pair to the database.
     pub fn insert(&mut self, key: String, value: TypeSaved) -> Option<TypeSaved> {
         if let Some((_, value)) = self.elements.insert(key, (ExpireInfo::new(), value)) {
             Some(value)
@@ -132,7 +126,7 @@ impl Database {
         }
     }
 
-    // Database value getter. Important: performs a touch.
+    /// Database value getter. Important: performs a touch.
     pub fn get(&mut self, key: &str) -> Option<&TypeSaved> {
         let _ = self.private_touch(key, None);
         if let Some((_, value)) = self.elements.get(key) {
@@ -142,7 +136,7 @@ impl Database {
         }
     }
 
-    // Database value mutable getter. Important: performs a touch.
+    /// Database value mutable getter. Important: performs a touch.
     pub fn get_mut(&mut self, key: &str) -> Option<&mut TypeSaved> {
         let _ = self.private_touch(key, None);
         if let Some((_, value)) = self.elements.get_mut(key) {
@@ -152,21 +146,21 @@ impl Database {
         }
     }
 
-    // Returns true if the database contains the received key.
-    // Important: performs a touch.
+    /// Returns true if the database contains the received key.
+    /// Important: performs a touch.
     pub fn contains_key(&mut self, key: &str) -> bool {
         let _ = self.private_touch(key, None);
         self.elements.contains_key(key)
     }
 
-    // Empties the database HashMap.
+    /// Empties the database HashMap.
     pub fn clear(&mut self) {
         self.elements.clear();
     }
 
-    // Checks if a key has already expired, in that case, it removes it and returns true.
-    // If the key exists but has not expired yet, returns false. If the key does not exist,
-    // throws an error.
+    /// Checks if a key has already expired, in that case, it removes it and returns true.
+    /// If the key exists but has not expired yet, returns false. If the key does not exist,
+    /// throws an error.
     fn private_touch(
         &mut self,
         key: &str,
@@ -184,7 +178,7 @@ impl Database {
         }
     }
 
-    // Performs a touch calling private_touch().
+    /// Performs a touch calling private_touch().
     pub fn touch(&mut self, key: &str) -> Result<bool, ErrorStruct> {
         self.private_touch(
             key,
@@ -192,7 +186,7 @@ impl Database {
         )
     }
 
-    // Returns the timeout of a specified key. Important: performs a touch.
+    /// Returns the timeout of a specified key. Important: performs a touch.
     pub fn ttl(&mut self, key: &str) -> Option<u64> {
         let _ = self.private_touch(key, None);
         if let Some((info, _)) = self.elements.get(key) {
@@ -202,12 +196,11 @@ impl Database {
         }
     }
 
-    // Database keys timeout setter. Important: performs a touch.
+    /// Database keys timeout setter. Important: performs a touch.
     pub fn set_ttl(&mut self, key: &str, timeout: u64) -> Result<(), ErrorStruct> {
         let _ = self.private_touch(key, None);
         if let Some((info, _)) = self.elements.get_mut(key) {
             info.set_timeout(timeout)?;
-            println!("asd");
             Ok(())
         } else {
             let message = redis_messages::key_not_found();
@@ -218,7 +211,7 @@ impl Database {
         }
     }
 
-    // Database keys unix timestamp timeout setter. Important: performs a touch.
+    /// Database keys unix timestamp timeout setter. Important: performs a touch.
     pub fn set_ttl_unix_timestamp(&mut self, key: &str, timeout: u64) -> Result<(), ErrorStruct> {
         let _ = self.private_touch(key, None);
         if let Some((info, _)) = self.elements.get_mut(key) {
@@ -233,9 +226,9 @@ impl Database {
         }
     }
 
-    // Given a key, tries to obtain its tuple value and check for its ExpireInfo
-    // if it actually IS expirable, calls persist() and returns its timeout. See
-    // ExpireInfo persist() for a deeper understanding. Important: performs a touch.
+    /// Given a key, tries to obtain its tuple value and check for its ExpireInfo
+    /// if it actually IS expirable, calls persist() and returns its timeout. See
+    /// ExpireInfo persist() for a deeper understanding. Important: performs a touch.
     pub fn persist(&mut self, key: &str) -> Option<u64> {
         let _ = self.private_touch(key, None);
         if let Some((info, _)) = self.elements.get_mut(key) {
@@ -245,26 +238,36 @@ impl Database {
         }
     }
 
-    // Returns a random key from the database using Rust Rand module method choose().
+    /// Returns a random key from the database using Rust Rand module method choose().
     pub fn random_key(&mut self) -> Option<String> {
         let mut rng = rand::thread_rng();
         self.elements.keys().choose(&mut rng).map(String::from)
     }
 
-    // Writes to a file current information about all keys and values ​​in the database
-    // including their expiration time and type. See SAVE command.
-    // This method is useful for restoring the database.
-    //
-    // File format: :{EXPIRE_TIME}:{CASE}+{KEY}+{VALUE}
-    // Where:
-    // * EXPIRE_TIME can be any positive value or -1 if its not an expirable key
-    // encoded as Redis Integer.
-    // * CASE: 0: String, 1: List, 2: Set encoded as Redis Integer.
-    // * KEY: Redis Simple String.
-    // * VALUE: Redis Simple String or Redis Array.
+    /// Writes to a file current information about all keys and values ​​in the database
+    /// including their expiration time and type. See SAVE command.
+    /// This method is useful for restoring the database.
+    ///
+    /// File format: :{EXPIRE_TIME}:{CASE}+{KEY}+{VALUE}
+    /// Where:
+    /// * EXPIRE_TIME can be any positive value or -1 if its not an expirable key
+    /// encoded as Redis Integer.
+    /// * CASE: 0: String, 1: List, 2: Set encoded as Redis Integer.
+    /// * KEY: Redis Simple String.
+    /// * VALUE: Redis Simple String or Redis Array.
     pub fn take_snapshot(&mut self) -> Result<(), ErrorStruct> {
-        // TODO: recordar chequear el unwrap
-        let mut config = self.redis_config.as_ref().unwrap().lock().unwrap();
+        let mut config = if let Some(config) = self.redis_config.as_ref() {
+            config.lock().map_err(|_| {
+                ErrorStruct::from(redis_messages::poisoned_lock(
+                    "redis config",
+                    crate::native_types::error_severity::ErrorSeverity::ShutdownServer,
+                ))
+            })?
+        } else {
+            return Err(ErrorStruct::from(redis_messages::unexpected_behaviour(
+                "no redis config available",
+            )));
+        };
         let mut file = config.get_mut_dump_file().unwrap();
         for (key, (expire_info, typesaved)) in self.elements.iter_mut() {
             let mut expire_clone = expire_info.clone();
@@ -280,7 +283,7 @@ impl Database {
         Ok(())
     }
 
-    // Returns all database keys matching the pattern received.
+    /// Returns all database keys matching the pattern received.
     pub fn match_pattern(&self, regex: &str) -> Result<Vec<String>, regex::Error> {
         let matcher = SuperRegex::from(regex)?;
         Ok(self
@@ -302,58 +305,55 @@ impl fmt::Display for Database {
 // and returns a TypeSaved obtained from decoding a value read which can be
 // a Redis Simple String or a Redis Array.
 fn decode_value(
-    //TODO: refactor
     lines: &mut Lines<BufReader<File>>,
     type_decoded: isize,
 ) -> Result<TypeSaved, ErrorStruct> {
     if let Some(line) = lines.next() {
         match line {
-            Ok(mut line) => {
-                //TODO: refactor
-                match type_decoded {
-                    0 => {
-                        check_decodable_line(&mut line, '+')?;
-                        let value = match RSimpleString::decode(line, lines) {
-                            Ok(value) => value,
-                            Err(err) => return Err(err),
-                        };
-                        Ok(TypeSaved::String(value))
-                    }
-                    1 => {
-                        check_decodable_line(&mut line, '*')?;
-                        let value = match RArray::decode(line, lines) {
-                            Ok(value) => value,
-                            Err(err) => return Err(err),
-                        };
-                        Ok(TypeSaved::List(VecDeque::from(value)))
-                    }
-                    _ => {
-                        check_decodable_line(&mut line, '*')?;
-                        let value = match RArray::decode(line, lines) {
-                            Ok(value) => value,
-                            Err(err) => return Err(err),
-                        };
-                        Ok(TypeSaved::Set(value.into_iter().collect()))
-                    }
-                }
-            }
-            Err(_) => {
-                Err(ErrorStruct::new(
-                    "ERR".to_string(),
-                    "Some error".to_string(), // TODO
-                ))
-            }
+            Ok(line) => get_matching_typesaved(type_decoded, line, lines),
+            Err(_) => Err(ErrorStruct::from(redis_messages::file_read_error())),
         }
     } else {
-        Err(ErrorStruct::new(
-            "ERR".to_string(),
-            "Some error".to_string(), // TODO
-        ))
+        Err(ErrorStruct::from(redis_messages::file_read_error()))
     }
 }
 
-// Given the lines received moves to the next one, checks if the line is valid
-// and returns a key String.
+/// Obtains a specific typesaved according to the type_decoded isize received.
+fn get_matching_typesaved(
+    type_decoded: isize,
+    mut line: String,
+    lines: &mut Lines<BufReader<File>>,
+) -> Result<TypeSaved, ErrorStruct> {
+    match type_decoded {
+        0 => {
+            check_decodable_line(&mut line, '+')?;
+            let value = match RSimpleString::decode(line, lines) {
+                Ok(value) => value,
+                Err(err) => return Err(err),
+            };
+            Ok(TypeSaved::String(value))
+        }
+        1 => {
+            check_decodable_line(&mut line, '*')?;
+            let value = match RArray::decode(line, lines) {
+                Ok(value) => value,
+                Err(err) => return Err(err),
+            };
+            Ok(TypeSaved::List(VecDeque::from(value)))
+        }
+        _ => {
+            check_decodable_line(&mut line, '*')?;
+            let value = match RArray::decode(line, lines) {
+                Ok(value) => value,
+                Err(err) => return Err(err),
+            };
+            Ok(TypeSaved::Set(value.into_iter().collect()))
+        }
+    }
+}
+
+/// Given the lines received moves to the next one, checks if the line is valid
+/// and returns a key String.
 fn decode_key(lines: &mut Lines<BufReader<File>>) -> Result<String, ErrorStruct> {
     if let Some(line) = lines.next() {
         match line {
@@ -361,23 +361,15 @@ fn decode_key(lines: &mut Lines<BufReader<File>>) -> Result<String, ErrorStruct>
                 check_decodable_line(&mut line, '+')?;
                 RSimpleString::decode(line, lines)
             }
-            Err(_) => {
-                Err(ErrorStruct::new(
-                    "ERR".to_string(),
-                    "Some error".to_string(), // TODO
-                ))
-            }
+            Err(_) => Err(ErrorStruct::from(redis_messages::file_read_error())),
         }
     } else {
-        Err(ErrorStruct::new(
-            "ERR".to_string(),
-            "Some error".to_string(), // TODO
-        ))
+        Err(ErrorStruct::from(redis_messages::file_read_error()))
     }
 }
 
-// Given the lines received moves to the next one, checks if the line is valid
-// and returns an isize (0, 1 or 2) identifying the case (String, List or Set).
+/// Given the lines received moves to the next one, checks if the line is valid
+/// and returns an isize (0, 1 or 2) identifying the case (String, List or Set).
 fn decode_case(lines: &mut Lines<BufReader<File>>) -> Result<isize, ErrorStruct> {
     if let Some(line) = lines.next() {
         match line {
@@ -385,36 +377,27 @@ fn decode_case(lines: &mut Lines<BufReader<File>>) -> Result<isize, ErrorStruct>
                 check_decodable_line(&mut line, ':')?;
                 get_case(line, lines)
             }
-            Err(_) => {
-                Err(ErrorStruct::new(
-                    "ERR".to_string(),
-                    "Some error".to_string(), // TODO
-                ))
-            }
+            Err(_) => Err(ErrorStruct::from(redis_messages::file_read_error())),
         }
     } else {
-        Err(ErrorStruct::new(
-            "ERR".to_string(),
-            "Some error".to_string(), // TODO
-        ))
+        Err(ErrorStruct::from(redis_messages::file_read_error()))
     }
 }
 
-// Obtains an isize from the parameters received and returns it if it matches any
-// of the 3 possible cases (0: String, 1: List, 2: Set). Any other case, returns error.
+/// Obtains an isize from the parameters received and returns it if it matches any
+/// of the 3 possible cases (0: String, 1: List, 2: Set). Any other case, returns error.
 fn get_case(line: String, lines: &mut Lines<BufReader<File>>) -> Result<isize, ErrorStruct> {
     let value = RInteger::decode(line, lines)?;
     if value == 0 || value == 1 || value == 2 {
         return Ok(value);
     }
-    Err(ErrorStruct::new(
-        "ERR".to_string(),
-        "Some error".to_string(), // TODO
-    ))
+    Err(ErrorStruct::from(redis_messages::unexpected_behaviour(
+        "unknown case found at dump",
+    )))
 }
 
-// Given a string line and its following ones obtains a timeout and returns an instance
-// of ExpireInfo.
+/// Given a string line and its following ones obtains a timeout and returns an instance
+/// of ExpireInfo.
 fn get_expire_info(
     mut line: String,
     lines: &mut Lines<BufReader<File>>,
@@ -428,57 +411,35 @@ fn get_expire_info(
     Ok(expire_info)
 }
 
-// Checks if the first character of the given string line matches the received character.
+/// Checks if the first character of the given string line matches the received character.
 fn check_decodable_line(line: &mut String, char: char) -> Result<(), ErrorStruct> {
     if line.remove(0) != char {
-        return Err(ErrorStruct::new(
-            "ERR".to_string(),
-            "Some error".to_string(), // TODO
-        ));
+        return Err(ErrorStruct::from(redis_messages::unexpected_behaviour(
+            "unexpected char found at dump",
+        )));
     }
     Ok(())
 }
 
-// Performs the writing of a String to the given file, while first encoding it as
-// a Redis Simple String (RSimpleString). Returns error in case writing failed.
+/// Performs the writing of a String to the given file, while first encoding it as
+/// a Redis Simple String (RSimpleString). Returns error in case writing failed.
 fn write_string_to_file(string: &str, file: &mut File) -> Result<(), ErrorStruct> {
-    if file
-        .write_all(RSimpleString::encode(string.to_string()).as_bytes())
-        .is_ok()
-    {
-        Ok(())
-    } else {
-        Err(ErrorStruct::new(
-            "ERR_WRITE".to_string(),
-            "File write failed".to_string(),
-        ))
-    }
+    file.write_all(RSimpleString::encode(string.to_string()).as_bytes())
+        .map_err(|_| ErrorStruct::from(redis_messages::write_error()))
 }
 
-// Performs the writing of an isize to the given file, while first encoding it
-// as a Redis Integer (RInteger). Returns error in case writing failed.
+/// Performs the writing of an isize to the given file, while first encoding it
+/// as a Redis Integer (RInteger). Returns error in case writing failed.
 fn write_integer_to_file(number: isize, file: &mut File) -> Result<(), ErrorStruct> {
-    if file.write_all(RInteger::encode(number).as_bytes()).is_ok() {
-        Ok(())
-    } else {
-        Err(ErrorStruct::new(
-            "ERR_WRITE".to_string(),
-            "File write failed".to_string(),
-        ))
-    }
+    file.write_all(RInteger::encode(number).as_bytes())
+        .map_err(|_| ErrorStruct::from(redis_messages::write_error()))
 }
 
-// Performs the writing of a Vec<String> to the given file, while first encoding it
-// as a Redis Array (RArray). Returns error in case writing failed.
+/// Performs the writing of a Vec<String> to the given file, while first encoding it
+/// as a Redis Array (RArray). Returns error in case writing failed.
 fn write_array_to_file(vector: Vec<String>, file: &mut File) -> Result<(), ErrorStruct> {
-    if file.write_all(RArray::encode(vector).as_bytes()).is_ok() {
-        Ok(())
-    } else {
-        Err(ErrorStruct::new(
-            "ERR_WRITE".to_string(),
-            "File write failed".to_string(),
-        ))
-    }
+    file.write_all(RArray::encode(vector).as_bytes())
+        .map_err(|_| ErrorStruct::from(redis_messages::write_error()))
 }
 
 enum TypeCase {
@@ -487,6 +448,14 @@ enum TypeCase {
     Set = 2,
 }
 
+/// Auxiliar function which performs the writing of a specified pair key-value of the database
+/// to the received file using the established file format: ":{EXPIRE_TIME}:{CASE}+{KEY}+{VALUE}"
+/// Where:
+/// * EXPIRE_TIME can be any positive value or -1 if its not an expirable key
+/// encoded as Redis Integer.
+/// * CASE: 0: String, 1: List, 2: Set encoded as Redis Integer.
+/// * KEY: Redis Simple String.
+/// * VALUE: Redis Simple String or Redis Array.
 fn persist_data(key: &str, file: &mut File, typesaved: &TypeSaved) -> Result<(), ErrorStruct> {
     match typesaved {
         TypeSaved::String(value) => {
@@ -513,8 +482,7 @@ fn persist_data(key: &str, file: &mut File, typesaved: &TypeSaved) -> Result<(),
 #[cfg(test)]
 mod test_database {
 
-    use std::fs;
-
+    use super::*;
     use crate::{
         commands::{
             create_notifier,
@@ -526,8 +494,7 @@ mod test_database {
         native_types::RBulkString,
         vec_strings,
     };
-
-    use super::*;
+    use std::fs;
 
     #[test]
     fn test_01_insert_a_key() {

@@ -101,8 +101,8 @@ impl Notifier {
     /// Force disconnection of [ListenerProcessor](crate::tcp_protocol::listener_processor::ListenerProcessor). It informs the logs of the forced closure.
     pub fn force_shutdown_server(&self, reason: String) {
         self.status_listener.store(true, Ordering::SeqCst); // The next connection will necessarily say goodbye.
-        let _ = TcpStream::connect(&self.addr_server).map(|_| ()); // TODO: I'm not interested...  🤔
-        let _ = self.send_log(LogMessage::forced_shutdown(reason)); // TODO: I'm not interested... x2  🤔
+        let _ = TcpStream::connect(&self.addr_server).map(|_| ());
+        let _ = self.send_log(LogMessage::forced_shutdown(reason));
     }
 
     /// Each client with [Status::Monitor](crate::tcp_protocol::client_atributes::status::Status) from [ClientList](crate::tcp_protocol::client_list::ClientList) receives a notification of all commands processed successfully on the server.

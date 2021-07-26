@@ -112,6 +112,25 @@ impl ServerRedisAttributes {
         Ok(())
     }
 
+    /// Change the name of the dump file used to store db information.
+    //
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * the structure that stores the name is poisoned.
+    pub fn change_dump_filename(&self, new_file_name: String) -> Result<(), ErrorStruct> {
+        self.config
+            .lock()
+            .map_err(|_| {
+                ErrorStruct::from(redis_messages::poisoned_lock(
+                    "Server Redis Atributes",
+                    ErrorSeverity::ShutdownServer,
+                ))
+            })?
+            .change_dump_file(new_file_name)?;
+        Ok(())
+    }
+
     /// Changes the time it takes to disconnect a client that is not interacting with the server.
     ///
     /// # Error
