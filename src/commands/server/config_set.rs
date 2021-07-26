@@ -14,6 +14,22 @@ use crate::{
 pub struct ConfigSet;
 
 impl Runnable<ServerRedisAttributes> for ConfigSet {
+    /// The CONFIG SET command is used in order to reconfigure the server at run time without the need to restart Redis.
+    ///
+    /// Enabled reconfigurations:
+    /// * logfile
+    /// * dbfilename
+    /// * verbose
+    ///
+    /// # Return value
+    /// [String] _encoded_ in [RArray]: OK when the configuration was set properly.
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * Buffer [Vec]<[String]> is received empty.
+    /// * [ServerRedisAtributes] has poisoned methods.
+    /// * Unknown subcommand for CONFIG SET.    
     fn run(
         &self,
         mut buffer: Vec<String>,

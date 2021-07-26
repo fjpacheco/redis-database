@@ -12,9 +12,12 @@ use crate::{
 
 use super::notifier::Notifier;
 
+/// Structure in charge of listening to new clients that connect to the server.
 pub struct ListenerProcessor;
 
 impl ListenerProcessor {
+    /// Listen for connections from new clients connected to the server.
+    /// If an error occurs, the server is forced to shut down in addition to writing the problem that occurred in the logs.
     pub fn incoming(
         listener: TcpListener,
         server_redis: ServerRedisAttributes,
@@ -28,6 +31,13 @@ impl ListenerProcessor {
         }
     }
 
+    /// Creates a new [TcpListener] which will be bound to the specified [RedisConfig].
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * Cannot connect to requested address.
+    /// * wrong address received in [RedisConfig].
     pub fn new_tcp_listener(config: &RedisConfig) -> Result<TcpListener, ErrorStruct> {
         let ip = config.ip();
         let port = config.port();
@@ -35,6 +45,12 @@ impl ListenerProcessor {
         Ok(listener)
     }
 
+    /// Creates a new [TcpListener] which will be bound to the specified ip and port.
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * Cannot connect to requested address.
     fn bind(ip: &str, port: &str) -> Result<TcpListener, ErrorStruct> {
         match TcpListener::bind(ip.to_owned() + ":" + port) {
             Ok(listener) => Ok(listener),
@@ -46,6 +62,17 @@ impl ListenerProcessor {
     }
 }
 
+/// The connections of new clients connected to the server will be listened to.
+/// Each new connected client will have a new [ClientHandler] that will be stored
+/// in the [ClientList] of [ServerRedisAttributes]. In addition, each customer
+/// will be assigned the corresponding timeout.
+/// It also informs the registries about the connection.
+///
+/// # Error
+/// Return an [ErrorStruct] if:
+///
+/// * The channel to communicate with the [LogCenter] is closed.
+/// * [ServerRedisAttributes] has poisoned fields.
 fn start_incoming(
     listener: TcpListener,
     notifier: &Notifier,
@@ -53,7 +80,7 @@ fn start_incoming(
 ) -> Result<(), ErrorStruct> {
     welcome_message(&listener, &notifier)?;
     for stream in listener.incoming() {
-        if server_redis.is_listener_off() {
+        if server_redis.status_listener() {
             break;
         }
 
@@ -84,6 +111,11 @@ fn start_incoming(
     Ok(())
 }
 
+///Print the welcome message with server details. Inform the logs of the server startup.
+/// # Error
+/// Returns an [ErrorStruct] if:
+///
+/// * The channel to communicate with the [LogCenter] is closed.
 fn welcome_message(listener: &TcpListener, notifier: &Notifier) -> Result<(), ErrorStruct> {
     let port = listener
         .local_addr()

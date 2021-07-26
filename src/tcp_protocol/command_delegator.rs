@@ -77,7 +77,7 @@ impl CommandDelegator {
     ///
     /// * Some of the errors thrown before demands to close
     /// the server.
-    /// * 
+    /// *
     fn init(
         command_delegator_recv: Receiver<Option<RawCommand>>,
         mut commands_map: CommandsMap,
@@ -115,12 +115,11 @@ impl CommandDelegator {
     }
 }
 
-    /// Determines if an error requiers some shutdown action.
-    /// If the error is critical, then it is returned.
-    /// Else, Ok() is returned
-    ///
+/// Determines if an error requiers some shutdown action.
+/// If the error is critical, then it is returned.
+/// Else, Ok() is returned
+///
 fn is_critical(potential_error: Result<(), ErrorStruct>) -> Result<(), ErrorStruct> {
-
     match potential_error {
         Ok(()) => Ok(()),
         Err(error) => check_severity(error),
@@ -138,18 +137,17 @@ fn check_severity(error: ErrorStruct) -> Result<(), ErrorStruct> {
     }
 }
 
-
-    /// Delegates the raw command to the apropiate structure.
-    /// If there is no sender to the structure, then the command
-    /// should be run in the atributes of the client executor.
-    ///
-    /// # Error
-    /// Return an [ErrorStruct] if:
-    ///
-    /// * Any sender to any structure is closed.
-    /// * The client atributes's lock is poisoned.
-    /// * An error is thrown while running a command.
-    ///
+/// Delegates the raw command to the apropiate structure.
+/// If there is no sender to the structure, then the command
+/// should be run in the atributes of the client executor.
+///
+/// # Error
+/// Return an [ErrorStruct] if:
+///
+/// * Any sender to any structure is closed.
+/// * The client atributes's lock is poisoned.
+/// * An error is thrown while running a command.
+///
 fn delegate_jobs(
     raw_command: RawCommand,
     sender_list: &[Option<Sender<Option<RawCommand>>>],

@@ -25,6 +25,21 @@ use super::{
 pub struct ServerRedis;
 
 impl ServerRedis {
+    /// # Start of Server Redis
+    /// Starts the server, letting the program flow listen for new clients connecting to it.
+    /// Because of this, it is recommended to start the server in a separate thread from the rest of the main program.
+    ///
+    /// The received vector may be empty: in this case, the server starts with the default setting of [RedisConfig].
+    /// If it is not empty, at index 1 it receives the path where the _redis.conf_ file is located to start the server with a different configuration.
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * There was an error parsing the new configuration received in redis.conf.
+    /// * The server cannot be started on the default port of [RedisConfig] or the one specified in the received redis.conf.
+    /// * Poisoned structures.
+    /// * Incorrect reading of the data persistence file.     
+    /// * Thread initialization failure.
     pub fn start(argv: Vec<String>) -> Result<(), ErrorStruct> {
         // ################## 1° Initialization structures: BASIC ELEMENTS ##################
         let config = RedisConfig::parse_config(argv)?;

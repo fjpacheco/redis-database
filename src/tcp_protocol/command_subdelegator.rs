@@ -36,7 +36,6 @@ impl Joinable<()> for CommandSubDelegator {
     }
 }
 impl CommandSubDelegator {
-    
     /// Creates an instance of the command sub delegator
     /// # Error
     /// Return an [ErrorStruct] if:
@@ -135,7 +134,6 @@ fn run_command<T: 'static>(
 }
 
 fn is_critical(potential_error: Result<(), ErrorStruct>) -> Result<(), ErrorStruct> {
-
     match potential_error {
         Ok(()) => Ok(()),
         Err(error) => check_severity(error),

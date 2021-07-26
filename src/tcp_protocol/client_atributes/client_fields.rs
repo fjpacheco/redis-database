@@ -15,8 +15,8 @@ use std::sync::Mutex;
 
 use std::net::SocketAddrV4;
 
-    /// Contains the atributes of one client.
-    /// Its behaviour depends on the client status.
+/// Contains the atributes of one client.
+/// Its behaviour depends on the client status.
 pub struct ClientFields {
     map: Option<RunnablesMap<Arc<Mutex<ClientFields>>>>,
     status: Status,
@@ -25,8 +25,6 @@ pub struct ClientFields {
 }
 
 impl ClientFields {
-
-
     /// Return a new instance of the Client Fields
     ///
     /// # Return value
@@ -94,7 +92,7 @@ impl ClientFields {
     /// Return an [ErrorStruct] if:
     ///
     /// * Client is in monitor or dead status.
-    /// 
+    ///
     pub fn is_allowed_to(&self, command: &str) -> Result<(), ErrorStruct> {
         match self.status {
             Status::Executor => Ok(()),
@@ -162,7 +160,6 @@ impl ClientFields {
     fn update_map(&mut self) {
         self.map = self.status.update_map();
     }
-
 
     /// Add the given channels to the subscription list.
     ///

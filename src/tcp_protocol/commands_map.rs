@@ -2,7 +2,6 @@ use super::RawCommand;
 use std::collections::HashMap;
 use std::sync::mpsc::Sender;
 
-
 /// Associate a command's name with a sender to the structure
 /// where the command should be executed. If there is no sender
 /// associated, then the command would be executed in the given
@@ -23,7 +22,6 @@ macro_rules! insert_in {
 }
 
 impl CommandsMap {
-
     /// Drops all the senders contained in the map.
     pub fn kill_senders(&mut self) {
         self.channel_map.iter_mut().for_each(|x| {

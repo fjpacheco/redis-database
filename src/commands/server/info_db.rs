@@ -9,6 +9,15 @@ pub struct InfoDb;
 use crate::native_types::error_severity::ErrorSeverity;
 use std::sync::{Arc, Mutex};
 impl Runnable<Arc<Mutex<Database>>> for InfoDb {
+    /// Required for the INFO command. Returns information and statistics about the [Database] in a format that is simple to parse by computers and easy to read by humans.
+    ///
+    /// # Return value
+    /// [String] _encoded_ in [RArray]: as a collection of text lines.
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * [ServerRedisAtributes] has poisoned methods.
     fn run(
         &self,
         _buffer: Vec<String>,

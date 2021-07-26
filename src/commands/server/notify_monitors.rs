@@ -9,7 +9,7 @@ use crate::{
 pub struct NotifyMonitors;
 
 impl Runnable<ServerRedisAttributes> for NotifyMonitors {
-    /// Notifies each client of the [ClientList] of the commands issued by the server.
+    /// Notify each client with [Status::Monitor] of [ClientList] of the commands issued correctly by the server.
     ///
     /// # Return value
     /// [String] _encoded_ in [RSimpleString]: OK if MONITOR was executed correctly.

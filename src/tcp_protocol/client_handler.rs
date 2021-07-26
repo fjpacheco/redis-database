@@ -16,17 +16,28 @@ use crate::tcp_protocol::client_atributes::status::Status;
 
 use super::{client_atributes::client_fields::ClientFields, notifier::Notifier, Response};
 
+/// Structure in charge of processing what is received in the socket [TcpStream] of the client connected to the server,
+/// with the help of [Notifier] the different tasks requested by the client will
+/// be delegated to the main structures such as [CommandDelegator] and [LogCenter].
 pub struct ClientHandler {
     stream: TcpStream,
-    pub fields: Arc<Mutex<ClientFields>>,
+    fields: Arc<Mutex<ClientFields>>,
     in_thread: Option<JoinHandle<Result<(), ErrorStruct>>>,
     out_thread: Option<JoinHandle<Result<(), ErrorStruct>>>,
     response_snd: mpsc::Sender<Option<String>>,
-    addr: SocketAddrV4,
     notifier: Notifier,
 }
 
 impl ClientHandler {
+    /// Creates the structure in charge of processing what is received in
+    /// the socket [TcpStream] of the client connected to the server.
+    /// You also need the [Notifier] to communicate with the main structures.
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * Any channel to communicate with the [Notifier] is closed.
+    /// * TcpStream was closed.
     pub fn new(
         stream_received: TcpStream,
         notifier: Notifier,
@@ -39,7 +50,6 @@ impl ClientHandler {
             .try_clone()
             .map_err(|_| ErrorStruct::from(redis_messages::clone_socket()))?;
         let address = get_peer(&stream_received)?;
-        let addr = address; /* Culpa de Martina */
         let fields = ClientFields::new(address);
         let shared_fields = Arc::new(Mutex::new(fields));
         let c_shared_fields = Arc::clone(&shared_fields);
@@ -61,11 +71,11 @@ impl ClientHandler {
             in_thread: Some(in_thread),
             out_thread: Some(out_thread),
             response_snd,
-            addr,
             notifier,
         })
     }
 
+    /// returns [true] in case the customer is registered on a pubsub channel.
     pub fn is_subscripted_to(&self, channel: &str) -> bool {
         if let Ok(fields_guard) = self.fields.lock() {
             return fields_guard.is_subscripted_to(channel);
@@ -74,6 +84,7 @@ impl ClientHandler {
         false
     }
 
+    /// returns [true] in case the client has the [Status::Monitor].
     pub fn is_monitor_notificable(&self) -> bool {
         if let Ok(fields_guard) = self.fields.lock() {
             return fields_guard.is_monitor_notificable();
@@ -82,6 +93,7 @@ impl ClientHandler {
         false
     }
 
+    /// returns [true] in case the client has [Status::Dead].
     pub fn is_dead(&self) -> bool {
         if let Ok(fields_guard) = self.fields.lock() {
             return fields_guard.is_dead();
@@ -90,18 +102,14 @@ impl ClientHandler {
         true
     }
 
-    pub fn get_peer(&self) -> Result<SocketAddrV4, ErrorStruct> {
-        get_peer(&self.stream)
-    }
-
-    pub fn get_addr(&self) -> String {
-        self.addr.clone().to_string()
-    }
-
+    /// It receives the response obtained from the execution of some command
+    /// in the main structure of the server and sends it to the thread in
+    /// charge of sending strings to the client via [TcpStream].
     pub fn write_stream(&self, response: String) -> Result<(), ErrorStruct> {
         send_response(response, &self.response_snd)
     }
 
+    /// Get a [String] with the detailed information of a client.
     pub fn get_detail(&self) -> String {
         match self.fields.lock() {
             Ok(fields_guard) => fields_guard.get_detail(),
@@ -110,6 +118,16 @@ impl ClientHandler {
     }
 }
 
+/// The response received after its execution in the main structures is received
+/// through a channel of [Option]<[String]>.
+/// The string will be sent to the client through the [TcpStream] socket.
+///
+/// When [None] is received, it is an indication to stop writing to the socket and close the client.
+///
+/// # Error
+/// Return an [ErrorStruct] if:
+///
+/// * TcpStream was closed.
 fn write_socket(
     mut stream: TcpStream,
     response_recv: mpsc::Receiver<Option<String>>,
@@ -127,6 +145,16 @@ fn write_socket(
     Ok(())
 }
 
+/// Function in charge of delegating the function of reading the 'socket' [TcpStream].
+/// In case the client has been disconnected, its [Status] will be replaced by [Status::Dead]
+/// and the [LogCenter] will be notified of the disconnection.
+///
+/// # Error
+/// Return an [ErrorStruct] if:
+///
+/// * Any channel to communicate with the [Notifier] is closed.
+/// * [ClientFields] is poisoned.
+/// * TcpStream was closed.
 fn read_socket(
     stream: TcpStream,
     c_shared_fields: Arc<Mutex<ClientFields>>,
@@ -169,6 +197,18 @@ fn read_socket(
     status_while
 }
 
+/// Function in charge of processing what is received in the socket [TcpStream] through an iterator of [BufReader].
+/// For each command received as a string, it will be processed if it was successfully received in **Redis Protocol**
+/// to execute the specific action requested..
+/// In case it does not receive **Redis Protocol**, it will try to convert to **Redis Protocol** so that the server
+/// understands it and can execute the requested action.
+//  If the server clients times out, the function will stop listening to what is received on the socket.
+///
+/// # Error
+/// Return an [ErrorStruct] if:
+///
+/// * If the buffer receives bad lines.
+/// * An error that justifies causing a forced shutdown of the server or closing a client.
 fn listen_while_client(
     mut lines: Lines<BufReader<TcpStream>>,
     c_shared_fields: &Arc<Mutex<ClientFields>>,
@@ -222,6 +262,7 @@ fn listen_while_client(
     Ok(())
 }
 
+/// Function in charge of delegating the processing of a command received correctly with the **redis protocol**.
 fn process_command_redis(
     mut input: String,
     mut lines_buffer_reader: &mut Lines<BufReader<TcpStream>>,
@@ -239,6 +280,13 @@ fn process_command_redis(
     )
 }
 
+/// Function in charge of delegating the processing of an incorrectly received command.
+/// But first it is a matter of converting what is received into the necessary **redis protocol** to see if it is a valid command.
+///
+/// # Error
+/// Return an [ErrorStruct] if:
+///
+/// * If what is received in the socket does not comply with the redis protocol.
 fn process_other(
     input: String,
     client_status: &Arc<Mutex<ClientFields>>,
@@ -261,6 +309,14 @@ fn process_other(
     )
 }
 
+/// Function in charge of decoding what is received in the socket and then delegating it as <[Vec]<[String]>> in case the [Status] of the client allows it.
+/// All that received command is always received in [RArray] format, so it is decoded as a redis array.
+///
+/// # Error
+/// Return an [ErrorStruct] if:
+///
+/// * Any channel is closed to communicate with the [Notifier] or the channel to communicate a response after processing.
+/// * [ClientFields] is poisoned.
 fn process_command_general<G>(
     first_lecture: String,
     lines_buffer_reader: &mut Lines<G>,
@@ -288,6 +344,16 @@ where
     }
 }
 
+/// Depending on the command received, it will be delegated to the main structures with the help of the [Notifier] channels.
+///
+/// Depending on the type of response, the client will be communicated or the client will be closed.
+/// They could even cause a forced shutdown of the server.
+///
+/// # Error
+/// Return an [ErrorStruct] if:
+///
+/// * Any channel is closed to communicate with the [Notifier] or the channel to communicate a response after processing.
+/// * [ClientFields] is poisoned.
 fn delegate_command(
     command_received: Vec<String>,
     client_fields: &Arc<Mutex<ClientFields>>,
@@ -326,6 +392,12 @@ fn delegate_command(
     Ok(())
 }
 
+/// Gets the address of a [TcpStream].
+///
+/// # Error
+/// Return an [ErrorStruct] if:
+///
+/// * the client disconnects causing the address does not exist.
 pub fn get_peer(stream: &TcpStream) -> Result<SocketAddrV4, ErrorStruct> {
     match stream.peer_addr().map_err(|_| {
         ErrorStruct::from(redis_messages::init_failed(
@@ -344,6 +416,9 @@ pub fn get_peer(stream: &TcpStream) -> Result<SocketAddrV4, ErrorStruct> {
     })
 }
 
+/// It receives the response obtained from the execution of some command
+/// in the main structure of the server and sends it to the thread in
+/// charge of sending strings to the client via [TcpStream].
 fn send_response(
     response: String,
     sender: &mpsc::Sender<Option<String>>,

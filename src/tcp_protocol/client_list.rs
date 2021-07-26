@@ -82,7 +82,7 @@ impl ClientList {
     /// Return an [SendError] if:
     ///
     /// * Log channel is actually closed.
-    /// 
+    ///
     pub fn print_detail_clients(&mut self) -> Result<(), SendError<Option<LogMessage>>> {
         let clients_detail = self
             .list
@@ -154,7 +154,7 @@ impl ClientList {
         }
     }
 
-        /// Decrease by one the number of subscribers of the given channels.
+    /// Decrease by one the number of subscribers of the given channels.
     pub fn decrease_channels(&mut self, channels: Vec<String>) {
         for channel in channels.iter() {
             let same_channel = String::from(channel);

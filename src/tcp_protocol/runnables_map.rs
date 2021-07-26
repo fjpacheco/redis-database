@@ -49,7 +49,6 @@ macro_rules! get_runnables {
 }
 
 impl<T> RunnablesMap<T> {
-
     /// Creats an empty instance of the runnables map.
     pub fn new(map: HashMap<String, Arc<BoxedCommand<T>>>) -> Self {
         Self { elements: map }

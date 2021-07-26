@@ -14,8 +14,6 @@ pub enum Status {
 }
 
 impl Status {
-
-
     /// Replace the status of the client with a new given one
     ///
     /// # Return value

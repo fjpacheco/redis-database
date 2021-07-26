@@ -1,5 +1,5 @@
 use crate::{
-    commands::{check_error_cases_without_elements, Runnable},
+    commands::Runnable,
     messages::redis_messages,
     native_types::ErrorStruct,
     native_types::{RSimpleString, RedisType},
@@ -21,7 +21,7 @@ impl Runnable<Arc<Mutex<Database>>> for FlushDb {
     /// * [Database] received in <[Arc]<[Mutex]>> is poisoned.       
     fn run(
         &self,
-        buffer: Vec<String>,
+        _buffer: Vec<String>,
         database: &mut Arc<Mutex<Database>>,
     ) -> Result<String, ErrorStruct> {
         let mut database = database.lock().map_err(|_| {
@@ -30,7 +30,6 @@ impl Runnable<Arc<Mutex<Database>>> for FlushDb {
                 ErrorSeverity::ShutdownServer,
             ))
         })?;
-        check_error_cases_without_elements(&buffer, "flushdb", 1)?;
 
         database.clear();
         Ok(RSimpleString::encode("OK".to_string()))

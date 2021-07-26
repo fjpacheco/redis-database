@@ -1,4 +1,9 @@
-use crate::{native_types::error_severity::ErrorSeverity, commands::Runnable, messages::redis_messages, native_types::{error::ErrorStruct, integer::RInteger, redis_type::RedisType}};
+use crate::{
+    commands::Runnable,
+    messages::redis_messages,
+    native_types::error_severity::ErrorSeverity,
+    native_types::{error::ErrorStruct, integer::RInteger, redis_type::RedisType},
+};
 
 use crate::tcp_protocol::client_atributes::client_fields::ClientFields;
 
@@ -23,9 +28,16 @@ impl Runnable<Arc<Mutex<ClientFields>>> for UnsubscribeCf {
         buffer: Vec<String>,
         status: &mut Arc<Mutex<ClientFields>>,
     ) -> Result<String, ErrorStruct> {
-        match status.lock()
-        .map_err(|_| ErrorStruct::from(redis_messages::poisoned_lock("client fields", ErrorSeverity::ShutdownServer)))?
-        .remove_subscriptions(buffer) {
+        match status
+            .lock()
+            .map_err(|_| {
+                ErrorStruct::from(redis_messages::poisoned_lock(
+                    "client fields",
+                    ErrorSeverity::ShutdownServer,
+                ))
+            })?
+            .remove_subscriptions(buffer)
+        {
             Ok(added) => Ok(RInteger::encode(added)),
             Err(error) => Err(error),
         }

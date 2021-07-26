@@ -1,4 +1,3 @@
-use std::fmt;
 use std::net::TcpStream;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
@@ -30,6 +29,12 @@ impl ServerRedisAttributes {
         }
     }
 
+    /// Obtains in a [Vec]<[String]> detailed information about the status of the server with its clients, database and pubsub system.
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * any structure to which the information is consulted is poisoned.
     pub fn info(&mut self) -> Result<Vec<String>, ErrorStruct> {
         let mut info = Vec::new();
 
@@ -53,18 +58,28 @@ impl ServerRedisAttributes {
             })?
             .info(&mut info);
 
-        println!("{:?}", info);
-
         Ok(info)
     }
 
+    /// Returns a clone of [Arc]<[Mutex]<[ClientList]>> to be shared.
     pub fn get_client_list(&self) -> Arc<Mutex<ClientList>> {
         Arc::clone(&self.shared_clients)
     }
 
+    /// Changes the state of the client with a [bool].
+    ///
+    /// * If [true]: stop listening to new clients with [Tcplistener].
+    /// * If [false]: keep listening to clients with [Tcplistener].
     pub fn store(&self, val: bool) {
         self.status_listener.store(val, Ordering::SeqCst);
     }
+
+    /// Change verbose level to display more or less debug information.
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * the structure that stores the name is poisoned.
     pub fn change_verbose(&self, new: usize) -> Result<(), ErrorStruct> {
         self.config
             .lock()
@@ -78,6 +93,12 @@ impl ServerRedisAttributes {
         Ok(())
     }
 
+    /// Change the name of the log file used to store debug information.
+    //
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * the structure that stores the name is poisoned.
     pub fn change_logfilename(&self, new_file_name: String) -> Result<(), ErrorStruct> {
         self.config
             .lock()
@@ -91,6 +112,12 @@ impl ServerRedisAttributes {
         Ok(())
     }
 
+    /// Changes the time it takes to disconnect a client that is not interacting with the server.
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * the structure that stores the timeout is poisoned.    
     pub fn set_timeout(&self, client: &TcpStream) -> Result<(), ErrorStruct> {
         let time = self
             .config
@@ -115,6 +142,12 @@ impl ServerRedisAttributes {
         Ok(())
     }
 
+    /// Gets a [String] with the address to connect as a client to the server.
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * the structure that stores the address is poisoned.
     pub fn get_addr(&self) -> Result<String, ErrorStruct> {
         Ok(self
             .config
@@ -128,6 +161,12 @@ impl ServerRedisAttributes {
             .get_addr())
     }
 
+    /// Gets a [String] with the port to connect as a client to the server.
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * the structure that stores the port is poisoned.
     pub fn get_port(&self) -> Result<String, ErrorStruct> {
         Ok(self
             .config
@@ -141,6 +180,12 @@ impl ServerRedisAttributes {
             .port())
     }
 
+    /// Gets a [String] with the verbosity level to display debug information.
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * the structure that stores the verbose level is poisoned.
     pub fn get_verbose(&self) -> Result<String, ErrorStruct> {
         Ok(self
             .config
@@ -155,6 +200,12 @@ impl ServerRedisAttributes {
             .to_string())
     }
 
+    /// Gets a [String] with timeout allowed for clients.
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * the structure that stores the timeout is poisoned.
     pub fn get_timeout(&self) -> Result<String, ErrorStruct> {
         Ok(self
             .config
@@ -169,6 +220,12 @@ impl ServerRedisAttributes {
             .to_string())
     }
 
+    /// Gets a [String] with the name of the file in charge of saving the debug information.
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * the structure that stores the name is poisoned.
     pub fn get_logfile_name(&self) -> Result<String, ErrorStruct> {
         Ok(self
             .config
@@ -182,6 +239,12 @@ impl ServerRedisAttributes {
             .log_filename())
     }
 
+    /// Gets a [String] with the name of the file in charge of the persistence of the [Database].
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * the structure that stores the name is poisoned.
     pub fn get_dbfile_name(&self) -> Result<String, ErrorStruct> {
         Ok(self
             .config
@@ -195,14 +258,12 @@ impl ServerRedisAttributes {
             .db_filename())
     }
 
-    pub fn is_listener_off(&self) -> bool {
+    /// Returns the current state of the listener processor with [bool].
+    ///
+    /// * If [true]: stop listening to new clients with [Tcplistener].
+    /// * If [false]: keep listening to clients with [Tcplistener].
+    pub fn status_listener(&self) -> bool {
         self.status_listener
             .load(std::sync::atomic::Ordering::SeqCst)
-    }
-}
-
-impl fmt::Display for ServerRedisAttributes {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Server Redis Atributes")
     }
 }

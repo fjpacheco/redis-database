@@ -8,6 +8,16 @@ use crate::{
 pub struct ConfigSetLogFile;
 
 impl Runnable<ServerRedisAttributes> for ConfigSetLogFile {
+    /// Change the name of the log file used to store debug information.
+    ///
+    /// # Return value
+    /// [String] _encoded_ in [RSimpleString]: OK if CONFIG SET LOGFILE was executed correctly.
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * Buffer [Vec]<[String]> is received empty.
+    /// * [ServerRedisAtributes] has poisoned methods.
     fn run(
         &self,
         buffer: Vec<String>,

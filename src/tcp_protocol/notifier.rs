@@ -15,6 +15,10 @@ use crate::{
 
 use super::{client_atributes::client_fields::ClientFields, RawCommand};
 
+/// Structure in charge of sending the communication [RawCommand] and [LogMessage] to the threads of
+/// the main structures of the [CommandDelegator] and [LogCenter] respectively.
+///
+/// It also has the ability to force a server shutdown.
 #[derive(Clone)]
 pub struct Notifier {
     sender_log: Sender<Option<LogMessage>>,
@@ -38,7 +42,13 @@ impl Notifier {
         }
     }
 
-    /// Si falla, fuerza un cierre de servidor
+    /// A [LogMessage] will be sent to the [LogCenter] for processing.
+    /// If the communication channel is closed, the server is forced to close.
+    ///
+    /// # Error
+    /// Returns an [ErrorStruct] if:
+    ///
+    /// * The channel to communicate with the [LogCenter] is closed.
     pub fn send_log(&self, message: LogMessage) -> Result<(), ErrorStruct> {
         let result_send = self.sender_log.send(Some(message)).map_err(|_| {
             ErrorStruct::from(redis_messages::closed_sender(ErrorSeverity::ShutdownServer))
@@ -52,10 +62,23 @@ impl Notifier {
         Ok(())
     }
 
+    /// The [LogCenter] will be notified of the disconnection of a client from the server.
+    ///
+    /// # Error
+    /// Returns an [ErrorStruct] if:
+    ///
+    /// * The channel to communicate with the [LogCenter] is closed.
     pub fn off_client(&self, addr: String) -> Result<(), ErrorStruct> {
         self.send_log(LogMessage::client_off(addr))
     }
 
+    /// The [RawCommand] package will be sent to the CommandDelegator for processing.
+    /// If the communication channel is closed, the server is forced to shut down.     
+    ///
+    /// # Error
+    /// Returns an [ErrorStruct] if:
+    ///
+    /// * The channel to communicate with the [CommandDelegator] is closed.
     pub fn send_command_delegator(
         &self,
         raw_command: Option<RawCommand>,
@@ -75,13 +98,21 @@ impl Notifier {
         Ok(())
     }
 
-    /// Fuerza la desconección del listener del servidor. Comunica a los logs el cierre forzado.
+    /// Force disconnection of [ListenerProcessor]. It informs the logs of the forced closure.
     pub fn force_shutdown_server(&self, reason: String) {
         self.status_listener.store(true, Ordering::SeqCst); // The next connection will necessarily say goodbye.
         let _ = TcpStream::connect(&self.addr_server).map(|_| ()); // TODO: I'm not interested...  🤔
         let _ = self.send_log(LogMessage::forced_shutdown(reason)); // TODO: I'm not interested... x2  🤔
     }
 
+    /// Each client with [Status::Monitor] from [ClientList] receives a notification of all commands processed successfully on the server.
+    /// This is done by sending a special command through the [CommandDelegator]
+    ///
+    /// # Error
+    /// Returns an [ErrorStruct] if:
+    ///
+    /// * The channel to communicate with the [CommandDelegator] or the [LogCenter] is closed.
+    /// * Received client fields have been poisoned.
     pub fn notify_successful_shipment(
         &self,
         client_fields: &Arc<Mutex<ClientFields>>,

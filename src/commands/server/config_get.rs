@@ -8,6 +8,22 @@ use crate::{
 pub struct ConfigGet;
 
 impl Runnable<ServerRedisAttributes> for ConfigGet {
+    /// The CONFIG GET command is used to read the configuration parameters of a running Redis server
+    ///
+    /// # Return value
+    /// [String] _encoded_ in [RArray]: specifically:
+    /// * port: accept connections on the specified port.
+    /// * timeout: close the connection after a client is idle for N seconds.
+    /// * logfile: specify the log file name.
+    /// * dbfilename: specify the dbfile name.
+    /// * verbose: level for visualization information.
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * Buffer [Vec]<[String]> is received empty.
+    /// * [ServerRedisAtributes] has poisoned methods.
+    /// * Unknown subcommand for CONFIG GET.
     fn run(
         &self,
         mut buffer: Vec<String>,

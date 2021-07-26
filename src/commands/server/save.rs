@@ -1,10 +1,7 @@
-use std::{
-    ops::Not,
-    sync::{Arc, Mutex},
-};
+use std::sync::{Arc, Mutex};
 
 use crate::{
-    commands::{check_empty, check_empty_2, check_not_empty, Runnable},
+    commands::{check_empty_2, Runnable},
     database::Database,
     messages::redis_messages,
     native_types::{error_severity::ErrorSeverity, ErrorStruct, RSimpleString, RedisType},
@@ -13,6 +10,17 @@ use crate::{
 pub struct Save;
 
 impl Runnable<Arc<Mutex<Database>>> for Save {
+    /// Execute a take snapshot on the received [Database].
+    ///
+    /// # Return value
+    /// [String] _encoded_ in [RSimpleString]: OK if SAVE was executed correctly.
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * The take snapshot on the [Database] failed.
+    /// * The buffer [Vec]<[String]> is received not empty.
+    /// * [Database] received in <[Arc]<[Mutex]>> is poisoned.   
     fn run(
         &self,
         buffer: Vec<String>,

@@ -8,6 +8,17 @@ use crate::{
 pub struct ConfigSetVerbose;
 
 impl Runnable<ServerRedisAttributes> for ConfigSetVerbose {
+    /// Change verbose level to display more or less debug information.
+    ///
+    /// # Return value
+    /// [String] _encoded_ in [RSimpleString]: OK if CONFIG SET VERBOSE was executed correctly.
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * Buffer [Vec]<[String]> is received empty.
+    /// * [ServerRedisAtributes] has poisoned methods.
+    /// * Invalid verbose level received.
     fn run(
         &self,
         buffer: Vec<String>,

@@ -16,4 +16,3 @@ pub use monitor::Monitor;
 pub use notify_monitors::NotifyMonitors;
 pub use shutdown::Shutdown;
 pub mod dbsize;
-pub mod take_snapshot;
