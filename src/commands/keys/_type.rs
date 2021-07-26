@@ -9,6 +9,18 @@ use std::sync::{Arc, Mutex};
 pub struct Type;
 
 impl Runnable<Arc<Mutex<Database>>> for Type {
+    /// Returns the string representation of the type of the value stored at key.
+    /// The different types that can be returned are: string, list and set.
+    ///
+    /// # Return value
+    /// * [String] _encoded_ in [RSimpleString]: type of key or none when key does not exist.
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * Buffer [Vec]<[String]> is received empty, or received with a number of elements
+    /// different than 1.
+    /// * [Database] received in <[Arc]<[Mutex]>> is poisoned.
     fn run(
         &self,
         mut buffer: Vec<String>,

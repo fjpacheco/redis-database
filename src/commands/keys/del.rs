@@ -10,6 +10,22 @@ use std::sync::{Arc, Mutex};
 pub struct Del;
 
 impl Runnable<Arc<Mutex<Database>>> for Del {
+    /// Removes the specified keys. A key is ignored if it does not exist.
+    /// Time complexity: O(N) where N is the number of keys that will be
+    /// removed. When a key to remove holds a value other than a string,
+    /// the individual complexity for this key is O(M) where M is the number
+    /// of elements in the list, set, sorted set or hash. Removing a single
+    /// key that holds a string value is O(1).
+    ///
+    /// # Return value
+    /// * [String] _encoded_ in [RInteger]: The number of keys that were removed.
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * Buffer [Vec]<[String]> is received empty, or received with a number of elements
+    /// different than 1.
+    /// * [Database] received in <[Arc]<[Mutex]>> is poisoned.
     fn run(
         &self,
         mut buffer: Vec<String>,

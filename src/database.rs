@@ -43,11 +43,14 @@ impl Database {
         }
     }
 
+    // Setter
     pub fn set_redis_config(&mut self, redis_config: Arc<Mutex<RedisConfig>>) {
         // TODO
         self.redis_config = Some(redis_config);
     }
 
+    // Creates a new instance of the Database given a specified RedisConfig
+    // This function playes an important role for restoring the Database.
     pub fn new_from(
         config: Arc<Mutex<RedisConfig>>,
         notifier: Notifier,
@@ -69,7 +72,7 @@ impl Database {
                 "dbfile name",
                 crate::native_types::error_severity::ErrorSeverity::ShutdownServer,
             ))
-        })?; //Deberia devolver Result o algo asi
+        })?;
         let reader = BufReader::new(file);
         let mut lines = reader.lines();
         while let Some(line) = lines.next() {
@@ -97,6 +100,8 @@ impl Database {
         })
     }
 
+    // Returns a vector with a title for the database and its number
+    // of keys.
     pub fn info(&self) -> Result<Vec<String>, ErrorStruct> {
         Ok(vec![
             info_db_formatter::title(),
@@ -104,9 +109,12 @@ impl Database {
         ])
     }
 
+    // Database size getter
     pub fn size(&self) -> usize {
         self.elements.len()
     }
+
+    // Removes a specified key from the database.
     pub fn remove(&mut self, key: &str) -> Option<TypeSaved> {
         if let Some((_, value)) = self.elements.remove(key) {
             Some(value)
@@ -115,6 +123,7 @@ impl Database {
         }
     }
 
+    // Inserts a key-value pair to the database.
     pub fn insert(&mut self, key: String, value: TypeSaved) -> Option<TypeSaved> {
         if let Some((_, value)) = self.elements.insert(key, (ExpireInfo::new(), value)) {
             Some(value)
@@ -123,6 +132,7 @@ impl Database {
         }
     }
 
+    // Database value getter. Important: performs a touch.
     pub fn get(&mut self, key: &str) -> Option<&TypeSaved> {
         let _ = self.private_touch(key, None);
         if let Some((_, value)) = self.elements.get(key) {
@@ -132,6 +142,7 @@ impl Database {
         }
     }
 
+    // Database value mutable getter. Important: performs a touch.
     pub fn get_mut(&mut self, key: &str) -> Option<&mut TypeSaved> {
         let _ = self.private_touch(key, None);
         if let Some((_, value)) = self.elements.get_mut(key) {
@@ -141,15 +152,21 @@ impl Database {
         }
     }
 
+    // Returns true if the database contains the received key.
+    // Important: performs a touch.
     pub fn contains_key(&mut self, key: &str) -> bool {
         let _ = self.private_touch(key, None);
         self.elements.contains_key(key)
     }
 
+    // Empties the database HashMap.
     pub fn clear(&mut self) {
         self.elements.clear();
     }
 
+    // Checks if a key has already expired, in that case, it removes it and returns true.
+    // If the key exists but has not expired yet, returns false. If the key does not exist,
+    // throws an error.
     fn private_touch(
         &mut self,
         key: &str,
@@ -167,6 +184,7 @@ impl Database {
         }
     }
 
+    // Performs a touch calling private_touch().
     pub fn touch(&mut self, key: &str) -> Result<bool, ErrorStruct> {
         self.private_touch(
             key,
@@ -174,6 +192,7 @@ impl Database {
         )
     }
 
+    // Returns the timeout of a specified key. Important: performs a touch.
     pub fn ttl(&mut self, key: &str) -> Option<u64> {
         let _ = self.private_touch(key, None);
         if let Some((info, _)) = self.elements.get(key) {
@@ -183,6 +202,7 @@ impl Database {
         }
     }
 
+    // Database keys timeout setter. Important: performs a touch.
     pub fn set_ttl(&mut self, key: &str, timeout: u64) -> Result<(), ErrorStruct> {
         let _ = self.private_touch(key, None);
         if let Some((info, _)) = self.elements.get_mut(key) {
@@ -198,6 +218,7 @@ impl Database {
         }
     }
 
+    // Database keys unix timestamp timeout setter. Important: performs a touch.
     pub fn set_ttl_unix_timestamp(&mut self, key: &str, timeout: u64) -> Result<(), ErrorStruct> {
         let _ = self.private_touch(key, None);
         if let Some((info, _)) = self.elements.get_mut(key) {
@@ -212,6 +233,9 @@ impl Database {
         }
     }
 
+    // Given a key, tries to obtain its tuple value and check for its ExpireInfo
+    // if it actually IS expirable, calls persist() and returns its timeout. See
+    // ExpireInfo persist() for a deeper understanding. Important: performs a touch.
     pub fn persist(&mut self, key: &str) -> Option<u64> {
         let _ = self.private_touch(key, None);
         if let Some((info, _)) = self.elements.get_mut(key) {
@@ -221,11 +245,23 @@ impl Database {
         }
     }
 
+    // Returns a random key from the database using Rust Rand module method choose().
     pub fn random_key(&mut self) -> Option<String> {
         let mut rng = rand::thread_rng();
         self.elements.keys().choose(&mut rng).map(String::from)
     }
 
+    // Writes to a file current information about all keys and values ​​in the database
+    // including their expiration time and type. See SAVE command.
+    // This method is useful for restoring the database.
+    //
+    // File format: :{EXPIRE_TIME}:{CASE}+{KEY}+{VALUE}
+    // Where:
+    // * EXPIRE_TIME can be any positive value or -1 if its not an expirable key
+    // encoded as Redis Integer.
+    // * CASE: 0: String, 1: List, 2: Set encoded as Redis Integer.
+    // * KEY: Redis Simple String.
+    // * VALUE: Redis Simple String or Redis Array.
     pub fn take_snapshot(&mut self) -> Result<(), ErrorStruct> {
         // TODO: recordar chequear el unwrap
         let mut config = self.redis_config.as_ref().unwrap().lock().unwrap();
@@ -244,9 +280,9 @@ impl Database {
         Ok(())
     }
 
+    // Returns all database keys matching the pattern received.
     pub fn match_pattern(&self, regex: &str) -> Result<Vec<String>, regex::Error> {
         let matcher = SuperRegex::from(regex)?;
-
         Ok(self
             .elements
             .keys()
@@ -262,6 +298,9 @@ impl fmt::Display for Database {
     }
 }
 
+// Given the lines received moves to the next one, checks if the line is valid
+// and returns a TypeSaved obtained from decoding a value read which can be
+// a Redis Simple String or a Redis Array.
 fn decode_value(
     //TODO: refactor
     lines: &mut Lines<BufReader<File>>,
@@ -313,6 +352,8 @@ fn decode_value(
     }
 }
 
+// Given the lines received moves to the next one, checks if the line is valid
+// and returns a key String.
 fn decode_key(lines: &mut Lines<BufReader<File>>) -> Result<String, ErrorStruct> {
     if let Some(line) = lines.next() {
         match line {
@@ -335,6 +376,8 @@ fn decode_key(lines: &mut Lines<BufReader<File>>) -> Result<String, ErrorStruct>
     }
 }
 
+// Given the lines received moves to the next one, checks if the line is valid
+// and returns an isize (0, 1 or 2) identifying the case (String, List or Set).
 fn decode_case(lines: &mut Lines<BufReader<File>>) -> Result<isize, ErrorStruct> {
     if let Some(line) = lines.next() {
         match line {
@@ -357,6 +400,8 @@ fn decode_case(lines: &mut Lines<BufReader<File>>) -> Result<isize, ErrorStruct>
     }
 }
 
+// Obtains an isize from the parameters received and returns it if it matches any
+// of the 3 possible cases (0: String, 1: List, 2: Set). Any other case, returns error.
 fn get_case(line: String, lines: &mut Lines<BufReader<File>>) -> Result<isize, ErrorStruct> {
     let value = RInteger::decode(line, lines)?;
     if value == 0 || value == 1 || value == 2 {
@@ -368,6 +413,8 @@ fn get_case(line: String, lines: &mut Lines<BufReader<File>>) -> Result<isize, E
     ))
 }
 
+// Given a string line and its following ones obtains a timeout and returns an instance
+// of ExpireInfo.
 fn get_expire_info(
     mut line: String,
     lines: &mut Lines<BufReader<File>>,
@@ -381,10 +428,9 @@ fn get_expire_info(
     Ok(expire_info)
 }
 
+// Checks if the first character of the given string line matches the received character.
 fn check_decodable_line(line: &mut String, char: char) -> Result<(), ErrorStruct> {
-    if
-    /*line.pop().unwrap() != '\r' ||*/
-    line.remove(0) != char {
+    if line.remove(0) != char {
         return Err(ErrorStruct::new(
             "ERR".to_string(),
             "Some error".to_string(), // TODO
@@ -393,6 +439,8 @@ fn check_decodable_line(line: &mut String, char: char) -> Result<(), ErrorStruct
     Ok(())
 }
 
+// Performs the writing of a String to the given file, while first encoding it as
+// a Redis Simple String (RSimpleString). Returns error in case writing failed.
 fn write_string_to_file(string: &str, file: &mut File) -> Result<(), ErrorStruct> {
     if file
         .write_all(RSimpleString::encode(string.to_string()).as_bytes())
@@ -407,6 +455,8 @@ fn write_string_to_file(string: &str, file: &mut File) -> Result<(), ErrorStruct
     }
 }
 
+// Performs the writing of an isize to the given file, while first encoding it
+// as a Redis Integer (RInteger). Returns error in case writing failed.
 fn write_integer_to_file(number: isize, file: &mut File) -> Result<(), ErrorStruct> {
     if file.write_all(RInteger::encode(number).as_bytes()).is_ok() {
         Ok(())
@@ -418,6 +468,8 @@ fn write_integer_to_file(number: isize, file: &mut File) -> Result<(), ErrorStru
     }
 }
 
+// Performs the writing of a Vec<String> to the given file, while first encoding it
+// as a Redis Array (RArray). Returns error in case writing failed.
 fn write_array_to_file(vector: Vec<String>, file: &mut File) -> Result<(), ErrorStruct> {
     if file.write_all(RArray::encode(vector).as_bytes()).is_ok() {
         Ok(())
@@ -743,7 +795,6 @@ mod test_database {
         );
     }
 
-    // #[ignore = "Long test"]// El orden de las keys de los sets no es siempre el mismo
     #[test]
     fn test_13_restore_set_values_from_file() {
         let filename1 = "database_13_a.rdb";
@@ -869,15 +920,7 @@ mod test_database {
         Sadd.run(buffer3, &mut original_database).unwrap();
 
         let _ = original_database.lock().unwrap().take_snapshot();
-        // This test won't always assert because there's a hashmap iteration
-        /*
-        assert_eq!(
-            fs::read("database_15.rdb").unwrap(),
-            b":-1\r\n:0\r\n+key1\r\n+value1\r\n
-              :-1\r\n:1\r\n+key2\r\n*4\r\n$6\r\nvalue1\r\n$6\r\nvalue2\r\n$6\r\nvalue3\r\n$6\r\nvalue4\r\n
-              :-1\r\n:2\r\n+key3\r\n*1\r\n$6\r\nvalue1\r\n"
-        );
-        */
+
         let mut restored_database = Arc::new(Mutex::new(
             Database::new_from(config.clone(), notifier).unwrap(),
         ));

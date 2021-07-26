@@ -10,6 +10,16 @@ use std::sync::{Arc, Mutex};
 pub struct Touch;
 
 impl Runnable<Arc<Mutex<Database>>> for Touch {
+    /// Alters the last access time of a key(s). A key is ignored if it does not exist.
+    /// Time complexity: O(N) where N is the number of keys that will be touched.
+    ///
+    /// # Return value
+    /// [String] _encoded_ in [RInteger]: The number of keys that were touched.
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * [Database] received in <[Arc]<[Mutex]>> is poisoned.
     fn run(
         &self,
         buffer: Vec<String>,
@@ -32,11 +42,9 @@ impl Runnable<Arc<Mutex<Database>>> for Touch {
 
 #[cfg(test)]
 pub mod test_touch {
-    use crate::commands::create_notifier;
-
-    use crate::database::TypeSaved;
-
     use super::*;
+    use crate::commands::create_notifier;
+    use crate::database::TypeSaved;
 
     #[test]
     fn test_01_three_keys_touch_three() {

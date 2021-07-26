@@ -13,15 +13,18 @@ impl FileManager {
     pub fn new() -> Self {
         FileManager {}
     }
+
+    // Given the filename received opens a file and returns a BufReader.
     #[allow(dead_code)]
     pub fn open_file(filename: &str) -> Result<BufReader<File>, Error> {
         let path = Path::new(filename);
         let _display = path.display();
         let file = File::open(&path)?;
-
         Ok(BufReader::new(file))
     }
 
+    // Given the filename received, reads a file and obtains encoded text as Redis
+    // Bulk String, decodes it, returning
     #[allow(dead_code)]
     pub fn read_line(self, filename: &str) -> Result<String, ErrorStruct> {
         // READS ENCODED TEXT, DECODES IT AND RETURNS IT

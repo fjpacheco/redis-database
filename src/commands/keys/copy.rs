@@ -10,6 +10,21 @@ use std::sync::{Arc, Mutex};
 pub struct Copy;
 
 impl Runnable<Arc<Mutex<Database>>> for Copy {
+    /// This command copies the value stored at the source key to the destination key.
+    /// The command returns an error when the destination key already exists.
+    /// Time complexity: O(N) worst case for collections, where N is the number of
+    /// nested items. O(1) for string values.
+    ///
+    /// # Return value
+    /// * [String] _encoded_ in [RInteger]: 1 if source was copied.
+    /// * [String] _encoded_ in [RInteger]: 0 if source was not copied.
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * Buffer [Vec]<[String]> is received empty, or received with a number of elements
+    /// different than 2.
+    /// * [Database] received in <[Arc]<[Mutex]>> is poisoned.
     fn run(
         &self,
         buffer: Vec<String>,

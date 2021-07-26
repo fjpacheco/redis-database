@@ -11,6 +11,23 @@ use std::sync::{Arc, Mutex};
 pub struct Expire;
 
 impl Runnable<Arc<Mutex<Database>>> for Expire {
+    /// Set a timeout on key. After the timeout has expired, the key will automatically
+    /// be deleted. The timeout will only be cleared by commands that delete or overwrite
+    /// the contents of the key, including DEL, SET, GETSET and all the *STORE commands.
+    /// This means that all the operations that conceptually alter the value stored at the
+    /// key without replacing it with a new one will leave the timeout untouched.
+    /// The timeout can also be cleared, turning the key back into a persistent key.
+    ///
+    /// # Return value
+    /// * [String] _encoded_ in [RInteger]: 1 if the timeout was set.
+    /// * [String] _encoded_ in [RInteger]: 0 if key does not exist.
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * Buffer [Vec]<[String]> is received empty, or received with a number of elements
+    /// different than 2.
+    /// * [Database] received in <[Arc]<[Mutex]>> is poisoned.
     fn run(
         &self,
         mut buffer: Vec<String>,
@@ -34,6 +51,9 @@ impl Runnable<Arc<Mutex<Database>>> for Expire {
     }
 }
 
+// Returns an integer encoded as RInteger or an error according to the received parameter.
+// If the prefix read matches "NEG", returns error. Otherwise returns 0 or 1, if key does
+// not exist or if timeout was set respectively.
 fn check_errors(should_be_error: Result<(), ErrorStruct>) -> Result<String, ErrorStruct> {
     if let Err(error) = should_be_error {
         if let Some(prefix) = error.prefix() {

@@ -9,11 +9,19 @@ use crate::{
 use std::sync::{Arc, Mutex};
 pub struct Llen;
 
-// Returns the length of the list stored at key. If key does not exist, it is
-// interpreted as an empty list and 0 is returned. An error is returned when
-// the value stored at key is not a list.
-
 impl Runnable<Arc<Mutex<Database>>> for Llen {
+    /// Returns the length of the list stored at key. If key does not exist, it is interpreted as an
+    /// empty list and 0 is returned. An error is returned when the value stored at key is not a list.
+    ///
+    /// # Return value
+    /// [String] _encoded_ in [RInteger]: the length of the list at key.
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * The value stored at **key** is not a list.
+    /// * Buffer [Vec]<[String]> is received empty, or received with 2 or more elements.
+    /// * [Database] received in <[Arc]<[Mutex]>> is poisoned.
     fn run(
         &self,
         mut buffer: Vec<String>,

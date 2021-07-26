@@ -15,6 +15,19 @@ use std::sync::{Arc, Mutex};
 pub struct Sort;
 
 impl Runnable<Arc<Mutex<Database>>> for Sort {
+    /// Returns or stores the elements contained in the list, set or sorted set at key.
+    /// By default, sorting is numeric and elements are compared by their value using
+    /// Rust sort() function.
+    ///
+    /// # Return value
+    /// * [String] _encoded_ in [RArray]: sorted array.
+    /// * [String] _encoded_ in [RBulkString]: "(nil)".
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * Buffer [Vec]<[String]> is received empty, or received with more than 1 element.
+    /// * [Database] received in <[Arc]<[Mutex]>> is poisoned.
     fn run(
         &self,
         mut buffer: Vec<String>,
@@ -42,12 +55,14 @@ impl Runnable<Arc<Mutex<Database>>> for Sort {
     }
 }
 
+// Sorts VecDeque by mapping its elements generating a Vec<String> to use Rust sort() function.
 fn sort_list(list: &VecDeque<String>) -> Vec<String> {
     let mut sorted = list.iter().map(String::from).collect::<Vec<String>>();
     sorted.sort();
     sorted
 }
 
+// Sorts HashSet by mapping its elements generating a Vec<String> to use Rust sort() function.
 fn sort_set(set: &HashSet<String>) -> Vec<String> {
     let mut sorted = set.iter().map(String::from).collect::<Vec<String>>();
     sorted.sort();

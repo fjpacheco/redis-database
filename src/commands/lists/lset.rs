@@ -17,6 +17,17 @@ pub struct Lset;
 // An error is returned for out of range indexes.
 
 impl Runnable<Arc<Mutex<Database>>> for Lset {
+    /// Sets the list element at index to element. An error is returned for out of range indexes.
+    ///
+    /// # Return value
+    /// [String] _encoded_ in [RSimpleString]: "OK".
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * The value stored at **key** is not a list.
+    /// * Buffer [Vec]<[String]> is received empty, or received with an amount of elements different than 3.
+    /// * [Database] received in <[Arc]<[Mutex]>> is poisoned.
     fn run(
         &self,
         mut buffer: Vec<String>,
@@ -53,6 +64,9 @@ impl Runnable<Arc<Mutex<Database>>> for Lset {
     }
 }
 
+// Executes the replace of the element at the given index in the VecDeque.
+// Returns a result which can be an "OK" encoded as Simple String or an
+// ErrorStruct in case of error, when the index is out of range.
 pub fn replace_element_at(
     mut index: isize,
     replacement: String,

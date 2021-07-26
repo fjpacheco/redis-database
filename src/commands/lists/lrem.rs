@@ -14,13 +14,26 @@ use std::sync::{Arc, Mutex};
 
 pub struct Lrem;
 
-// Removes the first count occurrences of elements equal to element from the list
-// stored at key. The count argument influences the operation in the following ways:
-// count > 0: Remove elements equal to element moving from head to tail.
-// count < 0: Remove elements equal to element moving from tail to head.
-// count = 0: Remove all elements equal to element.
-
 impl Runnable<Arc<Mutex<Database>>> for Lrem {
+    /// Removes the first count occurrences of elements equal to element from the list
+    /// stored at key. The count argument influences the operation in the following ways:
+    /// * count > 0: Remove elements equal to element moving from head to tail.
+    /// * count < 0: Remove elements equal to element moving from tail to head.
+    /// * count = 0: Remove all elements equal to element.
+    /// For example, LREM list -2 "hello" will remove the last two occurrences of "hello"
+    /// in the list stored at list.
+    /// Note that non-existing keys are treated like empty lists, so when key does not
+    /// exist, the command will always return 0.
+    ///
+    /// # Return value
+    /// [String] _encoded_ in [RSimpleString]: the number of removed elements.
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * The value stored at **key** is not a list.
+    /// * Buffer [Vec]<[String]> is received empty, or received with an amount of elements different than 3.
+    /// * [Database] received in <[Arc]<[Mutex]>> is poisoned.
     fn run(
         &self,
         mut buffer: Vec<String>,
@@ -55,6 +68,7 @@ impl Runnable<Arc<Mutex<Database>>> for Lrem {
     }
 }
 
+// Removes the received value according to the count sign.
 fn remove_value(
     count: isize,
     value: String,
@@ -65,6 +79,9 @@ fn remove_value(
         _ => remove_value_default(count, value, values_list),
     }
 }
+
+// Receives a negative isize count and iterates the VecDeque from tail to head
+// removing as many repetitions of the value as count indicates.
 #[allow(dead_code)]
 pub fn remove_value_negative_count(
     count: isize,
@@ -88,6 +105,8 @@ pub fn remove_value_negative_count(
     Ok(RInteger::encode(i as isize))
 }
 
+// Receives a positive (or zero) isize count and iterates the VecDeque from head
+// to tail removing as many repetitions of the value as count indicates.
 #[allow(dead_code)]
 pub fn remove_value_default(
     count: isize,

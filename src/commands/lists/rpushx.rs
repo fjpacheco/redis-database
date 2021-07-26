@@ -9,6 +9,19 @@ use std::sync::{Arc, Mutex};
 pub struct RPushx;
 
 impl Runnable<Arc<Mutex<Database>>> for RPushx {
+    /// Inserts specified values at the tail of the list stored at key, only if key already
+    /// exists and holds a list. In contrary to RPUSH, no operation will be performed when
+    /// key does not yet exist.
+    ///
+    /// # Return value
+    /// [String] _encoded_ in [RInteger]: the length of the list after the push operation.
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * The value stored at **key** is not a list.
+    /// * Buffer [Vec]<[String]> is received empty, or received with more than 2 elements.
+    /// * [Database] received in <[Arc]<[Mutex]>> is poisoned.
     fn run(
         &self,
         buffer: Vec<String>,

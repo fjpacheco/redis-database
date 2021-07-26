@@ -10,15 +10,30 @@ use std::collections::VecDeque;
 use std::sync::{Arc, Mutex};
 pub struct Lrange;
 
-// Returns the specified elements of the list stored at key. The offsets start
-// and stop are zero-based indexes, with 0 being the first element of the list
-// (the head of the list), 1 being the next element and so on.
-
-// These offsets can also be negative numbers indicating offsets starting at
-// the end of the list. For example, -1 is the last element of the list, -2
-// the penultimate, and so on.
-
 impl Runnable<Arc<Mutex<Database>>> for Lrange {
+    /// Returns the specified elements of the list stored at key. The offsets start and
+    /// stop are zero-based indexes, with 0 being the first element of the list (the head
+    /// of the list), 1 being the next element and so on.
+    /// These offsets can also be negative numbers indicating offsets starting at the end
+    /// of the list. For example, -1 is the last element of the list, -2 the penultimate,
+    /// and so on.
+    /// Out of range indexes will not produce an error. If start is larger than the end of
+    /// the list, an empty list is returned. If stop is larger than the actual end of the
+    /// list, Redis will treat it like the last element of the list.
+    /// Time complexity: O(S+N) where S is the distance of start offset from HEAD for small
+    /// lists, from nearest end (HEAD or TAIL) for large lists; and N is the number of
+    /// elements in the specified range.
+    ///
+    /// # Return value
+    /// [String] _encoded_ in [RArray]: list of elements in the specified range.
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * The value stored at **key** is not a list.
+    /// * **Key** does not exist.
+    /// * Buffer [Vec]<[String]> is received empty, or received with an amount of elements different than 3.
+    /// * [Database] received in <[Arc]<[Mutex]>> is poisoned.
     fn run(
         &self,
         mut buffer: Vec<String>,
@@ -47,6 +62,9 @@ impl Runnable<Arc<Mutex<Database>>> for Lrange {
     }
 }
 
+// Obtains list stop and start indexes checking buffer has only 2 elements. If
+// indexes are not valid, returns "(empty list or set)", any other case, returns
+// a decoded RArray containing all elements at interval [start, stop].
 pub fn find_elements_in_range(
     values_list: &mut VecDeque<String>,
     mut buffer: Vec<String>,
@@ -57,15 +75,12 @@ pub fn find_elements_in_range(
     let mut start = get_as_integer(&buffer.pop().unwrap()).unwrap();
     check_empty_2(&buffer)?;
     let len = values_list.len() as isize;
-
     if start < 0 {
         start += len; // start = 2
     }
-
     if stop < 0 {
         stop += len; // stop = 2
     }
-
     if start >= len || start > stop || stop < -len {
         Ok(RSimpleString::encode("(empty list or set)".to_string()))
     } else {
@@ -79,6 +94,8 @@ pub fn find_elements_in_range(
     }
 }
 
+// Iterates the VecDeque pushing all elements in interval [start, stop]
+// to a Vec<String> and returns it encoded as RArray.
 pub fn get_list_elements_in_range(
     start: isize,
     stop: isize,

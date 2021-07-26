@@ -10,6 +10,18 @@ use std::sync::{Arc, Mutex};
 pub struct Exists;
 
 impl Runnable<Arc<Mutex<Database>>> for Exists {
+    /// Returns if key exists.
+    ///
+    /// # Return value
+    /// * [String] _encoded_ in [RInteger]: 1 if the timeout was set.
+    /// * [String] _encoded_ in [RInteger]: 0 if key does not exist.
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * Buffer [Vec]<[String]> is received empty, or received with a number of elements
+    /// different than 1.
+    /// * [Database] received in <[Arc]<[Mutex]>> is poisoned.
     fn run(
         &self,
         mut buffer: Vec<String>,

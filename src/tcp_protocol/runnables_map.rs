@@ -14,7 +14,7 @@ use crate::commands::{
     },
     server::{
         config::Config, dbsize::Dbsize, flushdb::FlushDb, info_db::InfoDb, info_sv::InfoSv,
-        monitor::Monitor, notify_monitors::NotifyMonitors, shutdown::Shutdown, save::Save
+        monitor::Monitor, notify_monitors::NotifyMonitors, save::Save, shutdown::Shutdown,
     },
     sets::{sadd::Sadd, scard::Scard, sismember::Sismember, smembers::Smembers, srem::Srem},
     strings::{

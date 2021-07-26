@@ -10,6 +10,19 @@ use std::sync::{Arc, Mutex, MutexGuard};
 pub struct Clean;
 
 impl Runnable<Arc<Mutex<Database>>> for Clean {
+    /// Touches n database elements (see TOUCH command for a deeper understanding) forcing
+    /// key expiration (if it's configured). If more than 25% was expired, the process is
+    /// repeated.
+    ///
+    /// # Return value
+    /// * [String] _encoded_ in [RInteger]: number of total keys expired.
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * Buffer [Vec]<[String]> is received empty, or received with a number of elements
+    /// different than 1.
+    /// * [Database] received in <[Arc]<[Mutex]>> is poisoned.
     fn run(
         &self,
         mut buffer: Vec<String>,

@@ -49,8 +49,11 @@ impl ServerRedis {
         // ################## 5° Initialization structures: SERVER REDIS ATRIBUTES AND RUNNABLES MAP ##################
         // and
         // ################## 6° Initialization structures: Notifier ##################
-        let server_redis =
-            ServerRedisAttributes::new(Arc::clone(&config), status_listener.clone(), shared_clients);
+        let server_redis = ServerRedisAttributes::new(
+            Arc::clone(&config),
+            status_listener.clone(),
+            shared_clients,
+        );
 
         let notifier = Notifier::new(
             sender_log.clone(),
@@ -128,7 +131,7 @@ impl ServerRedis {
             })?
             .take_snapshot()?;
 
-            // ################## FINISH SERVER ##################
+        // ################## FINISH SERVER ##################
         command_delegator.join()?;
         garbage_collector.join()?;
         saver.join()?;

@@ -33,7 +33,6 @@ impl ExpireInfo {
     }
 
     /// Evaluates if the timeout has ended.
-    #[allow(clippy::branches_sharing_code)]
     pub fn is_expired(&mut self, notifier: Option<Arc<Mutex<Notifier>>>, key_name: &str) -> bool {
         if self.timeout.is_some() {
             let _ = self.update(notifier, key_name);
