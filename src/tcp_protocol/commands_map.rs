@@ -10,17 +10,6 @@ pub struct CommandsMap {
     channel_map: HashMap<String, Vec<Option<Sender<Option<RawCommand>>>>>,
 }
 
-#[macro_export]
-macro_rules! insert_in {
-    ($channel_map:expr, $sender:expr, $( $x:expr ),*) => {
-        {
-            $(
-                $channel_map.insert(String::from($x), vec![Some($sender.clone())]);
-            )*
-        }
-    };
-}
-
 impl CommandsMap {
     /// Drops all the senders contained in the map.
     pub fn kill_senders(&mut self) {

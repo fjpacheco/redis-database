@@ -1,4 +1,4 @@
-///Methods with the format in String for the [InfoSv] command about a database.
+///Methods with the format in String for the [InfoSv](crate::commands::server::info_sv::InfoSv) command about a database.
 pub mod info_db_formatter {
     pub fn title() -> String {
         "DATABASE:".to_string()
@@ -9,7 +9,7 @@ pub mod info_db_formatter {
     }
 }
 
-///Methods with the format in String for the [InfoSv] command about a clients and channels.
+///Methods with the format in String for the [InfoSv](crate::commands::server::info_sv::InfoSv) command about a clients and channels.
 pub mod info_client_formatter {
     pub fn clients_connected(n: usize) -> String {
         format!("clients connected: {}", n)
@@ -20,7 +20,7 @@ pub mod info_client_formatter {
     }
 }
 
-///Methods with the format in String for the [InfoSv] command about a server.
+///Methods with the format in String for the [InfoSv](crate::commands::server::info_sv::InfoSv) command about a server.
 pub mod info_server_formatter {
     use std::env::current_exe;
 

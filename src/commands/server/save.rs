@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex};
 
 use crate::{
-    commands::{check_empty_2, Runnable},
+    commands::{check_not_empty, Runnable},
     database::Database,
     messages::redis_messages,
     native_types::{error_severity::ErrorSeverity, ErrorStruct, RSimpleString, RedisType},
@@ -26,7 +26,7 @@ impl Runnable<Arc<Mutex<Database>>> for Save {
         buffer: Vec<String>,
         database: &mut Arc<Mutex<Database>>,
     ) -> Result<String, ErrorStruct> {
-        check_empty_2(&buffer)?;
+        check_not_empty(&buffer)?;
 
         match database
             .lock()

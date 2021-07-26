@@ -7,13 +7,13 @@ impl Runnable<ServerRedisAttributes> for ConfigSetDbFileName {
     /// Rename archive file to save to database.
     ///
     /// # Return value
-    /// [String] _encoded_ in [RSimpleString]: OK if CONFIG SET DBFILENAME was executed correctly.
+    /// [String] _encoded_ in [RSimpleString](crate::native_types::RSimpleString): OK if CONFIG SET DBFILENAME was executed correctly.
     ///
     /// # Error
     /// Return an [ErrorStruct] if:
     ///
     /// * Buffer [Vec]<[String]> is received empty.
-    /// * [ServerRedisAtributes] has poisoned methods.
+    /// * [ServerRedisAttributes](crate::tcp_protocol::server_redis_attributes::ServerRedisAttributes) has poisoned methods.
     fn run(
         &self,
         _buffer: Vec<String>,

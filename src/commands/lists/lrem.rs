@@ -1,7 +1,7 @@
 use crate::messages::redis_messages;
 use crate::native_types::error_severity::ErrorSeverity;
 use crate::{
-    commands::lists::{check_empty_2, check_not_empty},
+    commands::lists::{check_empty, check_not_empty},
     native_types::{error::ErrorStruct, redis_type::RedisType, simple_string::RSimpleString},
 };
 use crate::{
@@ -45,13 +45,13 @@ impl Runnable<Arc<Mutex<Database>>> for Lrem {
                 ErrorSeverity::ShutdownServer,
             ))
         })?;
-        check_not_empty(&buffer)?;
+        check_empty(&buffer, "lrem")?;
         let key = buffer.remove(0);
-        check_not_empty(&buffer)?;
+        check_empty(&buffer, "lrem")?;
         let value = buffer.pop().unwrap();
-        check_not_empty(&buffer)?;
+        check_empty(&buffer, "lrem")?;
         let count = get_as_integer(&buffer.pop().unwrap()).unwrap();
-        check_empty_2(&buffer)?;
+        check_not_empty(&buffer)?;
         if let Some(typesaved) = database.get_mut(&key) {
             match typesaved {
                 TypeSaved::List(values_list) => remove_value(count, value, values_list),

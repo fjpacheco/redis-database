@@ -1,11 +1,12 @@
+use crate::database::Database;
 use crate::native_types::error_severity::ErrorSeverity;
 use crate::{
     commands::Runnable,
     messages::redis_messages,
     native_types::ErrorStruct,
     native_types::{RInteger, RedisType},
-    Database,
 };
+
 use std::sync::{Arc, Mutex};
 pub struct Touch;
 
@@ -14,7 +15,7 @@ impl Runnable<Arc<Mutex<Database>>> for Touch {
     /// Time complexity: O(N) where N is the number of keys that will be touched.
     ///
     /// # Return value
-    /// [String] _encoded_ in [RInteger]: The number of keys that were touched.
+    /// [String] _encoded_ in [RInteger](crate::native_types::integer::RInteger): The number of keys that were touched.
     ///
     /// # Error
     /// Return an [ErrorStruct] if:

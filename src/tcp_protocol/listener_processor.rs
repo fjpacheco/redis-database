@@ -31,7 +31,7 @@ impl ListenerProcessor {
         }
     }
 
-    /// Creates a new [TcpListener] which will be bound to the specified [RedisConfig].
+    /// Creates a new [TcpListener](std::net::TcpListener) which will be bound to the specified [RedisConfig].
     ///
     /// # Error
     /// Return an [ErrorStruct] if:
@@ -45,7 +45,7 @@ impl ListenerProcessor {
         Ok(listener)
     }
 
-    /// Creates a new [TcpListener] which will be bound to the specified ip and port.
+    /// Creates a new [TcpListener](std::net::TcpListener) which will be bound to the specified ip and port.
     ///
     /// # Error
     /// Return an [ErrorStruct] if:
@@ -64,15 +64,15 @@ impl ListenerProcessor {
 
 /// The connections of new clients connected to the server will be listened to.
 /// Each new connected client will have a new [ClientHandler] that will be stored
-/// in the [ClientList] of [ServerRedisAttributes]. In addition, each customer
+/// in the [ClientList](crate::tcp_protocol::client_list::ClientList) of [ServerRedisAttributes](crate::tcp_protocol::server_redis_attributes::ServerRedisAttributes). In addition, each customer
 /// will be assigned the corresponding timeout.
 /// It also informs the registries about the connection.
 ///
 /// # Error
 /// Return an [ErrorStruct] if:
 ///
-/// * The channel to communicate with the [LogCenter] is closed.
-/// * [ServerRedisAttributes] has poisoned fields.
+/// * The channel to communicate with the [LogCenter](crate::logs::log_center::LogCenter) is closed.
+/// * [ServerRedisAttributes](crate::tcp_protocol::server_redis_attributes::ServerRedisAttributes) has poisoned fields.
 fn start_incoming(
     listener: TcpListener,
     notifier: &Notifier,
@@ -115,7 +115,7 @@ fn start_incoming(
 /// # Error
 /// Returns an [ErrorStruct] if:
 ///
-/// * The channel to communicate with the [LogCenter] is closed.
+/// * The channel to communicate with the [LogCenter](crate::logs::log_center::LogCenter) is closed.
 fn welcome_message(listener: &TcpListener, notifier: &Notifier) -> Result<(), ErrorStruct> {
     let port = listener
         .local_addr()

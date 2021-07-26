@@ -22,13 +22,13 @@ impl Runnable<ServerRedisAttributes> for ConfigSet {
     /// * verbose
     ///
     /// # Return value
-    /// [String] _encoded_ in [RArray]: OK when the configuration was set properly.
+    /// [String] _encoded_ in [RArray](crate::native_types::RArray): OK when the configuration was set properly.
     ///
     /// # Error
     /// Return an [ErrorStruct] if:
     ///
     /// * Buffer [Vec]<[String]> is received empty.
-    /// * [ServerRedisAtributes] has poisoned methods.
+    /// * [ServerRedisAttributes](crate::tcp_protocol::server_redis_attributes::ServerRedisAttributes) has poisoned methods.
     /// * Unknown subcommand for CONFIG SET.    
     fn run(
         &self,

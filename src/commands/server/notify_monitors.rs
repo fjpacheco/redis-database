@@ -9,7 +9,7 @@ use crate::{
 pub struct NotifyMonitors;
 
 impl Runnable<ServerRedisAttributes> for NotifyMonitors {
-    /// Notify each client with [Status::Monitor] of [ClientList] of the commands issued correctly by the server.
+    /// Notify each client with [Status::Monitor](crate::tcp_protocol::client_atributes::status::Status) of [ClientList](crate::tcp_protocol::client_list::ClientList) of the commands issued correctly by the server.
     ///
     /// # Return value
     /// [String] _encoded_ in [RSimpleString]: OK if MONITOR was executed correctly.
@@ -17,7 +17,7 @@ impl Runnable<ServerRedisAttributes> for NotifyMonitors {
     /// # Error
     /// Return an [ErrorStruct] if:
     ///
-    /// * [ServerRedisAtributes] has poisoned methods.
+    /// * [ServerRedisAttributes](crate::tcp_protocol::server_redis_attributes::ServerRedisAttributes) has poisoned methods.
     fn run(
         &self,
         mut buffer: Vec<String>,

@@ -15,7 +15,7 @@ impl Runnable<Arc<Mutex<Database>>> for Decrby {
     /// This operation is limited to 64 bit signed integers.
     ///
     /// # Return value
-    /// [String] _encoded_ in [RInteger]: the value of **key** after the decrement.
+    /// [String] _encoded_ in [RInteger](crate::native_types::integer::RInteger): the value of **key** after the decrement.
     ///
     /// # Error
     /// Return an [ErrorStruct] if:

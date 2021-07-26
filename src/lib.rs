@@ -12,4 +12,4 @@ pub mod regex;
 pub mod tcp_protocol;
 pub mod time_expiration;
 
-pub use crate::{database::Database, tcp_protocol::client_handler::ClientHandler};
+pub use crate::tcp_protocol::server::ServerRedis;

@@ -14,13 +14,13 @@ impl Runnable<ServerRedisAttributes> for Config {
     /// Return the number of keys in the currently-selected database.
     ///
     /// # Return value
-    /// [String] _encoded_ in [RInteger]: a number of keys in the currently-selected database.
+    /// [String] _encoded_ in [RInteger](crate::native_types::integer::RInteger): a number of keys in the currently-selected database.
     ///
     /// # Error
     /// Return an [ErrorStruct] if:
     ///
     /// * Buffer [Vec]<[String]> is received empty.
-    /// * [ServerRedisAtributes] has poisoned methods.
+    /// * [ServerRedisAttributes](crate::tcp_protocol::server_redis_attributes::ServerRedisAttributes) has poisoned methods.
     fn run(
         &self,
         mut buffer: Vec<String>,

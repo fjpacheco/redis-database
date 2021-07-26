@@ -1,12 +1,13 @@
 use crate::commands::keys::{no_more_values, pop_value};
 use crate::commands::Runnable;
+use crate::database::Database;
 use crate::messages::redis_messages::{self, wrong_regex_pattern};
 use crate::native_types::error_severity::ErrorSeverity;
 use crate::native_types::ErrorStruct;
 use crate::native_types::RArray;
 use crate::native_types::RedisType;
-use crate::Database;
 use std::sync::{Arc, Mutex};
+
 pub struct Keys;
 
 impl Runnable<Arc<Mutex<Database>>> for Keys {

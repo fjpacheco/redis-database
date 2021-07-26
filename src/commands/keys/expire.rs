@@ -1,11 +1,11 @@
 use super::{no_more_values, parse_integer, pop_value};
+use crate::database::Database;
 use crate::native_types::error_severity::ErrorSeverity;
 use crate::{
     commands::Runnable,
     messages::redis_messages,
     native_types::ErrorStruct,
     native_types::{RInteger, RedisType},
-    Database,
 };
 use std::sync::{Arc, Mutex};
 pub struct Expire;
@@ -19,8 +19,8 @@ impl Runnable<Arc<Mutex<Database>>> for Expire {
     /// The timeout can also be cleared, turning the key back into a persistent key.
     ///
     /// # Return value
-    /// * [String] _encoded_ in [RInteger]: 1 if the timeout was set.
-    /// * [String] _encoded_ in [RInteger]: 0 if key does not exist.
+    /// * [String] _encoded_ in [RInteger](crate::native_types::integer::RInteger): 1 if the timeout was set.
+    /// * [String] _encoded_ in [RInteger](crate::native_types::integer::RInteger): 0 if key does not exist.
     ///
     /// # Error
     /// Return an [ErrorStruct] if:

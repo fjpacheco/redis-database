@@ -15,7 +15,7 @@ impl Runnable<Arc<Mutex<Database>>> for LPop {
     /// to count elements, depending on the list's length.
     ///
     /// # Return value
-    /// [String] _encoded_ in [RInteger]: Removes and returns the first elements of
+    /// [String] _encoded_ in [RInteger](crate::native_types::integer::RInteger): Removes and returns the first elements of
     /// the list stored at key. By default, the command pops a single element from
     /// the beginning of the list. When provided with the optional count argument,
     /// the reply will consist of up to count elements, depending on the list's length.
@@ -129,7 +129,7 @@ pub mod test_lpop {
             Ok(_encode) => {}
             Err(error) => assert_eq!(
                 error.print_it(),
-                "ERR wrong number of arguments".to_string()
+                "ERR wrong number of arguments for 'lpop or rpop' command".to_string()
             ),
         }
     }

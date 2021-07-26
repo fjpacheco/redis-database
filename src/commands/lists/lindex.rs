@@ -1,7 +1,7 @@
 use crate::messages::redis_messages;
 use crate::native_types::error_severity::ErrorSeverity;
 use crate::{
-    commands::lists::{check_empty_2, check_not_empty},
+    commands::lists::{check_empty, check_not_empty},
     database::{Database, TypeSaved},
     native_types::bulk_string::RBulkString,
 };
@@ -22,7 +22,7 @@ impl Runnable<Arc<Mutex<Database>>> for LIndex {
     /// When the value at key is not a list, an error is returned.
     ///
     /// # Return value
-    /// [String] _encoded_ in [RInteger]: the requested element, or nil when index is out of range.
+    /// [String] _encoded_ in [RInteger](crate::native_types::integer::RInteger): the requested element, or nil when index is out of range.
     ///
     /// # Error
     /// Return an [ErrorStruct] if:
@@ -41,11 +41,11 @@ impl Runnable<Arc<Mutex<Database>>> for LIndex {
                 ErrorSeverity::ShutdownServer,
             ))
         })?;
-        check_not_empty(&buffer)?;
+        check_empty(&buffer, "lindex")?;
         let key = buffer.remove(0);
-        check_not_empty(&buffer)?;
+        check_empty(&buffer, "lindex")?;
         let index = parse_index(&mut buffer)?;
-        check_empty_2(&buffer)?;
+        check_not_empty(&buffer)?;
 
         if let Some(typesaved) = database.get(&key) {
             match typesaved {

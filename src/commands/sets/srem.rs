@@ -14,7 +14,7 @@ impl Runnable<Arc<Mutex<Database>>> for Srem {
     /// If key does not exist, it is treated as an empty set and this command returns 0.
     ///
     /// # Return value
-    /// [String] _encoded_ in [RInteger]: the number of members that were removed from the set, not including non existing members.
+    /// [String] _encoded_ in [RInteger](crate::native_types::integer::RInteger): the number of members that were removed from the set, not including non existing members.
     ///
     /// # Error
     /// Return an [ErrorStruct] if:

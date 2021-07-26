@@ -13,7 +13,7 @@ impl Runnable<Arc<Mutex<Database>>> for Sismember {
     /// Returns if member is a member of the set stored at key.
     ///
     /// # Return value
-    /// [String] _encoded_ in [RInteger]: specifically:
+    /// [String] _encoded_ in [RInteger](crate::native_types::integer::RInteger): specifically:
     /// * 1 if the element is a member of the set.
     /// * 0 if the element is not a member of the set, or if **key** does not exist.
     ///

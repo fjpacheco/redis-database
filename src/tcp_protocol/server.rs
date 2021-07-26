@@ -1,5 +1,6 @@
 use std::sync::{atomic::AtomicBool, mpsc::channel, Arc, Mutex};
 
+use crate::database::Database;
 use crate::native_types::error_severity::ErrorSeverity;
 use crate::tcp_protocol::server_redis_attributes::ServerRedisAttributes;
 use crate::{
@@ -12,7 +13,6 @@ use crate::{
         command_delegator::CommandDelegator, listener_processor::ListenerProcessor,
         runnables_map::RunnablesMap,
     },
-    Database,
 };
 use crate::{memory_checker::periodic_executor::PeriodicExecutor, messages::redis_messages};
 

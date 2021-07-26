@@ -8,7 +8,7 @@ use crate::{
 pub struct InfoSv;
 
 impl Runnable<ServerRedisAttributes> for InfoSv {
-    /// Required for the INFO command. Returns information and statistics about the [ServerRedisAttributes] in a format that is simple to parse by computers and easy to read by humans.
+    /// Required for the INFO command. Returns information and statistics about the [ServerRedisAttributes](crate::tcp_protocol::server_redis_attributes::ServerRedisAttributes) in a format that is simple to parse by computers and easy to read by humans.
     ///
     /// # Return value
     /// [String] _encoded_ in [RArray]: as a collection of text lines.
@@ -16,7 +16,7 @@ impl Runnable<ServerRedisAttributes> for InfoSv {
     /// # Error
     /// Return an [ErrorStruct] if:
     ///
-    /// * [ServerRedisAtributes] has poisoned methods.
+    /// * [ServerRedisAttributes](crate::tcp_protocol::server_redis_attributes::ServerRedisAttributes) has poisoned methods.
     fn run(
         &self,
         _buffer: Vec<String>,

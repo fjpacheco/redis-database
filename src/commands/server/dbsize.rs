@@ -1,9 +1,9 @@
 use crate::{
     commands::{check_error_cases_without_elements, Runnable},
+    database::Database,
     messages::redis_messages,
     native_types::RedisType,
     native_types::{ErrorStruct, RInteger},
-    Database,
 };
 pub struct Dbsize;
 use crate::native_types::error_severity::ErrorSeverity;
@@ -12,7 +12,7 @@ impl Runnable<Arc<Mutex<Database>>> for Dbsize {
     /// Return the number of keys in the currently-selected database.
     ///
     /// # Return value
-    /// [String] _encoded_ in [RInteger]: a number of keys in the currently-selected database.
+    /// [String] _encoded_ in [RInteger](crate::native_types::integer::RInteger): a number of keys in the currently-selected database.
     ///
     /// # Error
     /// Return an [ErrorStruct] if:

@@ -38,7 +38,7 @@ impl ClientList {
     /// Return a new instance of the client list.
     ///
     /// # Return value
-    /// [ClientList].
+    /// [ClientList](crate::tcp_protocol::client_list::ClientList).
     ///
     pub fn new(log_channel: Sender<Option<LogMessage>>) -> ClientList {
         ClientList {

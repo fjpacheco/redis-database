@@ -19,7 +19,7 @@ impl Runnable<ServerRedisAttributes> for Shutdown {
     /// # Error
     /// Return an [ErrorStruct] if:
     ///
-    /// * [ServerRedisAtributes] has poisoned methods.
+    /// * [ServerRedisAttributes](crate::tcp_protocol::server_redis_attributes::ServerRedisAttributes): has poisoned methods.
     fn run(
         &self,
         _buffer: Vec<String>,

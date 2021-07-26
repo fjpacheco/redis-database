@@ -1,9 +1,9 @@
 use crate::{
     commands::Runnable,
+    database::Database,
     messages::redis_messages,
     native_types::ErrorStruct,
     native_types::{RSimpleString, RedisType},
-    Database,
 };
 pub struct FlushDb;
 use crate::native_types::error_severity::ErrorSeverity;

@@ -61,15 +61,15 @@ impl ServerRedisAttributes {
         Ok(info)
     }
 
-    /// Returns a clone of [Arc]<[Mutex]<[ClientList]>> to be shared.
+    /// Returns a clone of [Arc]<[Mutex]<[ClientList](crate::tcp_protocol::client_list::ClientList)>> to be shared.
     pub fn get_client_list(&self) -> Arc<Mutex<ClientList>> {
         Arc::clone(&self.shared_clients)
     }
 
     /// Changes the state of the client with a [bool].
     ///
-    /// * If [true]: stop listening to new clients with [Tcplistener].
-    /// * If [false]: keep listening to clients with [Tcplistener].
+    /// * If [true]: stop listening to new clients with [TcpListener](std::net::TcpListener).
+    /// * If [false]: keep listening to clients with [TcpListener](std::net::TcpListener).
     pub fn store(&self, val: bool) {
         self.status_listener.store(val, Ordering::SeqCst);
     }
@@ -239,7 +239,7 @@ impl ServerRedisAttributes {
             .log_filename())
     }
 
-    /// Gets a [String] with the name of the file in charge of the persistence of the [Database].
+    /// Gets a [String] with the name of the file in charge of the persistence of the [Database](crate::database::Database).
     ///
     /// # Error
     /// Return an [ErrorStruct] if:
@@ -260,8 +260,8 @@ impl ServerRedisAttributes {
 
     /// Returns the current state of the listener processor with [bool].
     ///
-    /// * If [true]: stop listening to new clients with [Tcplistener].
-    /// * If [false]: keep listening to clients with [Tcplistener].
+    /// * If [true]: stop listening to new clients with [TcpListener](std::net::TcpListener).
+    /// * If [false]: keep listening to clients with [TcpListener](std::net::TcpListener).
     pub fn status_listener(&self) -> bool {
         self.status_listener
             .load(std::sync::atomic::Ordering::SeqCst)

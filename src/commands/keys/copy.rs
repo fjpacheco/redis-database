@@ -16,8 +16,8 @@ impl Runnable<Arc<Mutex<Database>>> for Copy {
     /// nested items. O(1) for string values.
     ///
     /// # Return value
-    /// * [String] _encoded_ in [RInteger]: 1 if source was copied.
-    /// * [String] _encoded_ in [RInteger]: 0 if source was not copied.
+    /// * [String] _encoded_ in [RInteger](crate::native_types::integer::RInteger): 1 if source was copied.
+    /// * [String] _encoded_ in [RInteger](crate::native_types::integer::RInteger): 0 if source was not copied.
     ///
     /// # Error
     /// Return an [ErrorStruct] if:

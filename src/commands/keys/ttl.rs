@@ -1,12 +1,13 @@
 use super::{no_more_values, pop_value};
+use crate::database::Database;
 use crate::native_types::error_severity::ErrorSeverity;
 use crate::{
     commands::Runnable,
     messages::redis_messages,
     native_types::ErrorStruct,
     native_types::{RInteger, RedisType},
-    Database,
 };
+
 use std::sync::{Arc, Mutex};
 pub struct Ttl;
 
@@ -17,7 +18,7 @@ impl Runnable<Arc<Mutex<Database>>> for Ttl {
     /// The command returns -1 if the key exists but has no associated expire.
     ///
     /// # Return value
-    /// [String] _encoded_ in [RInteger]: TTL in seconds, or a negative value in order to signal an error.
+    /// [String] _encoded_ in [RInteger](crate::native_types::integer::RInteger): TTL in seconds, or a negative value in order to signal an error.
     ///
     /// # Error
     /// Return an [ErrorStruct] if:

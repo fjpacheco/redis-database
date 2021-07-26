@@ -1,5 +1,5 @@
 use crate::commands::get_as_integer;
-use crate::commands::lists::{check_empty_2, check_not_empty};
+use crate::commands::lists::{check_empty, check_not_empty};
 use crate::commands::Runnable;
 use crate::database::Database;
 use crate::database::TypeSaved;
@@ -39,13 +39,13 @@ impl Runnable<Arc<Mutex<Database>>> for Lset {
                 ErrorSeverity::ShutdownServer,
             ))
         })?;
-        check_not_empty(&buffer)?;
+        check_empty(&buffer, "lset")?;
         let key = buffer.remove(0);
-        check_not_empty(&buffer)?;
+        check_empty(&buffer, "lset")?;
         let index = get_as_integer(&buffer.remove(0)).unwrap();
-        check_not_empty(&buffer)?;
+        check_empty(&buffer, "lset")?;
         let replacement = buffer.remove(0);
-        check_empty_2(&buffer)?;
+        check_not_empty(&buffer)?;
 
         if let Some(typesaved) = database.get_mut(&key) {
             match typesaved {
@@ -340,7 +340,7 @@ pub mod test_lset {
         let error = Lset.run(buffer, &mut data);
         assert_eq!(
             error.unwrap_err().print_it(),
-            "ERR wrong number of arguments".to_string()
+            "ERR wrong number of arguments for 'lset' command".to_string()
         );
     }
 
@@ -376,7 +376,7 @@ pub mod test_lset {
         let error = Lset.run(buffer, &mut data);
         assert_eq!(
             error.unwrap_err().print_it(),
-            "ERR wrong number of arguments".to_string()
+            "ERR wrong number of arguments for 'lset' command".to_string()
         );
     }
 
@@ -394,7 +394,7 @@ pub mod test_lset {
         let error = Lset.run(buffer, &mut data);
         assert_eq!(
             error.unwrap_err().print_it(),
-            "ERR wrong number of arguments".to_string()
+            "ERR wrong number of arguments for 'lset' command".to_string()
         );
     }
 }

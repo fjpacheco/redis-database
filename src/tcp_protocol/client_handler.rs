@@ -18,7 +18,7 @@ use super::{client_atributes::client_fields::ClientFields, notifier::Notifier, R
 
 /// Structure in charge of processing what is received in the socket [TcpStream] of the client connected to the server,
 /// with the help of [Notifier] the different tasks requested by the client will
-/// be delegated to the main structures such as [CommandDelegator] and [LogCenter].
+/// be delegated to the main structures such as [CommandDelegator](crate::tcp_protocol::command_delegator::CommandDelegator) and [LogCenter](crate::logs::log_center::LogCenter).
 pub struct ClientHandler {
     stream: TcpStream,
     fields: Arc<Mutex<ClientFields>>,
@@ -84,7 +84,7 @@ impl ClientHandler {
         false
     }
 
-    /// returns [true] in case the client has the [Status::Monitor].
+    /// returns [true] in case the client has the [Status::Monitor](crate::tcp_protocol::client_atributes::status::Status).
     pub fn is_monitor_notificable(&self) -> bool {
         if let Ok(fields_guard) = self.fields.lock() {
             return fields_guard.is_monitor_notificable();
@@ -147,7 +147,7 @@ fn write_socket(
 
 /// Function in charge of delegating the function of reading the 'socket' [TcpStream].
 /// In case the client has been disconnected, its [Status] will be replaced by [Status::Dead]
-/// and the [LogCenter] will be notified of the disconnection.
+/// and the [LogCenter](crate::logs::log_center::LogCenter) will be notified of the disconnection.
 ///
 /// # Error
 /// Return an [ErrorStruct] if:

@@ -1,4 +1,4 @@
-use crate::commands::lists::{check_empty_2, check_not_empty};
+use crate::commands::lists::{check_empty, check_not_empty};
 use crate::commands::{get_as_integer, Runnable};
 use crate::database::Database;
 use crate::database::TypeSaved;
@@ -45,7 +45,7 @@ impl Runnable<Arc<Mutex<Database>>> for Lrange {
                 ErrorSeverity::ShutdownServer,
             ))
         })?;
-        check_not_empty(&buffer)?;
+        check_empty(&buffer, "lrange")?;
         let key = buffer.remove(0);
         if let Some(typesaved) = database.get_mut(&key) {
             match typesaved {
@@ -69,11 +69,11 @@ pub fn find_elements_in_range(
     values_list: &mut VecDeque<String>,
     mut buffer: Vec<String>,
 ) -> Result<String, ErrorStruct> {
-    check_not_empty(&buffer)?;
+    check_empty(&buffer, "lrange")?;
     let mut stop = get_as_integer(&buffer.pop().unwrap()).unwrap();
-    check_not_empty(&buffer)?;
+    check_empty(&buffer, "lrange")?;
     let mut start = get_as_integer(&buffer.pop().unwrap()).unwrap();
-    check_empty_2(&buffer)?;
+    check_not_empty(&buffer)?;
     let len = values_list.len() as isize;
     if start < 0 {
         start += len; // start = 2

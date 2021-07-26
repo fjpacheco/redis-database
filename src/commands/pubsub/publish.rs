@@ -10,7 +10,7 @@ use crate::{messages::redis_messages, native_types::error_severity::ErrorSeverit
 /// a given channel.
 ///
 /// # Return value
-/// [String] _encoded_ in [RInteger]: the number of clients that receive the message.
+/// [String] _encoded_ in [RInteger](crate::native_types::integer::RInteger): the number of clients that receive the message.
 pub struct Publish;
 
 impl Runnable<ServerRedisAttributes> for Publish {

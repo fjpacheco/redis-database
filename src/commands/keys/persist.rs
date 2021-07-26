@@ -1,12 +1,13 @@
 use super::{no_more_values, pop_value};
+use crate::database::Database;
 use crate::native_types::error_severity::ErrorSeverity;
 use crate::{
     commands::Runnable,
     messages::redis_messages,
     native_types::ErrorStruct,
     native_types::{RInteger, RedisType},
-    Database,
 };
+
 use std::sync::{Arc, Mutex};
 pub struct Persist;
 
@@ -16,8 +17,8 @@ impl Runnable<Arc<Mutex<Database>>> for Persist {
     /// associated).
     ///
     /// # Return value
-    /// * [String] _encoded_ in [RInteger]: 1 if the timeout was removed.
-    /// * [String] _encoded_ in [RInteger]: 0 if key does not exist or does
+    /// * [String] _encoded_ in [RInteger](crate::native_types::integer::RInteger): 1 if the timeout was removed.
+    /// * [String] _encoded_ in [RInteger](crate::native_types::integer::RInteger): 0 if key does not exist or does
     /// not have an associated timeout.
     ///
     /// # Error

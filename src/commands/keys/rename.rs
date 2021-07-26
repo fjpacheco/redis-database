@@ -1,6 +1,6 @@
 use crate::native_types::error_severity::ErrorSeverity;
 use crate::{
-    commands::{check_empty_2, check_not_empty, Runnable},
+    commands::{check_empty, check_not_empty, Runnable},
     database::Database,
     messages::redis_messages,
     native_types::{ErrorStruct, RSimpleString, RedisType},
@@ -35,11 +35,11 @@ impl Runnable<Arc<Mutex<Database>>> for Rename {
                 ErrorSeverity::ShutdownServer,
             ))
         })?;
-        check_not_empty(&buffer)?;
+        check_empty(&buffer, "rename")?;
         let new_key = buffer.pop().unwrap();
-        check_not_empty(&buffer)?;
+        check_empty(&buffer, "rename")?;
         let old_key = buffer.pop().unwrap();
-        check_empty_2(&buffer)?;
+        check_not_empty(&buffer)?;
         if let Some(string_list) = database.get(&old_key) {
             let value = string_list.clone();
             database.remove(&old_key);

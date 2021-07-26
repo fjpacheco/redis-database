@@ -15,7 +15,7 @@ impl Runnable<Arc<Mutex<Database>>> for Clean {
     /// repeated.
     ///
     /// # Return value
-    /// * [String] _encoded_ in [RInteger]: number of total keys expired.
+    /// * [String] _encoded_ in [RInteger](crate::native_types::integer::RInteger): number of total keys expired.
     ///
     /// # Error
     /// Return an [ErrorStruct] if:

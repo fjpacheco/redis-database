@@ -1,6 +1,6 @@
 use crate::native_types::error_severity::ErrorSeverity;
 use crate::{
-    commands::{check_empty_2, check_not_empty, Runnable},
+    commands::{check_empty, check_not_empty, Runnable},
     database::Database,
     messages::redis_messages,
     native_types::{ErrorStruct, RInteger, RedisType},
@@ -13,8 +13,8 @@ impl Runnable<Arc<Mutex<Database>>> for Exists {
     /// Returns if key exists.
     ///
     /// # Return value
-    /// * [String] _encoded_ in [RInteger]: 1 if the timeout was set.
-    /// * [String] _encoded_ in [RInteger]: 0 if key does not exist.
+    /// * [String] _encoded_ in [RInteger](crate::native_types::integer::RInteger): 1 if the timeout was set.
+    /// * [String] _encoded_ in [RInteger](crate::native_types::integer::RInteger): 0 if key does not exist.
     ///
     /// # Error
     /// Return an [ErrorStruct] if:
@@ -33,9 +33,9 @@ impl Runnable<Arc<Mutex<Database>>> for Exists {
                 ErrorSeverity::ShutdownServer,
             ))
         })?;
-        check_not_empty(&buffer)?;
+        check_empty(&buffer, "exists")?;
         let key = buffer.pop().unwrap();
-        check_empty_2(&buffer)?;
+        check_not_empty(&buffer)?;
         if database.contains_key(&key) {
             Ok(RInteger::encode(1))
         } else {

@@ -40,7 +40,7 @@ impl CommandDelegator {
     /// Return a new instance of the command delegator.
     ///
     /// # Return value
-    /// [CommandDelegator].
+    /// [CommandDelegator](crate::tcp_protocol::command_delegator::CommandDelegator).
     ///
     /// # Error
     /// Return an [ErrorStruct] if:

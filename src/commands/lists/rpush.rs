@@ -20,7 +20,7 @@ impl Runnable<Arc<Mutex<Database>>> for RPush {
     /// as first element, b as second element and c as third element.
     ///
     /// # Return value
-    /// [String] _encoded_ in [RInteger]: the length of the list after the push operation.
+    /// [String] _encoded_ in [RInteger](crate::native_types::integer::RInteger): the length of the list after the push operation.
     ///
     /// # Error
     /// Return an [ErrorStruct] if:

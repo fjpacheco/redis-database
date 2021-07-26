@@ -17,28 +17,6 @@ pub mod pubsub;
 pub mod server;
 pub mod sets;
 pub mod strings;
-pub use keys::{clean::Clean, expire::Expire};
-pub use pubsub::{
-    publish::Publish, subscribe_cf::SubscribeCf, subscribe_cl::SubscribeCl,
-    unsubscribe_cf::UnsubscribeCf, unsubscribe_cl::UnsubscribeCl,
-};
-pub use server::{config::Config, notify_monitors::NotifyMonitors, shutdown::Shutdown};
-pub use strings::{
-    append::Append, decrby::Decrby, get::Get, getdel::Getdel, getset::Getset, incrby::Incrby,
-    mget::Mget, mset::Mset, set::Set, strlen::Strlen,
-};
-
-fn check_empty(buffer: &[String], name: &str) -> Result<(), ErrorStruct> {
-    if buffer.is_empty() {
-        let message_error = redis_messages::arguments_invalid_to(name);
-        return Err(ErrorStruct::new(
-            message_error.get_prefix(),
-            message_error.get_message(),
-        ));
-    }
-
-    Ok(())
-}
 
 #[macro_export]
 macro_rules! vec_strings {
@@ -55,7 +33,7 @@ macro_rules! err_wrongtype {
     };
 }
 
-/// A trait for execute commands into Database.
+/// A trait for execute commands into elements T.
 pub trait Runnable<T> {
     /// # Example
     ///
@@ -104,18 +82,19 @@ pub fn get_as_integer(value: &str) -> Result<isize, ErrorStruct> {
 
 // Check number of arguments
 
-pub fn check_not_empty(buffer: &[String]) -> Result<(), ErrorStruct> {
+fn check_empty(buffer: &[String], name: &str) -> Result<(), ErrorStruct> {
     if buffer.is_empty() {
-        Err(ErrorStruct::new(
-            String::from("ERR"),
-            String::from("wrong number of arguments"),
-        ))
-    } else {
-        Ok(())
+        let message_error = redis_messages::arguments_invalid_to(name);
+        return Err(ErrorStruct::new(
+            message_error.get_prefix(),
+            message_error.get_message(),
+        ));
     }
+
+    Ok(())
 }
 
-pub fn check_empty_2(buffer: &[String]) -> Result<(), ErrorStruct> {
+pub fn check_not_empty(buffer: &[String]) -> Result<(), ErrorStruct> {
     if !buffer.is_empty() {
         Err(ErrorStruct::new(
             String::from("ERR"),

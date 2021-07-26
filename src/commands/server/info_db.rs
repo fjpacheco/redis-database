@@ -1,9 +1,9 @@
 use crate::{
     commands::Runnable,
+    database::Database,
     messages::redis_messages,
     native_types::ErrorStruct,
     native_types::{RArray, RedisType},
-    Database,
 };
 pub struct InfoDb;
 use crate::native_types::error_severity::ErrorSeverity;
@@ -17,7 +17,7 @@ impl Runnable<Arc<Mutex<Database>>> for InfoDb {
     /// # Error
     /// Return an [ErrorStruct] if:
     ///
-    /// * [ServerRedisAtributes] has poisoned methods.
+    /// * [ServerRedisAttributes](crate::tcp_protocol::server_redis_attributes::ServerRedisAttributes) has poisoned methods.
     fn run(
         &self,
         _buffer: Vec<String>,

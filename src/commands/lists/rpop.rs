@@ -15,7 +15,7 @@ impl Runnable<Arc<Mutex<Database>>> for RPop {
     /// count elements, depending on the list's length.
     ///
     /// # Return value
-    /// [String] _encoded_ in [RInteger]: When called without the count argument:
+    /// [String] _encoded_ in [RInteger](crate::native_types::integer::RInteger): When called without the count argument:
     /// Bulk string reply: the value of the last element, or nil when key does not exist.
     /// When called with the count argument:
     /// Array reply: list of popped elements, or nil when key does not exist.
@@ -128,7 +128,7 @@ pub mod test_rpop {
             Ok(_encode) => {}
             Err(error) => assert_eq!(
                 error.print_it(),
-                "ERR wrong number of arguments".to_string()
+                "ERR wrong number of arguments for 'lpop or rpop' command".to_string()
             ),
         }
     }

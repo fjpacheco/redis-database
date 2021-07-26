@@ -1,6 +1,6 @@
 use crate::native_types::error_severity::ErrorSeverity;
 use crate::{
-    commands::{check_empty_2, check_not_empty, Runnable},
+    commands::{check_empty, check_not_empty, Runnable},
     database::Database,
     messages::redis_messages,
     native_types::{ErrorStruct, RInteger, RedisType},
@@ -18,7 +18,7 @@ impl Runnable<Arc<Mutex<Database>>> for Del {
     /// key that holds a string value is O(1).
     ///
     /// # Return value
-    /// * [String] _encoded_ in [RInteger]: The number of keys that were removed.
+    /// * [String] _encoded_ in [RInteger](crate::native_types::integer::RInteger): The number of keys that were removed.
     ///
     /// # Error
     /// Return an [ErrorStruct] if:
@@ -37,9 +37,9 @@ impl Runnable<Arc<Mutex<Database>>> for Del {
                 ErrorSeverity::ShutdownServer,
             ))
         })?;
-        check_not_empty(&buffer)?;
+        check_empty(&buffer, "del")?;
         let key = buffer.pop().unwrap();
-        check_empty_2(&buffer)?;
+        check_not_empty(&buffer)?;
         if database.remove(&key).is_some() {
             Ok(RInteger::encode(1))
         } else {

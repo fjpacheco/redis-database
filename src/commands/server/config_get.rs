@@ -22,7 +22,7 @@ impl Runnable<ServerRedisAttributes> for ConfigGet {
     /// Return an [ErrorStruct] if:
     ///
     /// * Buffer [Vec]<[String]> is received empty.
-    /// * [ServerRedisAtributes] has poisoned methods.
+    /// * [ServerRedisAttributes](crate::tcp_protocol::server_redis_attributes::ServerRedisAttributes) has poisoned methods.
     /// * Unknown subcommand for CONFIG GET.
     fn run(
         &self,

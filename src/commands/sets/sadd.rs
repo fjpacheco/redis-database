@@ -16,7 +16,7 @@ impl Runnable<Arc<Mutex<Database>>> for Sadd {
     /// An error is returned when the value stored at key is not a set
     ///
     /// # Return value
-    /// [String] _encoded_ in [RInteger]: the number of elements that were added to the set, not including all the elements already present in the set.
+    /// [String] _encoded_ in [RInteger](crate::native_types::integer::RInteger): the number of elements that were added to the set, not including all the elements already present in the set.
     ///
     /// # Error
     /// Return an [ErrorStruct] if:

@@ -1,13 +1,11 @@
+use super::execute_value_modification;
+use crate::native_types::error_severity::ErrorSeverity;
 use crate::{
     commands::Runnable, database::Database, messages::redis_messages,
     native_types::error::ErrorStruct,
 };
-
-use super::execute_value_modification;
-use crate::native_types::error_severity::ErrorSeverity;
 use std::sync::{Arc, Mutex};
 pub struct Incrby;
-
 impl Runnable<Arc<Mutex<Database>>> for Incrby {
     /// Increments the number stored at **key** by increment. If the **key** does not exist, it is set
     /// to 0 before performing the operation.
@@ -15,7 +13,7 @@ impl Runnable<Arc<Mutex<Database>>> for Incrby {
     /// This operation is limited to 64 bit signed integers.
     ///
     /// # Return value
-    /// [String] _encoded_ in [RInteger]: the value of **key** after the increment.
+    /// [String] _encoded_ in [RInteger](crate::native_types::integer::RInteger)(crate::native_types::integer::RInteger): the value of **key** after the increment.
     ///
     /// # Error
     /// Return an [ErrorStruct] if:

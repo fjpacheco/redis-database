@@ -17,7 +17,7 @@ impl Runnable<ServerRedisAttributes> for ConfigSetVerbose {
     /// Return an [ErrorStruct] if:
     ///
     /// * Buffer [Vec]<[String]> is received empty.
-    /// * [ServerRedisAtributes] has poisoned methods.
+    /// * [ServerRedisAttributes](crate::tcp_protocol::server_redis_attributes::ServerRedisAttributes) has poisoned methods.
     /// * Invalid verbose level received.
     fn run(
         &self,

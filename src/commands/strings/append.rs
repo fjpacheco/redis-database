@@ -14,7 +14,7 @@ impl Runnable<Arc<Mutex<Database>>> for Append {
     /// If key does not exist it is created and set as an empty string, so APPEND will be similar to SET in this special case.
     ///
     /// # Return value
-    /// [String] _encoded_ in [RInteger]: the length of the string after the append operation.
+    /// [String] _encoded_ in [RInteger](crate::native_types::integer::RInteger): the length of the string after the append operation.
     ///
     /// # Error
     /// Return an [ErrorStruct] if:

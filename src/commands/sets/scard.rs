@@ -13,7 +13,7 @@ impl Runnable<Arc<Mutex<Database>>> for Scard {
     /// Returns the set cardinality (number of elements) of the set stored at **key**.
     ///
     /// # Return value
-    /// [String] _encoded_ in [RInteger]: the cardinality (number of elements) of the set, or **0** if **key** does not exist.
+    /// [String] _encoded_ in [RInteger](crate::native_types::integer::RInteger): the cardinality (number of elements) of the set, or **0** if **key** does not exist.
     ///
     /// # Error
     /// Return an [ErrorStruct] if:

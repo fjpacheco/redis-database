@@ -14,7 +14,7 @@ impl Runnable<Arc<Mutex<Database>>> for RPushx {
     /// key does not yet exist.
     ///
     /// # Return value
-    /// [String] _encoded_ in [RInteger]: the length of the list after the push operation.
+    /// [String] _encoded_ in [RInteger](crate::native_types::integer::RInteger): the length of the list after the push operation.
     ///
     /// # Error
     /// Return an [ErrorStruct] if:

@@ -14,7 +14,7 @@ impl Runnable<Arc<Mutex<Database>>> for Strlen {
     /// Returns the length of the string value stored at **key**.
     ///
     /// # Return value
-    /// [String] _encoded_ in [RInteger]:  the length of the string at key, or 0 when key does not exist.
+    /// [String] _encoded_ in [RInteger](crate::native_types::integer::RInteger):  the length of the string at key, or 0 when key does not exist.
     ///
     /// # Error
     /// Return an [ErrorStruct] if:

@@ -1,6 +1,6 @@
 use crate::native_types::error_severity::ErrorSeverity;
 use crate::{
-    commands::{check_empty_2, check_not_empty, Runnable},
+    commands::{check_empty, check_not_empty, Runnable},
     database::{Database, TypeSaved},
     native_types::{ErrorStruct, RSimpleString, RedisType},
 };
@@ -32,9 +32,9 @@ impl Runnable<Arc<Mutex<Database>>> for Type {
                 ErrorSeverity::ShutdownServer,
             ))
         })?;
-        check_not_empty(&buffer)?;
+        check_empty(&buffer, "type")?;
         let key = buffer.pop().unwrap();
-        check_empty_2(&buffer)?;
+        check_not_empty(&buffer)?;
         if let Some(typesaved) = database.get(&key) {
             match typesaved {
                 TypeSaved::String(_) => Ok(RSimpleString::encode("string".to_string())),

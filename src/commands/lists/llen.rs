@@ -1,6 +1,6 @@
 use crate::native_types::error_severity::ErrorSeverity;
 use crate::{
-    commands::lists::{check_empty_2, check_not_empty},
+    commands::lists::{check_empty, check_not_empty},
     commands::Runnable,
     database::{Database, TypeSaved},
     messages::redis_messages,
@@ -14,7 +14,7 @@ impl Runnable<Arc<Mutex<Database>>> for Llen {
     /// empty list and 0 is returned. An error is returned when the value stored at key is not a list.
     ///
     /// # Return value
-    /// [String] _encoded_ in [RInteger]: the length of the list at key.
+    /// [String] _encoded_ in [RInteger](crate::native_types::integer::RInteger): the length of the list at key.
     ///
     /// # Error
     /// Return an [ErrorStruct] if:
@@ -33,9 +33,9 @@ impl Runnable<Arc<Mutex<Database>>> for Llen {
                 ErrorSeverity::ShutdownServer,
             ))
         })?;
-        check_not_empty(&buffer)?;
+        check_empty(&buffer, "llen")?;
         let key = buffer.remove(0);
-        check_empty_2(&buffer)?;
+        check_not_empty(&buffer)?;
         if let Some(typesaved) = database.get_mut(&key) {
             match typesaved {
                 TypeSaved::List(list_of_values) => {

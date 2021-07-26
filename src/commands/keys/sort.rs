@@ -1,6 +1,7 @@
 use std::collections::{HashSet, VecDeque};
 
 use super::{no_more_values, pop_value};
+use crate::database::Database;
 use crate::native_types::error_severity::ErrorSeverity;
 use crate::{
     commands::Runnable,
@@ -9,8 +10,8 @@ use crate::{
     native_types::ErrorStruct,
     native_types::RArray,
     native_types::{RBulkString, RedisType},
-    Database,
 };
+
 use std::sync::{Arc, Mutex};
 pub struct Sort;
 
