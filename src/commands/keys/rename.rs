@@ -8,13 +8,22 @@ use crate::{
 use std::sync::{Arc, Mutex};
 pub struct Rename;
 
-/// Renames key to newkey. It returns an error when key does not exist.
-/// If newkey already exists it is overwritten, when this happens RENAME
-/// executes an implicit DEL operation, so if the deleted key contains a
-/// very big value it may cause high latency even if RENAME itself is
-/// usually a constant-time operation.
-
 impl Runnable<Arc<Mutex<Database>>> for Rename {
+    /// Renames key to newkey. It returns an error when key does not exist.
+    /// If newkey already exists it is overwritten, when this happens RENAME
+    /// executes an implicit DEL operation, so if the deleted key contains a
+    /// very big value it may cause high latency even if RENAME itself is
+    /// usually a constant-time operation.
+    ///
+    /// # Return value
+    /// * [String] _encoded_ in [RSimpleString]: "OK"
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * Buffer [Vec]<[String]> is received empty, or received with an amount
+    /// of elements different than 2.
+    /// * [Database] received in <[Arc]<[Mutex]>> is poisoned.
     fn run(
         &self,
         mut buffer: Vec<String>,

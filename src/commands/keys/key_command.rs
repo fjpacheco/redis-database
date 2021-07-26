@@ -10,6 +10,20 @@ use std::sync::{Arc, Mutex};
 pub struct Keys;
 
 impl Runnable<Arc<Mutex<Database>>> for Keys {
+    /// Returns all keys matching pattern.
+    /// Warning: consider KEYS as a command that should only be used in production
+    /// This command is intended for debugging and special operations, such as
+    /// changing your keyspace layout. Don't use KEYS in your regular application
+    /// code.
+    ///
+    /// # Return value
+    /// * [String] _encoded_ in [RArray]: list of keys matching pattern.
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * Buffer [Vec]<[String]> is received empty, or received with more than 1 element.
+    /// * [Database] received in <[Arc]<[Mutex]>> is poisoned.
     fn run(
         &self,
         mut buffer: Vec<String>,

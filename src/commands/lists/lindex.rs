@@ -15,6 +15,21 @@ use std::sync::{Arc, Mutex};
 pub struct LIndex;
 
 impl Runnable<Arc<Mutex<Database>>> for LIndex {
+    /// Returns the element at index index in the list stored at key. The index is zero-based,
+    /// so 0 means the first element, 1 the second element and so on. Negative indices can be
+    /// used to designate elements starting at the tail of the list. Here, -1 means the last element, -2 means the penultimate and so forth.
+    /// Time complexity: O(N) where N is the number of elements to traverse to get to the element at index. This makes asking for the first or the last element of the list O(1).
+    /// When the value at key is not a list, an error is returned.
+    ///
+    /// # Return value
+    /// [String] _encoded_ in [RInteger]: the requested element, or nil when index is out of range.
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * The value stored at **key** is not a list.
+    /// * Buffer [Vec]<[String]> is received empty, or received with less or more than 2 elements.
+    /// * [Database] received in <[Arc]<[Mutex]>> is poisoned.
     fn run(
         &self,
         mut buffer: Vec<String>,
@@ -46,6 +61,8 @@ impl Runnable<Arc<Mutex<Database>>> for LIndex {
     }
 }
 
+// Obtains an integer (isize) from a String received at a vector and returns it.
+// If the String was not a parsable integer, returns error.
 fn parse_index(buffer: &mut Vec<String>) -> Result<isize, ErrorStruct> {
     if let Some(value) = buffer.pop() {
         if let Ok(index) = value.parse::<isize>() {
@@ -64,11 +81,13 @@ fn parse_index(buffer: &mut Vec<String>) -> Result<isize, ErrorStruct> {
     }
 }
 
+// Looks for the element at index in the VecDeque list. If there is an element at the index
+// it returns it encoded as Bulk String, if there's not, it returns "(nil)" also encoded as
+// Bulk String. This function accepts negative index values.
 fn get_from_index(mut index: isize, list: &VecDeque<String>) -> String {
     if index < 0 {
         index += list.len() as isize;
     }
-
     if let Some(string) = list.get(index as usize) {
         RBulkString::encode(String::from(string))
     } else {

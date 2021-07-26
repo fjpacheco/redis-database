@@ -9,6 +9,23 @@ use std::sync::{Arc, Mutex};
 pub struct RPop;
 
 impl Runnable<Arc<Mutex<Database>>> for RPop {
+    /// Removes and returns the last elements of the list stored at key.
+    /// By default, the command pops a single element from the end of the list. When
+    /// provided with the optional count argument, the reply will consist of up to
+    /// count elements, depending on the list's length.
+    ///
+    /// # Return value
+    /// [String] _encoded_ in [RInteger]: When called without the count argument:
+    /// Bulk string reply: the value of the last element, or nil when key does not exist.
+    /// When called with the count argument:
+    /// Array reply: list of popped elements, or nil when key does not exist.
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * The value stored at **key** is not a list.
+    /// * Buffer [Vec]<[String]> is received empty, or received with more than 2 elements.
+    /// * [Database] received in <[Arc]<[Mutex]>> is poisoned.
     fn run(
         &self,
         buffer: Vec<String>,
