@@ -376,6 +376,8 @@ fn delegate_command(
         match response {
             Ok(good_string) => {
                 send_response(good_string, response_sender)?;
+                notifier
+                    .notify_successful_shipment(&client_fields, command_received_initial.clone())?;
             }
             Err(error) => {
                 if let Some(severity) = error.severity() {
@@ -393,7 +395,6 @@ fn delegate_command(
             }
         }
     }
-    notifier.notify_successful_shipment(&client_fields, command_received_initial)?;
     Ok(())
 }
 
