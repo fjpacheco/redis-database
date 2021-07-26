@@ -2,6 +2,7 @@ use std::io::{BufRead, Lines};
 
 use super::{error::ErrorStruct, redis_type::RedisType};
 
+/// Redis native type: Simple String
 pub struct RSimpleString;
 
 impl RedisType<String> for RSimpleString {
@@ -30,14 +31,14 @@ pub mod test_simple_string {
     use super::*;
     use std::io::BufReader;
     #[test]
-    fn test01_simple_string_encoding() {
+    fn test_01_simple_string_encoding() {
         let simple_string = String::from("word");
         let encoded = RSimpleString::encode(simple_string);
         assert_eq!(encoded, "+word\r\n".to_string());
     }
 
     #[test]
-    fn test02_simple_string_decoding() {
+    fn test_02_simple_string_decoding() {
         let encoded = "+word\r\n".to_string();
         let mut bufreader = BufReader::new(encoded.as_bytes());
         let mut first_lecture = String::new();
@@ -50,7 +51,7 @@ pub mod test_simple_string {
     }
 
     /*#[test]
-    fn test03_bad_decoding_of_simple_string_throws_a_parsing_error() {
+    fn test_03_bad_decoding_of_simple_string_throws_a_parsing_error() {
         let encoded = "Good Morning".to_string();
         let should_be_error = RSimpleString::decode(&mut encoded.as_bytes());
         match should_be_error {

@@ -1,23 +1,33 @@
 use std::io::{BufRead, Lines};
 
+use super::error_severity::ErrorSeverity;
 use super::redis_type::RedisType;
 use crate::messages::MessageRedis;
 
 #[derive(Debug, Clone)]
+/// This structure encapsulate information
+/// about an error that could be thrown from
+/// any execution.
 pub struct ErrorStruct {
     prefix: String,
     message: String,
+    severity: ErrorSeverity,
 }
 
 impl ErrorStruct {
     pub fn new(prefix: String, message: String) -> Self {
-        ErrorStruct { prefix, message }
+        ErrorStruct {
+            prefix,
+            message,
+            severity: ErrorSeverity::Comunicate,
+        }
     }
 
     pub fn from(message: MessageRedis) -> Self {
         ErrorStruct {
             prefix: message.get_prefix(),
             message: message.get_message(),
+            severity: message.get_severity(),
         }
     }
     #[allow(dead_code)]
@@ -28,11 +38,21 @@ impl ErrorStruct {
         printed
     }
 
+    pub fn prefix(&self) -> Option<&str> {
+        Some(&self.prefix)
+    }
+
+    pub fn severity(&self) -> Option<&ErrorSeverity> {
+        Some(&self.severity)
+    }
+
     // Para tests... investigar si existe una macro así: #[metodo_para_test]
     pub fn get_encoded_message_complete(&self) -> String {
         RError::encode(self.clone())
     }
 }
+
+/// Redis native type: Error
 pub struct RError;
 
 impl RedisType<ErrorStruct> for RError {
@@ -59,6 +79,7 @@ impl RedisType<ErrorStruct> for RError {
             Ok(ErrorStruct {
                 prefix: first_lecture,
                 message: err_message,
+                severity: ErrorSeverity::Comunicate,
             })
         } else {
             Err(ErrorStruct::new(
@@ -75,7 +96,7 @@ mod test_error {
     use super::*;
     use std::io::BufReader;
     #[test]
-    fn test05_encoding_and_decoding_of_an_error() {
+    fn test_05_encoding_and_decoding_of_an_error() {
         let error = ErrorStruct::new("ERR".to_string(), "esto es un error generico".to_string());
         let encoded = RError::encode(error);
         assert_eq!(encoded, "-ERR esto es un error generico\r\n".to_string());

@@ -1,47 +1,40 @@
-/*use crate::native_types::RBulkString;
-use crate::{
-    commands::Runnable,
-    native_types::{error::ErrorStruct, redis_type::RedisType},
-    tcp_protocol::client_list::ClientList,
-};
-
-
-use std::sync::Arc;
-use std::sync::Mutex;
-
-pub struct SubscribeCL;
-
-impl Runnable<Arc<Mutex<ClientList>>> for SubscribeCL {
-    fn run(
-        &self,
-        mut buffer: Vec<String>,
-        clients: &mut Arc<Mutex<ClientList>>,
-    ) -> Result<String, ErrorStruct> {
-
-        clients.lock().unwrap().increase_channels(buffer);
-        Ok(RBulkString::encode("".to_string()))
-
-    }
-}*/
-
+use crate::messages::redis_messages;
 use crate::{
     commands::Runnable,
     native_types::{ErrorStruct, RBulkString, RedisType},
-    tcp_protocol::server::ServerRedisAtributes,
+};
+use crate::{
+    native_types::error_severity::ErrorSeverity,
+    tcp_protocol::server_redis_attributes::ServerRedisAttributes,
 };
 
-pub struct SubscribeCL;
+/// Add the given channels to the channels register.
+///
+/// # Return value
+/// [String] encoding a [isize]: the number of channels that have
+/// been added.
+///
+/// # Error
+/// Return an [ErrorStruct] if:
+///
+/// * The list's lock is poisoned.
+pub struct SubscribeCl;
 
-impl Runnable<ServerRedisAtributes> for SubscribeCL {
+impl Runnable<ServerRedisAttributes> for SubscribeCl {
     fn run(
         &self,
         buffer: Vec<String>,
-        server: &mut ServerRedisAtributes,
+        server: &mut ServerRedisAttributes,
     ) -> Result<String, ErrorStruct> {
         server
-            .shared_clients
+            .get_client_list()
             .lock()
-            .unwrap()
+            .map_err(|_| {
+                ErrorStruct::from(redis_messages::poisoned_lock(
+                    "client list",
+                    ErrorSeverity::ShutdownServer,
+                ))
+            })?
             .increase_channels(buffer);
         Ok(RBulkString::encode("".to_string()))
     }

@@ -6,6 +6,7 @@ use super::{
     redis_type::{verify_parsable_array_size, RedisType},
 };
 
+/// Redis native type: Array
 pub struct RArray;
 
 impl RedisType<Vec<String>> for RArray {
@@ -41,14 +42,14 @@ mod test_array {
     use super::*;
     use std::io::BufReader;
     #[test]
-    fn test01_array_encoding() {
+    fn test_01_array_encoding() {
         let vec: Vec<String> = vec!["foo".to_string(), "bar".to_string()];
         let encoded = RArray::encode(vec);
         assert_eq!(encoded, "*2\r\n$3\r\nfoo\r\n$3\r\nbar\r\n".to_string());
     }
 
     #[test]
-    fn test02_array_decoding() {
+    fn test_02_array_decoding() {
         let vec1: Vec<String> = vec!["fooo".to_string(), "bar".to_string()];
         let vec2 = vec1.clone();
         let encoded: String = RArray::encode(vec1);
@@ -65,14 +66,14 @@ mod test_array {
     }
 
     #[test]
-    fn test03_empty_array_encoding() {
+    fn test_03_empty_array_encoding() {
         let vec: Vec<String> = vec![];
         let encoded = RArray::encode(vec);
         assert_eq!(encoded, "*0\r\n".to_string());
     }
 
     #[test]
-    fn test04_empty_array_decoding() {
+    fn test_04_empty_array_decoding() {
         let vec1: Vec<String> = vec![];
         let encoded: String = RArray::encode(vec1);
         let mut bufreader = BufReader::new(encoded.as_bytes());
@@ -89,7 +90,7 @@ mod test_array {
     }
 
     #[test]
-    fn test05_set_key_value_simulation() {
+    fn test_05_set_key_value_simulation() {
         let input: String = "SET ping pong".to_string();
         let v: Vec<String> = input.split(' ').map(str::to_string).collect();
         let encoded: String = RArray::encode(v);

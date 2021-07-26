@@ -1,45 +1,29 @@
-/*use crate::native_types::RBulkString;
-use crate::{
-    commands::Runnable,
-    native_types::{error::ErrorStruct, redis_type::RedisType},
-    tcp_protocol::client_list::ClientList,
-};
-
-
-use std::sync::Arc;
-use std::sync::Mutex;
-
-pub struct UnsubscribeCL;
-
-impl Runnable<Arc<Mutex<ClientList>>> for UnsubscribeCL {
-    fn run(
-        &self,
-        mut buffer: Vec<String>,
-        clients: &mut Arc<Mutex<ClientList>>,
-    ) -> Result<String, ErrorStruct> {
-
-        clients.lock().unwrap().decrease_channels(buffer);
-        Ok(RBulkString::encode("".to_string()))
-
-    }
-}*/
-
+use crate::tcp_protocol::server_redis_attributes::ServerRedisAttributes;
 use crate::{
     commands::Runnable,
     native_types::{ErrorStruct, RBulkString, RedisType},
-    tcp_protocol::server::ServerRedisAtributes,
 };
 
-pub struct UnsubscribeCL;
+/// Remove the given channels to the channels register.
+///
+/// # Return value
+/// [String] encoding a [isize]: the number of channels that have
+/// been removed.
+///
+/// # Error
+/// Return an [ErrorStruct] if:
+///
+/// * The list's lock is poisoned.
+pub struct UnsubscribeCl;
 
-impl Runnable<ServerRedisAtributes> for UnsubscribeCL {
+impl Runnable<ServerRedisAttributes> for UnsubscribeCl {
     fn run(
         &self,
         buffer: Vec<String>,
-        server: &mut ServerRedisAtributes,
+        server: &mut ServerRedisAttributes,
     ) -> Result<String, ErrorStruct> {
         server
-            .shared_clients
+            .get_client_list()
             .lock()
             .unwrap()
             .decrease_channels(buffer);

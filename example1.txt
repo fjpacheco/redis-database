@@ -1,2 +1,0 @@
-$28
-This is a line to be written

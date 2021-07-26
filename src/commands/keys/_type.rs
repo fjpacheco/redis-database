@@ -1,16 +1,40 @@
+use crate::native_types::error_severity::ErrorSeverity;
 use crate::{
-    commands::{check_empty_2, check_not_empty, Runnable},
+    commands::{check_empty, check_not_empty, Runnable},
     database::{Database, TypeSaved},
     native_types::{ErrorStruct, RSimpleString, RedisType},
 };
+use std::sync::{Arc, Mutex};
 
 pub struct Type;
 
-impl Runnable<Database> for Type {
-    fn run(&self, mut buffer: Vec<String>, database: &mut Database) -> Result<String, ErrorStruct> {
-        check_not_empty(&buffer)?;
+impl Runnable<Arc<Mutex<Database>>> for Type {
+    /// Returns the string representation of the type of the value stored at key.
+    /// The different types that can be returned are: string, list and set.
+    ///
+    /// # Return value
+    /// * [String] _encoded_ in [RSimpleString]: type of key or none when key does not exist.
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * Buffer [Vec]<[String]> is received empty, or received with a number of elements
+    /// different than 1.
+    /// * [Database] received in <[Arc]<[Mutex]>> is poisoned.
+    fn run(
+        &self,
+        mut buffer: Vec<String>,
+        database: &mut Arc<Mutex<Database>>,
+    ) -> Result<String, ErrorStruct> {
+        let mut database = database.lock().map_err(|_| {
+            ErrorStruct::from(crate::messages::redis_messages::poisoned_lock(
+                "redis config",
+                ErrorSeverity::ShutdownServer,
+            ))
+        })?;
+        check_empty(&buffer, "type")?;
         let key = buffer.pop().unwrap();
-        check_empty_2(&buffer)?;
+        check_not_empty(&buffer)?;
         if let Some(typesaved) = database.get(&key) {
             match typesaved {
                 TypeSaved::String(_) => Ok(RSimpleString::encode("string".to_string())),
@@ -30,21 +54,29 @@ mod test_type {
 
     use super::*;
     use crate::{
-        commands::sets::sadd::Sadd, database::TypeSaved, native_types::RSimpleString, vec_strings,
+        commands::{create_notifier, sets::sadd::Sadd},
+        database::TypeSaved,
+        native_types::RSimpleString,
+        vec_strings,
     };
 
     #[test]
-    fn test01_type_of_string_key() {
-        let mut database = Database::new();
-        database.insert("key".to_string(), TypeSaved::String("value".to_string()));
+    fn test_01_type_of_string_key() {
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database = Arc::new(Mutex::new(Database::new(notifier)));
+        database
+            .lock()
+            .unwrap()
+            .insert("key".to_string(), TypeSaved::String("value".to_string()));
         let buffer = vec_strings!["key"];
         let result = Type.run(buffer, &mut database);
         assert_eq!(RSimpleString::encode("string".to_string()), result.unwrap());
     }
 
     #[test]
-    fn test02_type_of_set_key() {
-        let mut database = Database::new();
+    fn test_02_type_of_set_key() {
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database = Arc::new(Mutex::new(Database::new(notifier)));
         let buffer1 = vec_strings!["key", "member1", "member2"];
         let _result1 = Sadd.run(buffer1, &mut database);
 
@@ -54,15 +86,19 @@ mod test_type {
     }
 
     #[test]
-    fn test03_type_of_list_key() {
-        let mut database = Database::new();
+    fn test_03_type_of_list_key() {
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database = Arc::new(Mutex::new(Database::new(notifier)));
 
         let mut new_list = VecDeque::new();
         new_list.push_back("value1".to_string());
         new_list.push_back("value2".to_string());
         new_list.push_back("value3".to_string());
 
-        database.insert("key".to_string(), TypeSaved::List(new_list));
+        database
+            .lock()
+            .unwrap()
+            .insert("key".to_string(), TypeSaved::List(new_list));
 
         let buffer = vec_strings!["key"];
         let result = Type.run(buffer, &mut database);
@@ -70,9 +106,13 @@ mod test_type {
     }
 
     #[test]
-    fn test01_type_of_non_existent_string_key() {
-        let mut database = Database::new();
-        database.insert("key1".to_string(), TypeSaved::String("value".to_string()));
+    fn test_01_type_of_non_existent_string_key() {
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database = Arc::new(Mutex::new(Database::new(notifier)));
+        database
+            .lock()
+            .unwrap()
+            .insert("key1".to_string(), TypeSaved::String("value".to_string()));
         let buffer = vec_strings!["key2"];
         let result = Type.run(buffer, &mut database);
         assert_eq!(RSimpleString::encode("none".to_string()), result.unwrap());

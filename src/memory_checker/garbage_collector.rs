@@ -1,146 +1,240 @@
-use crate::memory_checker::RawCommand;
-use crate::native_types::redis_type::RedisType;
+use crate::{
+    joinable::Joinable,
+    messages::redis_messages,
+    native_types::error_severity::ErrorSeverity,
+    tcp_protocol::{
+        client_atributes::client_fields::ClientFields, close_thread, notifier::Notifier, RawCommand,
+    },
+};
+
 use crate::native_types::ErrorStruct;
-use crate::native_types::RError;
-use std::io::BufRead;
-use std::io::BufReader;
-use std::sync::atomic::{AtomicBool, Ordering};
+
+use crate::tcp_protocol::Response;
+
 use std::sync::mpsc;
 use std::sync::Arc;
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Mutex,
+};
 use std::thread::{self, JoinHandle};
 use std::time::Duration;
 
 pub struct GarbageCollector {
-    handle: Option<JoinHandle<()>>,
+    handle: Option<JoinHandle<Result<(), ErrorStruct>>>,
     still_working: Arc<AtomicBool>,
+    notifier: Notifier,
 }
 
+/// Garbage Collector cleans periodically some keys of
+/// the database which are expired. The period and the
+/// number of keys that would be checked are customizable.
+
 impl GarbageCollector {
-    pub fn start(
-        snd_to_dat_del: mpsc::Sender<RawCommand>,
+    /// Creates the structure
+    pub fn new(
+        snd_to_dat_del: mpsc::Sender<Option<RawCommand>>,
         period: u64,
         keys_touched: u64,
+        notifier: Notifier,
     ) -> GarbageCollector {
-        let (snd_rsp, rcv_rsp): (mpsc::Sender<String>, mpsc::Receiver<String>) = mpsc::channel();
         let still_working = Arc::new(AtomicBool::new(true));
         let still_working_clone = Arc::clone(&still_working);
 
         let garbage_collector_handle = std::thread::spawn(move || {
-            loop {
-                thread::sleep(Duration::new(period, 0));
-
-                if !still_working_clone.load(Ordering::Relaxed) {
-                    //log
-                    println!("Shutting down Garbage Collector");
-                    break;
-                }
-
-                let command = vec!["clean".to_string(), keys_touched.to_string()];
-                snd_to_dat_del.send((command, snd_rsp.clone())).unwrap();
-
-                match rcv_rsp.recv() {
-                    Ok(response) => match is_err(response) {
-                        Ok(()) => { /*log*/ }
-                        Err(_) => {
-                            //log
-                            break;
-                        }
-                    },
-                    Err(_) => {
-                        //log
-                        break;
-                    }
-                }
-            }
+            GarbageCollector::init(snd_to_dat_del, period, keys_touched, still_working_clone)
         });
 
         GarbageCollector {
             handle: Some(garbage_collector_handle),
             still_working,
+            notifier,
         }
     }
 
+    /// Initialize the loop that periodically send the
+    /// command CLEAN.
+    fn init(
+        snd_to_dat_del: mpsc::Sender<Option<RawCommand>>,
+        period: u64,
+        keys_touched: u64,
+        still_working_clone: Arc<AtomicBool>,
+    ) -> Result<(), ErrorStruct> {
+        let (snd_rsp, rcv_rsp): (mpsc::Sender<Response>, mpsc::Receiver<Response>) =
+            mpsc::channel();
+        loop {
+            thread::sleep(Duration::new(period, 0));
+
+            if !still_working_clone.load(Ordering::Relaxed) {
+                return Ok(());
+            }
+
+            let command = vec!["clean".to_string(), keys_touched.to_string()];
+            snd_to_dat_del
+                .send(Some((
+                    command,
+                    snd_rsp.clone(),
+                    Arc::new(Mutex::new(ClientFields::default())),
+                )))
+                .map_err(|_| {
+                    ErrorStruct::from(redis_messages::closed_sender(ErrorSeverity::ShutdownServer))
+                })?;
+
+            GarbageCollector::check_severity(
+                rcv_rsp
+                    .recv()
+                    .map_err(|_| {
+                        ErrorStruct::from(redis_messages::closed_sender(
+                            ErrorSeverity::ShutdownServer,
+                        ))
+                    })?
+                    .map(|_| ()),
+            )?;
+        }
+    }
+
+    fn check_severity(packed_error: Result<(), ErrorStruct>) -> Result<(), ErrorStruct> {
+        if let Err(error) = packed_error {
+            if let Some(ErrorSeverity::ShutdownServer) = error.severity() {
+                return Err(error);
+            }
+        }
+        Ok(())
+    }
+
+    /// Stops the loop and finishes the job
     fn stop(&mut self) {
         self.still_working.store(false, Ordering::Relaxed);
     }
 }
 
-impl Drop for GarbageCollector {
-    fn drop(&mut self) {
+impl Joinable<()> for GarbageCollector {
+    fn join(&mut self) -> Result<(), ErrorStruct> {
         self.stop();
-        if let Some(handle) = self.handle.take() {
-            handle.join().unwrap();
-        }
-        println!("Garbage collector has been shutted down!");
+        close_thread(
+            self.handle.take(),
+            "Garbage collector",
+            self.notifier.clone(),
+        )?;
+        Ok(())
     }
 }
-
-fn is_err(response: String) -> Result<(), ErrorStruct> {
-    let mut buffer = BufReader::new(response.as_bytes());
-    let mut first_lecture = String::new();
-    buffer.read_line(&mut first_lecture).unwrap();
-    let redis_type = first_lecture.remove(0); // Redis Type inference
-    first_lecture.pop().unwrap(); // popping \n
-    first_lecture.pop().unwrap(); // popping \r
-    match redis_type {
-        '+' => Ok(()),
-        '-' => Err(RError::decode(first_lecture, &mut buffer.lines()).unwrap()),
-        _ => Err(ErrorStruct::new(
-            "ERR".to_string(),
-            "something went wrong in garbage collector".to_string(),
-        )),
-    }
-}
-
 #[cfg(test)]
 
 mod test_garbage_collector {
 
+    use std::sync::mpsc::{Receiver, Sender};
+
     use super::*;
-    use crate::native_types::RSimpleString;
+    use crate::native_types::{RSimpleString, RedisType};
 
     // Para probar los test 1 y 3, hagan fallar el test
     // y verifiquen que se imprima un mensaje indicando que
     // se dropeo el Garbage Collector
 
     #[test]
-    #[ignore]
-    fn test01_garbage_collector_is_dropped_safely() {
-        let (snd_col_test, _rcv_col_test): (mpsc::Sender<RawCommand>, mpsc::Receiver<RawCommand>) =
-            mpsc::channel();
-        let _collector = GarbageCollector::start(snd_col_test, 4, 20);
+    #[ignore = "Long test"]
+    fn long_test_01_garbage_collector_is_dropped_safely() {
+        let (snd_col_test, rcv_col_test) = mpsc::channel();
+
+        let (snd_test_cmd, rcv_test_cmd): (
+            Sender<Option<RawCommand>>,
+            Receiver<Option<RawCommand>>,
+        ) = mpsc::channel();
+
+        let (snd_log_test, rcv_log_test) = mpsc::channel();
+        let rcv_log_test = Mutex::new(rcv_log_test);
+        let rcv_notifier = thread::spawn(move || {
+            let rcv_log_test = rcv_log_test.lock().unwrap();
+            for _useless in rcv_log_test.iter() {}
+        });
+        let notifier = Notifier::new(
+            snd_log_test,
+            snd_test_cmd,
+            Arc::new(AtomicBool::new(false)),
+            "test_addr".into(),
+        );
+        let mut collector = GarbageCollector::new(snd_col_test, 1, 20, notifier.clone());
 
         assert_eq!(4, 4);
+
+        // Correctly free channels
+        drop(notifier);
+        drop(rcv_col_test);
+        drop(rcv_test_cmd);
+        let _ = collector.join();
+        drop(collector);
+        let _ = rcv_notifier.join();
     }
 
     #[test]
-    #[ignore]
-    fn test02_garbage_collector_send_the_correct_command() {
-        let (snd_col_test, rcv_col_test): (mpsc::Sender<RawCommand>, mpsc::Receiver<RawCommand>) =
-            mpsc::channel();
-        let _collector = GarbageCollector::start(snd_col_test, 4, 20);
-        let (command, sender) = rcv_col_test.recv().unwrap();
+    #[ignore = "Long test"]
+    fn long_test_02_garbage_collector_send_the_correct_command() {
+        let (snd_col_test, rcv_col_test) = mpsc::channel();
+        let (snd_test_cmd, rcv_test_cmd) = mpsc::channel();
+        let (snd_log_test, rcv_log_test) = mpsc::channel();
+        let rcv_log_test = Mutex::new(rcv_log_test);
+        let rcv_notifier = thread::spawn(move || {
+            let rcv_log_test = rcv_log_test.lock().unwrap();
+            for _useless in rcv_log_test.iter() {}
+        });
+
+        let notifier = Notifier::new(
+            snd_log_test,
+            snd_test_cmd,
+            Arc::new(AtomicBool::new(false)),
+            "test_addr".into(),
+        );
+        let mut collector = GarbageCollector::new(snd_col_test, 1, 20, notifier.clone());
+        let (command, sender, _) = rcv_col_test.recv().unwrap().unwrap();
+
         assert_eq!(&command[0], "clean");
         assert_eq!(&command[1], "20");
         sender
-            .send(RSimpleString::encode("OK".to_string()))
+            .send(Ok(RSimpleString::encode("OK".to_string())))
             .unwrap();
+
+        // Correctly free channels
+        drop(notifier);
+        drop(rcv_test_cmd);
+        let _ = collector.join();
+        drop(collector);
+        let _ = rcv_notifier.join();
     }
 
     #[test]
-    #[ignore]
-    fn test03_returning_an_error_drops_the_garbage_collector() {
-        let (snd_col_test, rcv_col_test): (mpsc::Sender<RawCommand>, mpsc::Receiver<RawCommand>) =
-            mpsc::channel();
-        let _collector = GarbageCollector::start(snd_col_test, 4, 20);
-        let (_command, sender) = rcv_col_test.recv().unwrap();
+    #[ignore = "Long test"]
+    fn long_test_03_returning_an_error_drops_the_garbage_collector() {
+        let (snd_col_test, rcv_col_test) = mpsc::channel();
+        let (snd_test_cmd, _rcv_test_cmd) = mpsc::channel();
+
+        let (snd_log_test, rcv_log_test) = mpsc::channel();
+        let rcv_log_test = Mutex::new(rcv_log_test);
+        let rcv_notifier = thread::spawn(move || {
+            let rcv_log_test = rcv_log_test.lock().unwrap();
+            for _useless in rcv_log_test.iter() {}
+        });
+
+        let notifier = Notifier::new(
+            snd_log_test,
+            snd_test_cmd,
+            Arc::new(AtomicBool::new(false)),
+            "test_addr".into(),
+        );
+        let mut collector = GarbageCollector::new(snd_col_test, 1, 20, notifier.clone());
+        let (_command, sender, _client_fields) = rcv_col_test.recv().unwrap().unwrap();
         sender
-            .send(RError::encode(ErrorStruct::new(
+            .send(Err(ErrorStruct::new(
                 "ERR".to_string(),
                 "this is a generic error".to_string(),
             )))
             .unwrap();
 
         assert_eq!(4, 4);
+        // Correctly free channels
+        drop(notifier);
+        let _ = collector.join();
+        drop(collector);
+        let _ = rcv_notifier.join();
     }
 }

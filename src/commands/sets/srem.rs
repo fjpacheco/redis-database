@@ -1,3 +1,4 @@
+use crate::native_types::error_severity::ErrorSeverity;
 use crate::{
     commands::{check_empty, Runnable},
     database::{Database, TypeSaved},
@@ -5,11 +6,33 @@ use crate::{
     messages::redis_messages,
     native_types::{ErrorStruct, RInteger, RedisType},
 };
-
+use std::sync::{Arc, Mutex};
 pub struct Srem;
 
-impl Runnable<Database> for Srem {
-    fn run(&self, buffer: Vec<String>, database: &mut Database) -> Result<String, ErrorStruct> {
+impl Runnable<Arc<Mutex<Database>>> for Srem {
+    /// Remove the specified members from the set stored at key. Specified members that are not a member of this set are ignored.
+    /// If key does not exist, it is treated as an empty set and this command returns 0.
+    ///
+    /// # Return value
+    /// [String] _encoded_ in [RInteger](crate::native_types::integer::RInteger): the number of members that were removed from the set, not including non existing members.
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * The value stored at **key** is not a set.
+    /// * Buffer [Vec]<[String]> is received empty, or received with only one element.
+    /// * [Database] received in <[Arc]<[Mutex]>> is poisoned.    
+    fn run(
+        &self,
+        buffer: Vec<String>,
+        database: &mut Arc<Mutex<Database>>,
+    ) -> Result<String, ErrorStruct> {
+        let mut database = database.lock().map_err(|_| {
+            ErrorStruct::from(redis_messages::poisoned_lock(
+                "database",
+                ErrorSeverity::ShutdownServer,
+            ))
+        })?;
         check_error_cases(&buffer)?;
 
         let key = &buffer[0];
@@ -51,6 +74,7 @@ fn check_error_cases(buffer: &[String]) -> Result<(), ErrorStruct> {
 
 #[cfg(test)]
 mod test_srem_function {
+    use crate::commands::create_notifier;
     use std::collections::{HashSet, VecDeque};
 
     use crate::vec_strings;
@@ -58,7 +82,7 @@ mod test_srem_function {
     use super::*;
 
     #[test]
-    fn test01_srem_remove_members_of_set_and_return_the_eliminated_amount() {
+    fn test_01_srem_remove_members_of_set_and_return_the_eliminated_amount() {
         let mut set = HashSet::new();
         set.insert(String::from("m2")); // m2
         set.insert(String::from("m1")); // m1
@@ -69,8 +93,13 @@ mod test_srem_function {
         set.insert(String::from("m4")); // m4
         set.insert(String::from("m5")); // m5
         set.insert(String::from("m1"));
-        let mut database_mock = Database::new();
-        database_mock.insert("key".to_string(), TypeSaved::Set(set));
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database_mock = Arc::new(Mutex::new(Database::new(notifier)));
+
+        database_mock
+            .lock()
+            .unwrap()
+            .insert("key".to_string(), TypeSaved::Set(set));
         let buffer_mock_1 = vec_strings!["key", "m1"];
         let buffer_mock_2 = vec_strings!["key", "m2"];
 
@@ -81,60 +110,74 @@ mod test_srem_function {
         let excepted_2 = RInteger::encode(1);
         assert_eq!(excepted_1, result_received_1.unwrap());
         assert_eq!(excepted_2, result_received_2.unwrap());
-        if let TypeSaved::Set(set_post_srem) = database_mock.get("key").unwrap() {
+        if let TypeSaved::Set(set_post_srem) = database_mock.lock().unwrap().get("key").unwrap() {
             assert!(!set_post_srem.contains("m1")); // deleted
             assert!(!set_post_srem.contains("m2")); // deleted
             assert!(set_post_srem.contains("m3"));
             assert!(set_post_srem.contains("m4"));
             assert!(set_post_srem.contains("m5"));
             assert!(set_post_srem.len().eq(&3))
-        }
+        };
     }
     #[test]
-    fn test02_srem_accepts_multiples_member_arguments_to_remove() {
+    fn test_02_srem_accepts_multiples_member_arguments_to_remove() {
         let mut set = HashSet::new();
         set.insert(String::from("m1")); // m1
         set.insert(String::from("m2")); // m2
-        let mut database_mock = Database::new();
-        database_mock.insert("key".to_string(), TypeSaved::Set(set));
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database_mock = Arc::new(Mutex::new(Database::new(notifier)));
+
+        database_mock
+            .lock()
+            .unwrap()
+            .insert("key".to_string(), TypeSaved::Set(set));
         let buffer_mock = vec_strings!["key", "m1901020", "m1", "m1", "m1", "m192192", "m1", "m1"];
 
         let result_received = Srem.run(buffer_mock, &mut database_mock);
 
         let excepted = RInteger::encode(1);
         assert_eq!(excepted, result_received.unwrap());
-        if let TypeSaved::Set(set_post_srem) = database_mock.get("key").unwrap() {
+        if let TypeSaved::Set(set_post_srem) = database_mock.lock().unwrap().get("key").unwrap() {
             assert!(!set_post_srem.contains("m1")); // deleted one time
             assert!(set_post_srem.contains("m2"));
             assert!(set_post_srem.len().eq(&1))
-        }
+        };
     }
 
     #[test]
-    fn test03_srem_return_zero_if_there_are_no_members_at_the_set_for_remove() {
+    fn test_03_srem_return_zero_if_there_are_no_members_at_the_set_for_remove() {
         let mut set = HashSet::new();
         set.insert(String::from("m1")); // m1
         set.insert(String::from("m2")); // m2
-        let mut database_mock = Database::new();
-        database_mock.insert("key".to_string(), TypeSaved::Set(set));
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database_mock = Arc::new(Mutex::new(Database::new(notifier)));
+
+        database_mock
+            .lock()
+            .unwrap()
+            .insert("key".to_string(), TypeSaved::Set(set));
         let buffer_mock = vec_strings!["key", "m3", "m4"];
 
         let result_received = Srem.run(buffer_mock, &mut database_mock);
 
         let excepted = RInteger::encode(0);
         assert_eq!(excepted, result_received.unwrap());
-        if let TypeSaved::Set(set_post_srem) = database_mock.get("key").unwrap() {
+        if let TypeSaved::Set(set_post_srem) = database_mock.lock().unwrap().get("key").unwrap() {
             assert!(set_post_srem.contains("m1")); // unmodified
             assert!(set_post_srem.contains("m2")); // unmodified
             assert!(set_post_srem.len().eq(&2))
-        }
+        };
     }
 
     #[test]
-    fn test04_srem_return_zero_if_key_does_not_exist_in_database() {
+    fn test_04_srem_return_zero_if_key_does_not_exist_in_database() {
         let set = HashSet::new();
-        let mut database_mock = Database::new();
-        database_mock.insert("key".to_string(), TypeSaved::Set(set));
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database_mock = Arc::new(Mutex::new(Database::new(notifier)));
+        database_mock
+            .lock()
+            .unwrap()
+            .insert("key".to_string(), TypeSaved::Set(set));
         let buffer_mock = vec_strings!["key_random", "m1"];
 
         let result_received = Srem.run(buffer_mock, &mut database_mock);
@@ -144,9 +187,10 @@ mod test_srem_function {
     }
 
     #[test]
-    fn test05_srem_return_error_wrongtype_if_execute_with_key_of_string() {
-        let mut database_mock = Database::new();
-        database_mock.insert(
+    fn test_05_srem_return_error_wrongtype_if_execute_with_key_of_string() {
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database_mock = Arc::new(Mutex::new(Database::new(notifier)));
+        database_mock.lock().unwrap().insert(
             "keyOfString".to_string(),
             TypeSaved::String("value".to_string()),
         );
@@ -162,12 +206,16 @@ mod test_srem_function {
     }
 
     #[test]
-    fn test06_srem_return_error_wrongtype_if_execute_with_key_of_list() {
-        let mut database_mock = Database::new();
+    fn test_06_srem_return_error_wrongtype_if_execute_with_key_of_list() {
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database_mock = Arc::new(Mutex::new(Database::new(notifier)));
         let mut new_list = VecDeque::new();
         new_list.push_back("value1".to_string());
         new_list.push_back("value2".to_string());
-        database_mock.insert("keyOfList".to_string(), TypeSaved::List(new_list));
+        database_mock
+            .lock()
+            .unwrap()
+            .insert("keyOfList".to_string(), TypeSaved::List(new_list));
 
         let buffer_mock = vec_strings!["keyOfList", "value1", "value2"];
 
@@ -181,18 +229,23 @@ mod test_srem_function {
     }
 
     #[test]
-    fn test07_srem_return_zero_if_set_is_empty() {
+    fn test_07_srem_return_zero_if_set_is_empty() {
         let set = HashSet::new();
-        let mut database_mock = Database::new();
-        database_mock.insert("key".to_string(), TypeSaved::Set(set));
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database_mock = Arc::new(Mutex::new(Database::new(notifier)));
+
+        database_mock
+            .lock()
+            .unwrap()
+            .insert("key".to_string(), TypeSaved::Set(set));
         let buffer_mock = vec_strings!["key", "value1", "value2"];
 
         let result_received = Srem.run(buffer_mock, &mut database_mock);
 
         let excepted = RInteger::encode(0);
         assert_eq!(excepted, result_received.unwrap());
-        if let TypeSaved::Set(set_post_srem) = database_mock.get("key").unwrap() {
+        if let TypeSaved::Set(set_post_srem) = database_mock.lock().unwrap().get("key").unwrap() {
             assert!(set_post_srem.len().eq(&0))
-        }
+        };
     }
 }

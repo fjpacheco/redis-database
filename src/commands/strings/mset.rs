@@ -1,14 +1,36 @@
+use crate::native_types::error_severity::ErrorSeverity;
 use crate::{
     commands::{check_empty, Runnable},
     database::{Database, TypeSaved},
     messages::redis_messages,
     native_types::{ErrorStruct, RSimpleString, RedisType},
 };
-
+use std::sync::{Arc, Mutex};
 pub struct Mset;
 
-impl Runnable<Database> for Mset {
-    fn run(&self, buffer: Vec<String>, database: &mut Database) -> Result<String, ErrorStruct> {
+impl Runnable<Arc<Mutex<Database>>> for Mset {
+    /// Sets the given keys to their respective values.
+    /// MSET replaces existing values with new values, just as regular SET.
+    ///
+    /// # Return value
+    /// [String] _encoded_ in [RSimpleString]: OK if MSET was executed correctly.
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * The buffer [Vec]<[String]> is empty or received any key without value.
+    /// * [Database] received in <[Arc]<[Mutex]>> is poisoned.
+    fn run(
+        &self,
+        buffer: Vec<String>,
+        database: &mut Arc<Mutex<Database>>,
+    ) -> Result<String, ErrorStruct> {
+        let mut database = database.lock().map_err(|_| {
+            ErrorStruct::from(redis_messages::poisoned_lock(
+                "database",
+                ErrorSeverity::ShutdownServer,
+            ))
+        })?;
         check_error_cases(&buffer)?;
 
         let keys_and_value = buffer.chunks(2);
@@ -44,28 +66,32 @@ fn is_odd(buffer: &[String]) -> bool {
 
 #[cfg(test)]
 mod test_mset_function {
-
+    use crate::commands::create_notifier;
     use crate::{native_types::RBulkString, vec_strings};
 
     use super::*;
 
     #[test]
-    fn test01_mset_reemplace_value_old_of_key_and_insert_more_elements() {
+    fn test_01_mset_reemplace_value_old_of_key_and_insert_more_elements() {
         let buffer_mock2 = vec_strings!["key1", "value1_new", "key2", "value2"];
-        let mut database_mock = Database::new();
-        database_mock.insert("key1".to_string(), TypeSaved::String("value1".to_string()));
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database_mock = Arc::new(Mutex::new(Database::new(notifier)));
+        database_mock
+            .lock()
+            .unwrap()
+            .insert("key1".to_string(), TypeSaved::String("value1".to_string()));
 
         let _ = Mset.run(buffer_mock2, &mut database_mock);
 
         let mut get_received_1 = String::new();
-        if let TypeSaved::String(item) = database_mock.get("key1").unwrap() {
+        if let TypeSaved::String(item) = database_mock.lock().unwrap().get("key1").unwrap() {
             get_received_1 = RBulkString::encode(item.to_string());
         }
         let expected = RBulkString::encode("value1_new".to_string());
         assert_eq!(expected, get_received_1);
 
         let mut get_received_2 = String::new();
-        if let TypeSaved::String(item) = database_mock.get("key2").unwrap() {
+        if let TypeSaved::String(item) = database_mock.lock().unwrap().get("key2").unwrap() {
             get_received_2 = RBulkString::encode(item.to_string());
         }
 
@@ -74,9 +100,10 @@ mod test_mset_function {
     }
 
     #[test]
-    fn test02_mset_with_bad_args_return_err() {
+    fn test_02_mset_with_bad_args_return_err() {
         let buffer_mock = vec_strings!["key1", "value1_new", "key2"];
-        let mut database_mock = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database_mock = Arc::new(Mutex::new(Database::new(notifier)));
 
         let result_received = Mset.run(buffer_mock, &mut database_mock);
         let result_received_encoded = result_received.unwrap_err().get_encoded_message_complete();

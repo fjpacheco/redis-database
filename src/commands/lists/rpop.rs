@@ -1,38 +1,73 @@
-use crate::commands::Runnable;
-use crate::database::Database;
-use crate::native_types::error::ErrorStruct;
-
 use super::pop_at;
 use super::remove_values_from_bottom;
+use crate::commands::Runnable;
+use crate::database::Database;
+use crate::messages::redis_messages;
+use crate::native_types::error::ErrorStruct;
+use crate::native_types::error_severity::ErrorSeverity;
+use std::sync::{Arc, Mutex};
 pub struct RPop;
 
-impl Runnable<Database> for RPop {
-    fn run(&self, buffer: Vec<String>, database: &mut Database) -> Result<String, ErrorStruct> {
-        pop_at(buffer, database, remove_values_from_bottom)
+impl Runnable<Arc<Mutex<Database>>> for RPop {
+    /// Removes and returns the last elements of the list stored at key.
+    /// By default, the command pops a single element from the end of the list. When
+    /// provided with the optional count argument, the reply will consist of up to
+    /// count elements, depending on the list's length.
+    ///
+    /// # Return value
+    /// [String] _encoded_ in [RInteger](crate::native_types::integer::RInteger): When called without the count argument:
+    /// Bulk string reply: the value of the last element, or nil when key does not exist.
+    /// When called with the count argument:
+    /// Array reply: list of popped elements, or nil when key does not exist.
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * The value stored at **key** is not a list.
+    /// * Buffer [Vec]<[String]> is received empty, or received with more than 2 elements.
+    /// * [Database] received in <[Arc]<[Mutex]>> is poisoned.
+    fn run(
+        &self,
+        buffer: Vec<String>,
+        database: &mut Arc<Mutex<Database>>,
+    ) -> Result<String, ErrorStruct> {
+        let mut database = database.lock().map_err(|_| {
+            ErrorStruct::from(redis_messages::poisoned_lock(
+                "database",
+                ErrorSeverity::ShutdownServer,
+            ))
+        })?;
+        pop_at(buffer, &mut database, remove_values_from_bottom)
     }
 }
 
 #[cfg(test)]
 pub mod test_rpop {
+    use crate::commands::create_notifier;
 
     use crate::{database::TypeSaved, vec_strings};
 
     use super::*;
     use std::collections::VecDeque;
     #[test]
-    fn test01_lpop_one_value_from_an_existing_list() {
-        let mut data = Database::new();
+    fn test_01_lpop_one_value_from_an_existing_list() {
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+
         let mut new_list: VecDeque<String> = VecDeque::new();
         new_list.push_back("this".to_string());
         new_list.push_back("is".to_string());
         new_list.push_back("a".to_string());
         new_list.push_back("list".to_string());
-        data.insert("key".to_string(), TypeSaved::List(new_list));
+
+        let mut db = Database::new(notifier);
+        db.insert("key".to_string(), TypeSaved::List(new_list));
+        let mut data = Arc::new(Mutex::new(db));
 
         let buffer = vec_strings!["key"];
         let encode = RPop.run(buffer, &mut data);
         assert_eq!(encode.unwrap(), "$4\r\nlist\r\n".to_string());
-        match data.get("key").unwrap() {
+        let mut b = data.lock().unwrap();
+        match b.get("key").unwrap() {
             TypeSaved::List(list) => {
                 let mut list_iter = list.iter();
                 assert_eq!(list_iter.next(), Some(&"this".to_string()));
@@ -45,21 +80,26 @@ pub mod test_rpop {
     }
 
     #[test]
-    fn test02_lpop_many_values_from_an_existing_list() {
-        let mut data = Database::new();
+    fn test_02_lpop_many_values_from_an_existing_list() {
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+
         let mut new_list: VecDeque<String> = VecDeque::new();
         new_list.push_back("this".to_string());
         new_list.push_back("is".to_string());
         new_list.push_back("a".to_string());
         new_list.push_back("list".to_string());
-        data.insert("key".to_string(), TypeSaved::List(new_list));
+        let mut db = Database::new(notifier);
+        db.insert("key".to_string(), TypeSaved::List(new_list));
+        let mut data = Arc::new(Mutex::new(db));
+
         let buffer = vec_strings!["key", "3"];
         let encode = RPop.run(buffer, &mut data);
         assert_eq!(
             encode.unwrap(),
             "*3\r\n$4\r\nlist\r\n$1\r\na\r\n$2\r\nis\r\n".to_string()
         );
-        match data.get("key").unwrap() {
+        let mut b = data.lock().unwrap();
+        match b.get("key").unwrap() {
             TypeSaved::List(list) => {
                 let mut list_iter = list.iter();
                 assert_eq!(list_iter.next(), Some(&"this".to_string()));
@@ -70,23 +110,25 @@ pub mod test_rpop {
     }
 
     #[test]
-    fn test03_lpop_value_from_a_non_existing_list() {
-        let mut data = Database::new();
+    fn test_03_lpop_value_from_a_non_existing_list() {
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut data = Arc::new(Mutex::new(Database::new(notifier)));
         let buffer = vec_strings!["key"];
         let encode = RPop.run(buffer, &mut data);
         assert_eq!(encode.unwrap(), "$-1\r\n".to_string());
-        assert_eq!(data.get("key"), None);
+        assert_eq!(data.lock().unwrap().get("key"), None);
     }
 
     #[test]
-    fn test04_lpop_with_no_key() {
-        let mut data = Database::new();
+    fn test_04_lpop_with_no_key() {
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut data = Arc::new(Mutex::new(Database::new(notifier)));
         let buffer = vec_strings![];
         match RPop.run(buffer, &mut data) {
             Ok(_encode) => {}
             Err(error) => assert_eq!(
                 error.print_it(),
-                "ERR wrong number of arguments".to_string()
+                "ERR wrong number of arguments for 'lpop or rpop' command".to_string()
             ),
         }
     }

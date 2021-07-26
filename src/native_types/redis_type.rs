@@ -1,10 +1,17 @@
 use std::io::{BufRead, Lines};
 
 use super::{error::ErrorStruct, RArray};
-use crate::native_types::bulk_string::RBulkString;
+use crate::{messages::redis_messages, native_types::bulk_string::RBulkString};
 
+/// This trait implements encoding and decoding
+/// methods for redis native types.
 pub trait RedisType<T> {
+    /// Encodes a native type into a redis
+    /// protocol syntax
     fn encode(t: T) -> String;
+
+    /// Decodes a native type from a redis
+    /// protocol syntax
     fn decode<G>(
         first_lecture: String,
         redis_encoded_line: &mut Lines<G>,
@@ -14,8 +21,14 @@ pub trait RedisType<T> {
 }
 
 pub fn remove_first_cr_lf(slice: &mut String) -> Option<String> {
+    if slice.is_empty() {
+        return None;
+    }
     if let Some(first_cr) = slice.find('\r') {
         if slice.remove(first_cr + 1) == '\n' {
+            if slice.is_empty() {
+                return None;
+            }
             slice.remove(first_cr);
             let rest = slice.split_off(first_cr);
             let swap = slice.to_string();
@@ -84,7 +97,24 @@ pub fn fill_bulk_string_vector<G>(
 where
     G: BufRead,
 {
-    let mut first_lecture = rest.next().unwrap().unwrap();
+    let mut first_lecture = rest
+        .next()
+        .ok_or_else(|| {
+            ErrorStruct::new("ERR".to_string(), "Failed to parse Redis Type".to_string())
+        })?
+        .map_err(|err| {
+            ErrorStruct::new(
+                "ERR".to_string(),
+                format!("Error received in next line.\nDetail: {:?}", err),
+            )
+        })?;
+
+    if first_lecture.is_empty() {
+        return Err(ErrorStruct::new(
+            "ERR".to_string(),
+            "Failed to parse Redis Type".to_string(),
+        ));
+    }
     match first_lecture.remove(0) {
         // Redis Type inference
         '$' => {
@@ -133,7 +163,15 @@ where
     G: BufRead,
 {
     match rest_of.next() {
-        Some(item) => verify_b_string_size(size, item.unwrap()),
+        Some(item) => verify_b_string_size(
+            size,
+            item.map_err(|err| {
+                ErrorStruct::new(
+                    "ERR".to_string(),
+                    format!("Error received in next line.\nDetail: {:?}", err),
+                )
+            })?,
+        ),
         None => Err(ErrorStruct::new(
             "ERR_PARSE".to_string(),
             "Failed to parse redis bulk string".to_string(),
@@ -162,12 +200,25 @@ fn verify_b_string_size(size: isize, sliced_b_string: String) -> Result<String, 
 /// in
 ///
 /// "*3\r\n$3\r\nset\r\n$3\r\nkey\r\n$5\r\nvalue\r\n"
-pub fn encode_netcat_input(line: String) -> String {
-    RArray::encode(
-        line.split(' ')
-            .collect::<Vec<&str>>()
-            .iter()
-            .map(|s| s.to_string())
-            .collect::<Vec<String>>(),
-    )
+pub fn encode_netcat_input(line: String) -> Result<String, ErrorStruct> {
+    let vector_words = line
+        .split(' ')
+        .collect::<Vec<&str>>()
+        .iter()
+        .map(|s| s.to_string())
+        .collect::<Vec<String>>();
+
+    let max_chars_in_command = 30;
+    if vector_words
+        .get(0)
+        .unwrap_or(&"Empty".to_string())
+        .len()
+        .ge(&max_chars_in_command)
+    {
+        return Err(ErrorStruct::from(redis_messages::maximum_amount_exceeded(
+            max_chars_in_command,
+        )));
+    }
+
+    Ok(RArray::encode(vector_words))
 }

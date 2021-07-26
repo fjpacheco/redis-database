@@ -1,12 +1,14 @@
-use std::collections::VecDeque;
-
 use crate::commands::get_as_integer;
-use crate::commands::lists::{check_empty_2, check_not_empty};
+use crate::commands::lists::{check_empty, check_not_empty};
 use crate::commands::Runnable;
 use crate::database::Database;
 use crate::database::TypeSaved;
+use crate::messages::redis_messages;
+use crate::native_types::error_severity::ErrorSeverity;
 use crate::native_types::RedisType;
 use crate::native_types::{error::ErrorStruct, simple_string::RSimpleString};
+use std::collections::VecDeque;
+use std::sync::{Arc, Mutex};
 
 pub struct Lset;
 
@@ -14,15 +16,36 @@ pub struct Lset;
 //
 // An error is returned for out of range indexes.
 
-impl Runnable<Database> for Lset {
-    fn run(&self, mut buffer: Vec<String>, database: &mut Database) -> Result<String, ErrorStruct> {
-        check_not_empty(&buffer)?;
+impl Runnable<Arc<Mutex<Database>>> for Lset {
+    /// Sets the list element at index to element. An error is returned for out of range indexes.
+    ///
+    /// # Return value
+    /// [String] _encoded_ in [RSimpleString]: "OK".
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * The value stored at **key** is not a list.
+    /// * Buffer [Vec]<[String]> is received empty, or received with an amount of elements different than 3.
+    /// * [Database] received in <[Arc]<[Mutex]>> is poisoned.
+    fn run(
+        &self,
+        mut buffer: Vec<String>,
+        database: &mut Arc<Mutex<Database>>,
+    ) -> Result<String, ErrorStruct> {
+        let mut database = database.lock().map_err(|_| {
+            ErrorStruct::from(redis_messages::poisoned_lock(
+                "database",
+                ErrorSeverity::ShutdownServer,
+            ))
+        })?;
+        check_empty(&buffer, "lset")?;
         let key = buffer.remove(0);
-        check_not_empty(&buffer)?;
+        check_empty(&buffer, "lset")?;
         let index = get_as_integer(&buffer.remove(0)).unwrap();
-        check_not_empty(&buffer)?;
+        check_empty(&buffer, "lset")?;
         let replacement = buffer.remove(0);
-        check_empty_2(&buffer)?;
+        check_not_empty(&buffer)?;
 
         if let Some(typesaved) = database.get_mut(&key) {
             match typesaved {
@@ -41,6 +64,9 @@ impl Runnable<Database> for Lset {
     }
 }
 
+// Executes the replace of the element at the given index in the VecDeque.
+// Returns a result which can be an "OK" encoded as Simple String or an
+// ErrorStruct in case of error, when the index is out of range.
 pub fn replace_element_at(
     mut index: isize,
     replacement: String,
@@ -69,22 +95,25 @@ pub fn replace_element_at(
 
 #[cfg(test)]
 pub mod test_lset {
+    use crate::commands::create_notifier;
 
     use crate::vec_strings;
 
     use super::*;
-    use std::collections::{vec_deque::Iter, VecDeque};
+    use std::collections::VecDeque;
 
     #[test]
-    fn test01_lset_list_with_one_element_positive_indexing() {
-        let mut data = Database::new();
+    fn test_01_lset_list_with_one_element_positive_indexing() {
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut data = Arc::new(Mutex::new(Database::new(notifier)));
 
         let mut new_list = VecDeque::new();
         new_list.push_back("value".to_string());
 
         let key = "key".to_string();
         let key_cpy = key.clone();
-        data.insert(key, TypeSaved::List(new_list));
+
+        data.lock().unwrap().insert(key, TypeSaved::List(new_list));
 
         let buffer = vec_strings!["key", "0", "new_value"];
         let encoded = Lset.run(buffer, &mut data);
@@ -92,26 +121,29 @@ pub mod test_lset {
         // Check return value is simple string OK
         assert_eq!(encoded.unwrap(), "+OK\r\n".to_string());
 
-        let mut iter = None;
-        if let TypeSaved::List(values_list) = data.get_mut(&key_cpy).unwrap() {
-            iter = Some(values_list.iter());
-        }
-        assert_eq!(
-            iter.unwrap().next().unwrap().to_string(),
-            "new_value".to_string()
-        );
+        if let TypeSaved::List(values_list) = data.lock().unwrap().get_mut(&key_cpy).unwrap() {
+            let iter = Some(values_list.iter());
+            assert_eq!(
+                iter.unwrap().next().unwrap().to_string(),
+                "new_value".to_string()
+            );
+        } else {
+            panic!();
+        };
     }
 
     #[test]
-    fn test02_lset_list_with_one_element_negative_indexing() {
-        let mut data = Database::new();
+    fn test_02_lset_list_with_one_element_negative_indexing() {
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut data = Arc::new(Mutex::new(Database::new(notifier)));
 
         let mut new_list = VecDeque::new();
         new_list.push_back("value".to_string());
 
         let key = "key".to_string();
         let key_cpy = key.clone();
-        data.insert(key, TypeSaved::List(new_list));
+
+        data.lock().unwrap().insert(key, TypeSaved::List(new_list));
 
         let buffer = vec_strings!["key", "-1", "new_value"];
         let encoded = Lset.run(buffer, &mut data);
@@ -119,24 +151,26 @@ pub mod test_lset {
         // Check return value is simple string OK
         assert_eq!(encoded.unwrap(), "+OK\r\n".to_string());
 
-        let mut iter = None;
-        if let TypeSaved::List(values_list) = data.get_mut(&key_cpy).unwrap() {
-            iter = Some(values_list.iter());
-        }
-        assert_eq!(
-            iter.unwrap().next().unwrap().to_string(),
-            "new_value".to_string()
-        );
+        if let TypeSaved::List(values_list) = data.lock().unwrap().get_mut(&key_cpy).unwrap() {
+            let iter = Some(values_list.iter());
+            assert_eq!(
+                iter.unwrap().next().unwrap().to_string(),
+                "new_value".to_string()
+            );
+        } else {
+            panic!();
+        };
     }
     #[test]
-    fn test03_lset_list_with_out_of_range_positive_index() {
-        let mut data = Database::new();
+    fn test_03_lset_list_with_out_of_range_positive_index() {
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut data = Arc::new(Mutex::new(Database::new(notifier)));
 
         let mut new_list = VecDeque::new();
         new_list.push_back("value".to_string());
 
         let key = "key".to_string();
-        data.insert(key, TypeSaved::List(new_list));
+        data.lock().unwrap().insert(key, TypeSaved::List(new_list));
 
         let buffer = vec_strings!["key", "1", "new_value"];
         let error = Lset.run(buffer, &mut data);
@@ -147,14 +181,15 @@ pub mod test_lset {
     }
 
     #[test]
-    fn test04_lset_list_with_out_of_range_negative_index() {
-        let mut data = Database::new();
+    fn test_04_lset_list_with_out_of_range_negative_index() {
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut data = Arc::new(Mutex::new(Database::new(notifier)));
 
         let mut new_list = VecDeque::new();
         new_list.push_back("value".to_string());
 
         let key = "key".to_string();
-        data.insert(key, TypeSaved::List(new_list));
+        data.lock().unwrap().insert(key, TypeSaved::List(new_list));
 
         let buffer = vec_strings!["key", "-2", "new_value"];
         let error = Lset.run(buffer, &mut data);
@@ -165,14 +200,15 @@ pub mod test_lset {
     }
 
     #[test]
-    fn test05_lset_list_non_existent_key() {
-        let mut data = Database::new();
+    fn test_05_lset_list_non_existent_key() {
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut data = Arc::new(Mutex::new(Database::new(notifier)));
 
         let mut new_list = VecDeque::new();
         new_list.push_back("value".to_string());
 
         let key = "key1".to_string();
-        data.insert(key, TypeSaved::List(new_list));
+        data.lock().unwrap().insert(key, TypeSaved::List(new_list));
 
         // key2 was not inserted (key1 was)
         let buffer = vec_strings!["key2", "-2", "new_value"];
@@ -181,10 +217,13 @@ pub mod test_lset {
     }
 
     #[test]
-    fn test06_lset_non_list() {
-        let mut data = Database::new();
+    fn test_06_lset_non_list() {
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut data = Arc::new(Mutex::new(Database::new(notifier)));
         // redis> SET mykey 10
-        data.insert("key".to_string(), TypeSaved::String("value".to_string()));
+        data.lock()
+            .unwrap()
+            .insert("key".to_string(), TypeSaved::String("value".to_string()));
 
         let buffer = vec_strings!["key", "1", "new_value"];
         let error = Lset.run(buffer, &mut data);
@@ -195,8 +234,9 @@ pub mod test_lset {
     }
 
     #[test]
-    fn test07_lset_list_with_many_elements_at_top() {
-        let mut data = Database::new();
+    fn test_07_lset_list_with_many_elements_at_top() {
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut data = Arc::new(Mutex::new(Database::new(notifier)));
 
         let mut new_list = VecDeque::new();
         new_list.push_back("value1".to_string());
@@ -205,7 +245,8 @@ pub mod test_lset {
 
         let key = "key".to_string();
         let key_cpy = key.clone();
-        data.insert(key, TypeSaved::List(new_list));
+
+        data.lock().unwrap().insert(key, TypeSaved::List(new_list));
 
         let buffer = vec_strings!["key", "0", "new_value"];
         let encoded = Lset.run(buffer, &mut data);
@@ -213,19 +254,21 @@ pub mod test_lset {
         // Check return value is simple string OK
         assert_eq!(encoded.unwrap(), "+OK\r\n".to_string());
 
-        let mut iter = None;
-        if let TypeSaved::List(values_list) = data.get_mut(&key_cpy).unwrap() {
-            iter = Some(values_list.iter());
-        }
-        assert_eq!(
-            iter.unwrap().next().unwrap().to_string(),
-            "new_value".to_string()
-        );
+        if let TypeSaved::List(values_list) = data.lock().unwrap().get_mut(&key_cpy).unwrap() {
+            let iter = Some(values_list.iter());
+            assert_eq!(
+                iter.unwrap().next().unwrap().to_string(),
+                "new_value".to_string()
+            );
+        } else {
+            panic!();
+        };
     }
 
     #[test]
-    fn test08_lset_list_with_many_elements_at_middle() {
-        let mut data = Database::new();
+    fn test_08_lset_list_with_many_elements_at_middle() {
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut data = Arc::new(Mutex::new(Database::new(notifier)));
 
         let mut new_list = VecDeque::new();
         new_list.push_back("value1".to_string());
@@ -234,7 +277,8 @@ pub mod test_lset {
 
         let key = "key".to_string();
         let key_cpy = key.clone();
-        data.insert(key, TypeSaved::List(new_list));
+
+        data.lock().unwrap().insert(key, TypeSaved::List(new_list));
 
         let buffer = vec_strings!["key", "1", "new_value"];
         let encoded = Lset.run(buffer, &mut data);
@@ -242,16 +286,19 @@ pub mod test_lset {
         // Check return value is simple string OK
         assert_eq!(encoded.unwrap(), "+OK\r\n".to_string());
 
-        if let TypeSaved::List(values_list) = data.get_mut(&key_cpy).unwrap() {
-            let mut iter: Iter<String> = values_list.iter();
+        if let TypeSaved::List(values_list) = data.lock().unwrap().get_mut(&key_cpy).unwrap() {
+            let mut iter = values_list.iter();
             iter.next();
             assert_eq!(iter.next().unwrap().to_string(), "new_value".to_string());
-        }
+        } else {
+            panic!();
+        };
     }
 
     #[test]
-    fn test09_lset_list_with_many_elements_at_bottom() {
-        let mut data = Database::new();
+    fn test_09_lset_list_with_many_elements_at_bottom() {
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut data = Arc::new(Mutex::new(Database::new(notifier)));
 
         let mut new_list = VecDeque::new();
         new_list.push_back("value1".to_string());
@@ -260,7 +307,8 @@ pub mod test_lset {
 
         let key = "key".to_string();
         let key_cpy = key.clone();
-        data.insert(key, TypeSaved::List(new_list));
+
+        data.lock().unwrap().insert(key, TypeSaved::List(new_list));
 
         let buffer = vec_strings!["key", "2", "new_value"];
         let encoded = Lset.run(buffer, &mut data);
@@ -268,39 +316,43 @@ pub mod test_lset {
         // Check return value is simple string OK
         assert_eq!(encoded.unwrap(), "+OK\r\n".to_string());
 
-        if let TypeSaved::List(values_list) = data.get_mut(&key_cpy).unwrap() {
-            let mut iter: Iter<String> = values_list.iter();
+        if let TypeSaved::List(values_list) = data.lock().unwrap().get_mut(&key_cpy).unwrap() {
+            let mut iter = values_list.iter();
             iter.next();
             iter.next();
             assert_eq!(iter.next().unwrap().to_string(), "new_value".to_string());
-        }
+        } else {
+            panic!();
+        };
     }
 
     #[test]
-    fn test11_lset_with_zero_arguments() {
-        let mut data = Database::new();
+    fn test_11_lset_with_zero_arguments() {
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut data = Arc::new(Mutex::new(Database::new(notifier)));
 
         let new_list = VecDeque::new();
 
         let key = "key".to_string();
-        data.insert(key, TypeSaved::List(new_list));
+        data.lock().unwrap().insert(key, TypeSaved::List(new_list));
 
         let buffer = vec_strings![];
         let error = Lset.run(buffer, &mut data);
         assert_eq!(
             error.unwrap_err().print_it(),
-            "ERR wrong number of arguments".to_string()
+            "ERR wrong number of arguments for 'lset' command".to_string()
         );
     }
 
     #[test]
-    fn test12_lset_with_wrong_number_of_arguments() {
-        let mut data = Database::new();
+    fn test_12_lset_with_wrong_number_of_arguments() {
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut data = Arc::new(Mutex::new(Database::new(notifier)));
 
         let new_list = VecDeque::new();
 
         let key = "key".to_string();
-        data.insert(key, TypeSaved::List(new_list));
+        data.lock().unwrap().insert(key, TypeSaved::List(new_list));
 
         let buffer = vec_strings!["key", "2", "new_value_1", "new_value_2"];
         let error = Lset.run(buffer, &mut data);
@@ -311,36 +363,38 @@ pub mod test_lset {
     }
 
     #[test]
-    fn test13_lset_with_wrong_number_of_arguments() {
-        let mut data = Database::new();
+    fn test_13_lset_with_wrong_number_of_arguments() {
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut data = Arc::new(Mutex::new(Database::new(notifier)));
 
         let new_list = VecDeque::new();
 
         let key = "key".to_string();
-        data.insert(key, TypeSaved::List(new_list));
+        data.lock().unwrap().insert(key, TypeSaved::List(new_list));
 
         let buffer = vec_strings!["key", "2"];
         let error = Lset.run(buffer, &mut data);
         assert_eq!(
             error.unwrap_err().print_it(),
-            "ERR wrong number of arguments".to_string()
+            "ERR wrong number of arguments for 'lset' command".to_string()
         );
     }
 
     #[test]
-    fn test14_lset_with_wrong_number_of_arguments() {
-        let mut data = Database::new();
+    fn test_14_lset_with_wrong_number_of_arguments() {
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut data = Arc::new(Mutex::new(Database::new(notifier)));
 
         let new_list = VecDeque::new();
 
         let key = "key".to_string();
-        data.insert(key, TypeSaved::List(new_list));
+        data.lock().unwrap().insert(key, TypeSaved::List(new_list));
 
         let buffer = vec_strings!["key"];
         let error = Lset.run(buffer, &mut data);
         assert_eq!(
             error.unwrap_err().print_it(),
-            "ERR wrong number of arguments".to_string()
+            "ERR wrong number of arguments for 'lset' command".to_string()
         );
     }
 }

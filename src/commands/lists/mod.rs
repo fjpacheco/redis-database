@@ -5,7 +5,7 @@ use crate::{
     native_types::{ErrorStruct, RArray, RBulkString, RInteger, RedisType},
 };
 
-use super::{check_empty_2, check_not_empty};
+use super::{check_empty, check_not_empty};
 
 pub mod lindex;
 pub mod llen;
@@ -40,9 +40,9 @@ pub fn push_at(
     database: &mut Database,
     fill_list: fn(buffer: Vec<String>, list: &mut VecDeque<String>),
 ) -> Result<String, ErrorStruct> {
-    check_not_empty(&buffer)?;
+    check_empty(&buffer, "lpush or rpush")?;
     let key = buffer.remove(0);
-    check_not_empty(&buffer)?;
+    check_empty(&buffer, "lpush or rpush")?;
     let size;
     if let Some(typesaved) = database.get_mut(&key) {
         match typesaved {
@@ -72,9 +72,9 @@ pub fn pushx_at(
     database: &mut Database,
     fill_list: fn(buffer: Vec<String>, list: &mut VecDeque<String>),
 ) -> Result<String, ErrorStruct> {
-    check_not_empty(&buffer)?;
+    check_empty(&buffer, "lpush or rpush")?;
     let key = buffer.remove(0);
-    check_not_empty(&buffer)?;
+    check_empty(&buffer, "lpush or rpush")?;
     let size;
     if let Some(typesaved) = database.get_mut(&key) {
         match typesaved {
@@ -101,10 +101,10 @@ pub fn pop_at(
     database: &mut Database,
     fill_list: fn(list: &mut VecDeque<String>, counter: usize) -> String,
 ) -> Result<String, ErrorStruct> {
-    check_not_empty(&buffer)?;
+    check_empty(&buffer, "lpop or rpop")?;
     let key = buffer.remove(0);
     let count = parse_count(&mut buffer)?;
-    check_empty_2(&buffer)?;
+    check_not_empty(&buffer)?;
     if let Some(typesaved) = database.get_mut(&key) {
         match typesaved {
             TypeSaved::List(list_of_values) => {

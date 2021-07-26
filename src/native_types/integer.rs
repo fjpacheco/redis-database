@@ -2,6 +2,7 @@ use std::io::{BufRead, Lines};
 
 use super::{error::ErrorStruct, redis_type::RedisType};
 
+/// Redis native type: Integer
 pub struct RInteger;
 
 impl RedisType<isize> for RInteger {
@@ -37,7 +38,7 @@ pub mod test_integer {
     use super::*;
     use std::io::BufReader;
     #[test]
-    fn test01_encoding_and_decoding_of_an_integer() {
+    fn test_01_encoding_and_decoding_of_an_integer() {
         let integer: isize = 1234;
         let encoded = RInteger::encode(integer);
         assert_eq!(encoded, ":1234\r\n".to_string());
@@ -52,7 +53,7 @@ pub mod test_integer {
     }
 
     #[test]
-    fn test02_bad_decoding_of_integer_throws_a_parsing_error() {
+    fn test_02_bad_decoding_of_integer_throws_a_parsing_error() {
         let encoded = "+123a\r\n".to_string();
         let mut bufreader = BufReader::new(encoded.as_bytes());
         let mut first_lecture = String::new();

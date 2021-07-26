@@ -1,54 +1,59 @@
+use crate::tcp_protocol::server_redis_attributes::ServerRedisAttributes;
 use crate::{
-    commands::Runnable,
-    messages::redis_messages,
+    commands::{check_empty, Runnable},
     native_types::{ErrorStruct, RArray, RedisType},
-    tcp_protocol::server::ServerRedisAtributes,
     vec_strings,
 };
 
 pub struct ConfigGet;
 
-impl Runnable<ServerRedisAtributes> for ConfigGet {
+impl Runnable<ServerRedisAttributes> for ConfigGet {
+    /// The CONFIG GET command is used to read the configuration parameters of a running Redis server
+    ///
+    /// # Return value
+    /// [String] _encoded_ in [RArray]: specifically:
+    /// * port: accept connections on the specified port.
+    /// * timeout: close the connection after a client is idle for N seconds.
+    /// * logfile: specify the log file name.
+    /// * dbfilename: specify the dbfile name.
+    /// * verbose: level for visualization information.
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * Buffer [Vec]<[String]> is received empty.
+    /// * [ServerRedisAttributes](crate::tcp_protocol::server_redis_attributes::ServerRedisAttributes) has poisoned methods.
+    /// * Unknown subcommand for CONFIG GET.
     fn run(
         &self,
-        buffer: Vec<String>,
-        server: &mut ServerRedisAtributes,
+        mut buffer: Vec<String>,
+        server: &mut ServerRedisAttributes,
     ) -> Result<String, ErrorStruct> {
-        if buffer.len() != 1 {
-            let error_message = redis_messages::arguments_invalid_to("config get");
-            return Err(ErrorStruct::new(
-                error_message.get_prefix(),
-                error_message.get_message(),
-            ));
-        }
+        check_empty(&buffer, "config get")?;
 
-        let item = buffer.get(0).unwrap();
+        let item = buffer.remove(0);
         match item.as_str() {
+            "port" => Ok(RArray::encode(vec_strings!("port", server.get_port()?))),
             "timeout" => Ok(RArray::encode(vec_strings!(
                 "timeout",
-                server.get_timeout()
+                server.get_timeout()?
             ))),
-            "port" => Ok(RArray::encode(vec_strings!("port", server.get_port()))),
-            _ => Ok(RArray::encode(vec![])),
+            "logfile" => Ok(RArray::encode(vec_strings!(
+                "logfile",
+                server.get_logfile_name()?
+            ))),
+            "dbfilename" => Ok(RArray::encode(vec_strings!(
+                "dbfilename",
+                server.get_dbfile_name()?
+            ))),
+            "verbose" => Ok(RArray::encode(vec_strings!(
+                "verbose",
+                server.get_verbose()?
+            ))),
+            _ => Err(ErrorStruct::new(
+                String::from("ERR"),
+                String::from("Unknown subcommand or wrong number of arguments for 'get'."),
+            )),
         }
     }
 }
-
-/*pub struct Config;
-
-impl Runnable<ServerRedisAtributes> for Config {
-    fn run(
-        &self,
-        buffer: Vec<String>,
-        server: &mut ServerRedisAtributes,
-    ) -> Result<String, ErrorStruct> {
-
-        if let Some(item) = buffer.remove(0) {
-            match item {
-                "get" => ConfigGet.run(),
-                "set" => ConfigSet.run(),
-                _ => Err()
-            }
-        }
-
-}*/

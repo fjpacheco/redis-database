@@ -1,3 +1,4 @@
+use crate::tcp_protocol::server_redis_attributes::ServerRedisAttributes;
 use crate::{
     commands::{
         pubsub::{no_more_values, pop_value},
@@ -6,16 +7,15 @@ use crate::{
     messages::redis_messages,
     native_types::{ErrorStruct, RArray, RedisType},
     regex::super_regex::SuperRegex,
-    tcp_protocol::server::ServerRedisAtributes,
 };
 
 pub struct Channels;
 
-impl Runnable<ServerRedisAtributes> for Channels {
+impl Runnable<ServerRedisAttributes> for Channels {
     fn run(
         &self,
         mut buffer: Vec<String>,
-        server: &mut ServerRedisAtributes,
+        server: &mut ServerRedisAttributes,
     ) -> Result<String, ErrorStruct> {
         let pattern = pop_value(&mut buffer, "channels")?;
         no_more_values(&buffer, "channels")?;

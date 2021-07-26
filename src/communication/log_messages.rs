@@ -1,3 +1,4 @@
+use crate::native_types::ErrorStruct;
 use std::{
     error::Error,
     net::{TcpListener, TcpStream},
@@ -6,12 +7,18 @@ use std::{
 
 use crate::tcp_protocol::client_atributes::client_fields::ClientFields;
 
+/// This structure contains the message that
+/// should be dumped into the log file, and
+/// a number that represents the verbose
+/// priority, that indicates if the message
+/// should be printed through standar output.
 pub struct LogMessage {
     verbose_priority: usize,
     message: Option<String>,
 }
 
 impl LogMessage {
+    /// Creates the log message.
     pub fn new(verbose_priority: usize, message: String) -> LogMessage {
         LogMessage {
             verbose_priority,
@@ -19,6 +26,15 @@ impl LogMessage {
         }
     }
 
+    /// Creates the log message from an ErrorStruct.
+    pub fn from_errorstruct(error: ErrorStruct) -> LogMessage {
+        LogMessage {
+            verbose_priority: 1,
+            message: Some(error.print_it()),
+        }
+    }
+
+    /// Returns the message if the verbose value match.
     pub fn is_verbosely_printable(&self, verbose: &usize) -> Option<&String> {
         if *verbose > self.verbose_priority {
             self.message.as_ref()
@@ -27,6 +43,7 @@ impl LogMessage {
         }
     }
 
+    // Removes and return the message.
     pub fn take_message(&mut self) -> Option<String> {
         self.message.take()
     }
@@ -47,6 +64,11 @@ impl LogMessage {
     // mensajes que queremos logear.
 
     /// COMMAND --> KEY: VALUE
+
+    pub fn init_server() -> LogMessage {
+        LogMessage::new(9, "Server is on now!".to_string())
+    }
+
     pub fn database_correctly_updated(formatted_data: String) -> LogMessage {
         LogMessage::new(9, format!("Database update: {}", formatted_data))
     }
@@ -69,13 +91,24 @@ impl LogMessage {
         LogMessage::new(2, format!("Error to connect client: {:?}", err))
     }
 
-    pub fn log_closed() -> LogMessage {
+    pub fn log_stopped() -> LogMessage {
+        LogMessage::new(2, "Log center has stopped working.".to_string())
+    }
+
+    pub fn forced_shutdown(reason: String) -> LogMessage {
+        LogMessage::new(
+            2,
+            format!("Server is shutdown in a forced way. DETAIL: {}", reason),
+        )
+    }
+
+    pub fn log_closed_success() -> LogMessage {
         LogMessage::new(2, "Log center is closed.".to_string())
     }
 
     pub fn command_send_by_client(
         command: &[String],
-        client_fields: Arc<Mutex<ClientFields>>,
+        client_fields: &Arc<Mutex<ClientFields>>,
     ) -> LogMessage {
         let addr = client_fields.lock().unwrap().get_addr();
         LogMessage::new(2, format!("[{}] {:?}", addr, command))
@@ -89,6 +122,28 @@ impl LogMessage {
         LogMessage::new(
             2,
             format!("New conection: {:?}", client.peer_addr().unwrap()),
+        )
+    }
+
+    pub fn theard_panic(name_thread: &str) -> LogMessage {
+        LogMessage::new(2, format!("Thread '{}' has panicked", name_thread))
+    }
+
+    pub fn channel_client_off() -> LogMessage {
+        LogMessage::new(
+            2,
+            "Error to send message a client. The channel of client is disconected.".to_string(),
+        )
+    }
+
+    pub fn theard_closed(name_thread: &str) -> LogMessage {
+        LogMessage::new(2, format!("Thread '{}' is closed.", name_thread))
+    }
+
+    pub fn key_touched(key: &str, time: u64) -> LogMessage {
+        LogMessage::new(
+            2,
+            format!("Key {} has been updated. Last access: {}", key, time),
         )
     }
 
@@ -111,7 +166,7 @@ pub mod test_log_messages {
     use super::*;
 
     #[test]
-    fn test01_print_a_log_message() {
+    fn test_01_print_a_log_message() {
         let message = LogMessage::new(3, "This is a test".to_string());
         let verbose = 4;
         assert_eq!(
@@ -121,14 +176,14 @@ pub mod test_log_messages {
     }
 
     #[test]
-    fn test02_can_not_print_because_of_greater_verbose() {
+    fn test_02_can_not_print_because_of_greater_verbose() {
         let message = LogMessage::new(3, "This is a test".to_string());
         let verbose = 2;
         assert_eq!(message.is_verbosely_printable(&verbose), None);
     }
 
     #[test]
-    fn test03_get_the_message_no_matter_which_verbose() {
+    fn test_03_get_the_message_no_matter_which_verbose() {
         let mut message = LogMessage::new(3, "This is a test".to_string());
         assert_eq!(message.take_message(), Some("This is a test".to_string()));
         assert_eq!(message.take_message(), None);

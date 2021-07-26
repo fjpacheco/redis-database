@@ -1,14 +1,41 @@
+use crate::native_types::error_severity::ErrorSeverity;
 use crate::{
     commands::{check_empty, Runnable},
     database::Database,
     messages::redis_messages,
     native_types::{ErrorStruct, RInteger, RedisType},
 };
+use std::sync::{Arc, Mutex};
 
 pub struct Copy;
 
-impl Runnable<Database> for Copy {
-    fn run(&self, buffer: Vec<String>, database: &mut Database) -> Result<String, ErrorStruct> {
+impl Runnable<Arc<Mutex<Database>>> for Copy {
+    /// This command copies the value stored at the source key to the destination key.
+    /// The command returns an error when the destination key already exists.
+    /// Time complexity: O(N) worst case for collections, where N is the number of
+    /// nested items. O(1) for string values.
+    ///
+    /// # Return value
+    /// * [String] _encoded_ in [RInteger](crate::native_types::integer::RInteger): 1 if source was copied.
+    /// * [String] _encoded_ in [RInteger](crate::native_types::integer::RInteger): 0 if source was not copied.
+    ///
+    /// # Error
+    /// Return an [ErrorStruct] if:
+    ///
+    /// * Buffer [Vec]<[String]> is received empty, or received with a number of elements
+    /// different than 2.
+    /// * [Database] received in <[Arc]<[Mutex]>> is poisoned.
+    fn run(
+        &self,
+        buffer: Vec<String>,
+        database: &mut Arc<Mutex<Database>>,
+    ) -> Result<String, ErrorStruct> {
+        let mut database = database.lock().map_err(|_| {
+            ErrorStruct::from(redis_messages::poisoned_lock(
+                "database",
+                ErrorSeverity::ShutdownServer,
+            ))
+        })?;
         check_error_cases(&buffer)?;
 
         let key_source = &buffer[0];
@@ -41,6 +68,7 @@ fn check_error_cases(buffer: &[String]) -> Result<(), ErrorStruct> {
 
 #[cfg(test)]
 mod test_copy_function {
+    use crate::commands::create_notifier;
 
     use std::collections::{HashSet, VecDeque};
 
@@ -49,10 +77,14 @@ mod test_copy_function {
     use super::*;
 
     #[test]
-    fn test01_copy_value_string_of_key_source_existent_into_key_destiny_non_existent_return_success_one(
+    fn test_01_copy_value_string_of_key_source_existent_into_key_destiny_non_existent_return_success_one(
     ) {
-        let mut database_mock = Database::new();
-        database_mock.insert("key".to_string(), TypeSaved::String("value".to_string()));
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database_mock = Arc::new(Mutex::new(Database::new(notifier)));
+        database_mock
+            .lock()
+            .unwrap()
+            .insert("key".to_string(), TypeSaved::String("value".to_string()));
         let buffer_mock_get = vec_strings!["key", "key_new"];
 
         let result_received = Copy.run(buffer_mock_get, &mut database_mock);
@@ -60,21 +92,26 @@ mod test_copy_function {
         let expected_result = RInteger::encode(1);
         assert_eq!(expected_result, result_received.unwrap());
 
-        if let TypeSaved::String(set_post_copy) = database_mock.get("key").unwrap() {
+        let mut mutex_db = database_mock.lock().unwrap();
+        if let TypeSaved::String(set_post_copy) = mutex_db.get("key").unwrap() {
             assert!(set_post_copy.contains("value"));
         }
 
-        if let TypeSaved::String(set_post_copy) = database_mock.get("key_new").unwrap() {
+        if let TypeSaved::String(set_post_copy) = mutex_db.get("key_new").unwrap() {
             assert!(set_post_copy.contains("value"));
         }
     }
 
     #[test]
-    fn test02_copy_value_string_of_key_source_existent_into_key_destiny_existent_return_error_zero()
-    {
-        let mut database_mock = Database::new();
-        database_mock.insert("key".to_string(), TypeSaved::String("value".to_string()));
-        database_mock.insert(
+    fn test_02_copy_value_string_of_key_source_existent_into_key_destiny_existent_return_error_zero(
+    ) {
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database_mock = Arc::new(Mutex::new(Database::new(notifier)));
+        database_mock
+            .lock()
+            .unwrap()
+            .insert("key".to_string(), TypeSaved::String("value".to_string()));
+        database_mock.lock().unwrap().insert(
             "key_new".to_string(),
             TypeSaved::String("value".to_string()),
         );
@@ -87,10 +124,14 @@ mod test_copy_function {
     }
 
     #[test]
-    fn test03_copy_value_string_of_key_source_non_existent_into_key_destiny_non_existent_return_error_zero(
+    fn test_03_copy_value_string_of_key_source_non_existent_into_key_destiny_non_existent_return_error_zero(
     ) {
-        let mut database_mock = Database::new();
-        database_mock.insert("key".to_string(), TypeSaved::String("value".to_string()));
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database_mock = Arc::new(Mutex::new(Database::new(notifier)));
+        database_mock
+            .lock()
+            .unwrap()
+            .insert("key".to_string(), TypeSaved::String("value".to_string()));
         let buffer_mock_get = vec_strings!["key_random", "key_new"];
 
         let result_received = Copy.run(buffer_mock_get, &mut database_mock);
@@ -100,13 +141,17 @@ mod test_copy_function {
     }
 
     #[test]
-    fn test04_copy_value_set_of_key_source_existent_into_key_destiny_non_existent_return_success_one(
+    fn test_04_copy_value_set_of_key_source_existent_into_key_destiny_non_existent_return_success_one(
     ) {
         let mut set = HashSet::new();
         set.insert(String::from("m1"));
         set.insert(String::from("m2"));
-        let mut database_mock = Database::new();
-        database_mock.insert("key".to_string(), TypeSaved::Set(set));
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database_mock = Arc::new(Mutex::new(Database::new(notifier)));
+        database_mock
+            .lock()
+            .unwrap()
+            .insert("key".to_string(), TypeSaved::Set(set));
 
         let buffer_mock_get = vec_strings!["key", "key_new"];
 
@@ -114,14 +159,15 @@ mod test_copy_function {
 
         let expected_result = RInteger::encode(1);
         assert_eq!(expected_result, result_received.unwrap());
+        let mut mutex_db = database_mock.lock().unwrap();
 
-        if let TypeSaved::Set(set_post_copy) = database_mock.get("key").unwrap() {
+        if let TypeSaved::Set(set_post_copy) = mutex_db.get("key").unwrap() {
             assert!(set_post_copy.contains("m1"));
             assert!(set_post_copy.contains("m2"));
             assert!(set_post_copy.len().eq(&2))
         }
 
-        if let TypeSaved::Set(set_post_copy) = database_mock.get("key_new").unwrap() {
+        if let TypeSaved::Set(set_post_copy) = mutex_db.get("key_new").unwrap() {
             assert!(set_post_copy.contains("m1"));
             assert!(set_post_copy.contains("m2"));
             assert!(set_post_copy.len().eq(&2))
@@ -129,13 +175,17 @@ mod test_copy_function {
     }
 
     #[test]
-    fn test06_copy_value_list_of_key_source_existent_into_key_destiny_non_existent_return_success_one(
+    fn test_06_copy_value_list_of_key_source_existent_into_key_destiny_non_existent_return_success_one(
     ) {
-        let mut database_mock = Database::new();
+        let (notifier, _log_rcv, _cmd_rcv) = create_notifier();
+        let mut database_mock = Arc::new(Mutex::new(Database::new(notifier)));
         let mut new_list = VecDeque::new();
         new_list.push_back("value1".to_string());
         new_list.push_back("value2".to_string());
-        database_mock.insert("key".to_string(), TypeSaved::List(new_list));
+        database_mock
+            .lock()
+            .unwrap()
+            .insert("key".to_string(), TypeSaved::List(new_list));
 
         let buffer_mock_get = vec_strings!["key", "key_new"];
 
@@ -143,14 +193,15 @@ mod test_copy_function {
 
         let expected_result = RInteger::encode(1);
         assert_eq!(expected_result, result_received.unwrap());
+        let mut mutex_db = database_mock.lock().unwrap();
 
-        if let TypeSaved::List(set_post_copy) = database_mock.get("key").unwrap() {
+        if let TypeSaved::List(set_post_copy) = mutex_db.get("key").unwrap() {
             assert!(set_post_copy.contains(&"value1".to_string()));
             assert!(set_post_copy.contains(&"value2".to_string()));
             assert!(set_post_copy.len().eq(&2))
         }
 
-        if let TypeSaved::List(set_post_copy) = database_mock.get("key_new").unwrap() {
+        if let TypeSaved::List(set_post_copy) = mutex_db.get("key_new").unwrap() {
             assert!(set_post_copy.contains(&"value1".to_string()));
             assert!(set_post_copy.contains(&"value2".to_string()));
             assert!(set_post_copy.len().eq(&2))
