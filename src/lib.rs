@@ -11,5 +11,6 @@ pub mod redis_config;
 pub mod regex;
 pub mod tcp_protocol;
 pub mod time_expiration;
+pub mod server_html;
 
 pub use crate::tcp_protocol::server::ServerRedis;

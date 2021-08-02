@@ -16,3 +16,7 @@ version = "*"
 [[bin]]
 name = "server"
 path = "src/server_run.rs"
+
+[[bin]]
+name = "server_html"
+path = "src/server_html_run.rs"
