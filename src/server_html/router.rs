@@ -2,16 +2,21 @@ use std::io::Write;
 
 use crate::server_html::{handler::{Css, Handler, StaticPageHandler}, http_response::HttpResponse};
 
-use super::{handler::PageNotFoundHandler, http_request::{self, HttpRequest}};
+use super::{handler::PageNotFoundHandler/*http_request::{self, HttpRequest}*/};
 
+use crate::server_html::request::{
+    http_request::HttpRequest,
+    http_method::HttpMethod,
+    http_url::HttpUrl,
+};
 
 pub struct Router;
 impl Router {
     pub fn route(req: HttpRequest, stream: &mut impl Write) -> () {
-        match req.method {
+        match req.get_method() {
             // If GET request
-            http_request::Method::Post => match &req.resource {
-                http_request::Resource::Path(s) => {
+            HttpMethod::Get => match req.get_url() {
+                HttpUrl::Path(s) => {
                     // Parse the URI
                     let command= s.split("=").collect::<Vec<&str>>();
                     println!("[Router::Get_Request]: resource received: {:?} => {:?}", s,command);
@@ -20,7 +25,7 @@ impl Router {
                             // TODO: ESTO NO LOGRÉ HACERLO FUNCIONAR LPM! NO SE COMO MANDAR UNA IMAGEN CON EL CONTENT-TYPE IMAGE/JPEG
 
                              // TODO: FORMA 1) CROTA QUE NO ANDUVO
-                             let http_request::Resource::Path(s) = &req.resource;
+                             let HttpUrl::Path(s) = req.get_url();
 
                              // Parse the URI
                              let uri: Vec<&str> = s.split("=").collect();
@@ -44,8 +49,7 @@ impl Router {
                         }                        
                         "/?command" => {
                             // TODO: FORMA CROTA
-                            let http_request::Resource::Path(s) = &req.resource;
-
+                            let HttpUrl::Path(s) = req.get_url();
                             // Parse the URI
                             let uri: Vec<&str> = s.split("=").collect();
                             let command = uri[1].to_string().replace("+", " ");

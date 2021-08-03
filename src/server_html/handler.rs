@@ -1,8 +1,7 @@
 use std::{collections::HashMap, fs};
 
-use super::{http_request::{self, HttpRequest}, http_response::HttpResponse};
-
-
+use super::http_response::HttpResponse;
+use crate::server_html::request::{http_request::HttpRequest, http_url::HttpUrl};
 
 pub trait Handler {
     fn handle(req: &HttpRequest) -> HttpResponse;
@@ -39,7 +38,7 @@ pub struct CommandRedis;
 impl Handler for CommandRedis {
     fn handle(req: &HttpRequest) -> HttpResponse {
         // Get the path of static page resource being requested
-        let http_request::Resource::Path(s) = &req.resource;
+        let HttpUrl::Path(s) = req.get_url();
 
         // Parse the URI
         let uri: Vec<&str> = s.split("=").collect();
@@ -101,7 +100,7 @@ pub struct StaticPageHandler;
 impl Handler for StaticPageHandler {
     fn handle(req: &HttpRequest) -> HttpResponse {
         // Get the path of static page resource being requested
-        let http_request::Resource::Path(s) = &req.resource;
+        let HttpUrl::Path(s) = req.get_url();
 
         // Parse the URI
         let route: Vec<&str> = s.split("/").collect();

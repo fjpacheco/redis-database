@@ -1,6 +1,6 @@
 use std::{io::Read, net::TcpListener};
-
-use crate::server_html::{http_request::HttpRequest, router::Router};
+use std::io::{BufRead, BufReader};
+use crate::server_html::{request::http_request::HttpRequest, router::Router};
 
 pub struct ServerHtml<'a> {
     socket_addr: &'a str,
@@ -19,13 +19,19 @@ impl<'a> ServerHtml<'a> {
         for stream in connection_listener.incoming() {
             let mut stream = stream.unwrap();
             println!("Connection established");
-            let mut read_buffer = [0; 90];
-            stream.read(&mut read_buffer).unwrap();
+            let reader = BufReader::new(stream.try_clone().unwrap());
+            let mut lines = reader.lines();
+            //let first_lecture = lines.next().unwrap();
             // Convert HTTP request to Rust data structure
-            println!("read_buffer: {:?}", read_buffer);
-            let req: HttpRequest = String::from_utf8(read_buffer.to_vec()).unwrap().into();
+            //println!("read_buffer: {:?}", read_buffer);
+            //let req: HttpRequest = HttpRequest::new(first_lecture.unwrap(), &mut lines).unwrap();
             // Route request to appropriate handler
-            Router::route(req, &mut stream);
+            //Router::route(req, &mut stream);
+            while let Some(first_lecture) = lines.next() {
+                let req: HttpRequest = HttpRequest::new(first_lecture.unwrap(), &mut lines).unwrap();
+                // Route request to appropriate handler
+                Router::route(req, &mut stream);
+            }
             println!("Fin Connection");
         }
     }
