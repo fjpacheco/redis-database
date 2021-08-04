@@ -6,3 +6,4 @@ pub mod http_response;
 pub mod handler;
 pub mod error;
 pub mod request;
+pub mod page_content;

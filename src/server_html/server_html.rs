@@ -29,6 +29,7 @@ impl<'a> ServerHtml<'a> {
             //Router::route(req, &mut stream);
             while let Some(first_lecture) = lines.next() {
                 let req: HttpRequest = HttpRequest::new(first_lecture.unwrap(), &mut lines).unwrap();
+                println!("{:?}", req);
                 // Route request to appropriate handler
                 Router::route(req, &mut stream);
             }
