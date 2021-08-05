@@ -49,8 +49,7 @@ pub mod defaults {
 
     pub fn length_required() -> StatusCode {
         StatusCode::ClientError(ClientErrorCode::LengthRequired(
-            "Server refuses to accept the request without a defined Content-Length"
-                .to_string(),
+            "Server refuses to accept the request without a defined Content-Length".to_string(),
         ))
     }
 }
