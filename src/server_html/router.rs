@@ -1,9 +1,8 @@
 use std::io::Write;
 
 use crate::server_html::error::http_error::HttpError;
-use crate::server_html::page_content::get_page_content;
 use crate::server_html::{
-    handler::{Css, Handler, ImagePng, StaticPageHandler},
+    handler::{CommandRedis, Css, Handler, ImagePng, StaticPageHandler},
     http_response::HttpResponse,
 };
 
@@ -13,12 +12,13 @@ use crate::server_html::request::{
 
 pub struct Router;
 impl Router {
-    pub fn route(req: HttpRequest, stream: &mut impl Write) -> () {
+    pub fn route(req: HttpRequest, stream: &mut impl Write) -> Result<(), HttpError> {
         let method = req.get_method();
         match method {
-            HttpMethod::Get => Router::do_get(req, stream).unwrap(),
-            HttpMethod::Post => Router::do_post(req, stream).unwrap(),
+            HttpMethod::Get => Router::do_get(req, stream)?,
+            HttpMethod::Post => Router::do_post(req, stream)?,
         }
+        Ok(())
     }
 
     fn do_get(req: HttpRequest, stream: &mut impl Write) -> Result<(), HttpError> {
@@ -38,18 +38,18 @@ impl Router {
         req: HttpRequest,
         stream: &mut impl Write,
     ) -> Result<(), HttpError> {
-        let command = s.split("=").collect::<Vec<&str>>();
+        let command = s.split('=').collect::<Vec<&str>>();
         match command[0] {
             "/logo-rust-ese-2030.png" => {
-                let _ = ImagePng::send_image("logo-rust-ese-2030.png", stream);
+                ImagePng::send_image("logo-rust-ese-2030.png", stream)?;
                 Ok(())
             }
             "/favicon.png" => {
-                let _ = ImagePng::send_image("favicon.png", stream);
+                ImagePng::send_image("favicon.png", stream)?;
                 Ok(())
             }
             "/header-logo.png" => {
-                let _ = ImagePng::send_image("header-logo.png", stream);
+                ImagePng::send_image("header-logo.png", stream)?;
                 Ok(())
             }
             "/style.css" => Router::load_style_css(req, stream),
@@ -66,7 +66,7 @@ impl Router {
         req: HttpRequest,
         stream: &mut impl Write,
     ) -> Result<(), HttpError> {
-        let command = s.split("=").collect::<Vec<&str>>();
+        let command = s.split('=').collect::<Vec<&str>>();
         match command[0] {
             "/?command" => Router::process_command(req, stream),
             _ => {
@@ -84,7 +84,7 @@ impl Router {
     }
 
     fn process_command(req: HttpRequest, stream: &mut impl Write) -> Result<(), HttpError> {
-        let default_command = String::from("empty!");
+        /*let default_command = String::from("empty!");
         let command: Vec<&str> = req
             .get_body()
             .unwrap_or(&default_command)
@@ -97,7 +97,10 @@ impl Router {
         );
         stream.write_all(response.as_bytes()).unwrap();
         stream.write_all(contents.as_bytes()).unwrap();
-        stream.flush().unwrap();
+        stream.flush().unwrap();*/
+
+        let resp: HttpResponse = CommandRedis::handle(&req);
+        let _ = resp.send_response(stream);
 
         println!("[process_command::body]: {:?}", req);
 

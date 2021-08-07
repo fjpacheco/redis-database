@@ -5,7 +5,6 @@ use std::collections::HashMap;
 use std::convert::From;
 use std::io::{BufRead, BufReader, Lines, Read};
 use std::net::TcpStream;
-use std::str::FromStr;
 
 #[derive(Debug, Clone)]
 pub struct HttpRequest {
@@ -27,9 +26,11 @@ impl HttpRequest {
             return Err(HttpError::new(defaults::bad_request())); // TODO: esto esta mal !!!!!!!! puede venir vacio....hay un ejemplo, recordar..
         }
         println!("http_first_line: {:?}", http_first_line);
-        let (method, url, http_version) = process_req_line(http_first_line.to_string())?;
+        let (method, url, http_version) = process_req_line(http_first_line)?;
 
         let headers = get_headers(&mut buf_reader)?;
+
+        // Encapsular lo siguiente en una funcion
 
         let mut body = None;
 
@@ -40,6 +41,8 @@ impl HttpRequest {
                 .map_err(|_| HttpError::new(defaults::bad_request()))?;
             body = Some(String::from_utf8_lossy(&buffer).to_string())
         }
+
+        // Fin
 
         Ok(HttpRequest {
             method,
@@ -72,10 +75,7 @@ fn get_headers(
             if new_header.is_empty() {
                 break;
             } else {
-                let mut tuple: Vec<String> = new_header
-                    .split(": ")
-                    .map(|slice| String::from(slice))
-                    .collect();
+                let mut tuple: Vec<String> = new_header.split(": ").map(String::from).collect();
                 let field_value = match tuple.pop() {
                     Some(version) => version,
                     None => return Err(HttpError::new(defaults::bad_request())),
@@ -96,10 +96,11 @@ fn get_headers(
 }
 
 fn process_req_line(req_line: String) -> Result<(HttpMethod, HttpUrl, String), HttpError> {
-    let mut parsed_first_line: Vec<String> = req_line
-        .split_whitespace()
-        .map(|slice| String::from(slice))
-        .collect();
+    let mut parsed_first_line: Vec<String> =
+        req_line.split_whitespace().map(String::from).collect();
+
+    // Ver como modularizar estos matchs
+
     let http_version = match parsed_first_line.pop() {
         Some(version) => version,
         None => return Err(HttpError::new(defaults::bad_request())),
@@ -113,10 +114,12 @@ fn process_req_line(req_line: String) -> Result<(HttpMethod, HttpUrl, String), H
         None => return Err(HttpError::new(defaults::bad_request())),
     })?;
 
+    // Fin
+
     Ok((method, url, http_version))
 }
 
-fn get_body<G>(new_request: &mut Lines<G>) -> Result<String, HttpError>
+/*fn get_body<G>(new_request: &mut Lines<G>) -> Result<String, HttpError>
 where
     G: BufRead,
 {
@@ -125,4 +128,4 @@ where
     } else {
         return Err(HttpError::new(defaults::bad_request()));
     }
-}
+}*/
