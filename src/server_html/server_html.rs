@@ -1,4 +1,6 @@
-use crate::server_html::http_response::HttpResponse;
+use crate::server_html::http_response::{BodyContent, HttpResponse};
+use crate::server_html::page_content::get_page_content_error;
+use crate::server_html::status_codes::status_code;
 use crate::server_html::{request::http_request::HttpRequest, router::Router};
 use std::net::TcpListener;
 pub struct ServerHtml<'a> {
@@ -19,22 +21,25 @@ impl<'a> ServerHtml<'a> {
             .filter(|x| x.is_ok())
             .map(|x| x.unwrap())
         {
-            println!("Connection established");
+            println!("Request received");
             match HttpRequest::new(&mut stream) {
                 Ok(req) => {
-                    println!("{:?}", req);
-                    if let Err(status_code) = Router::route(req, &mut stream) {
-                        let response = HttpResponse::from(status_code);
-                        let _ = response.send_response(&mut stream);
+                    if let Err(err) = Router::route(req, &mut stream) {
+                        process_err(err, &mut stream);
                     }
                 }
-                Err(status) => {
-                    let response = HttpResponse::from(status);
-                    let _ = response.send_response(&mut stream);
+                Err(err) => {
+                    process_err(err, &mut stream);
                 }
             }
-            println!("Fin Connection");
+            println!("Response sent");
         }
         Ok(())
     }
+}
+
+fn process_err(err: super::error::http_error::HttpError, stream: &mut std::net::TcpStream) {
+    let body = BodyContent::Text(get_page_content_error(err.take()));
+    let response = HttpResponse::new(status_code::defaults::not_found(), None, body);
+    let _ = response.send_response(stream);
 }

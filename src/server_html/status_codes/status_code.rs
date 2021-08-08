@@ -3,7 +3,7 @@ use crate::server_html::status_codes::server_error_code::ServerErrorCode;
 use crate::server_html::status_codes::successfull_code::SuccessfullCode;
 use std::string::ToString;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum StatusCode {
     Informational(u16, String),
     Successfull(SuccessfullCode),
@@ -42,16 +42,23 @@ pub mod defaults {
     }
 
     pub fn bad_request() -> StatusCode {
-        StatusCode::ClientError(ClientErrorCode::BadRequest("Bad Request".to_string()))
+        StatusCode::ClientError(ClientErrorCode::BadRequest("Bad request".to_string()))
     }
 
     pub fn not_found() -> StatusCode {
-        StatusCode::ClientError(ClientErrorCode::NotFound("Not Found".to_string()))
+        StatusCode::ClientError(ClientErrorCode::NotFound("Page not found".to_string()))
     }
 
     pub fn length_required() -> StatusCode {
         StatusCode::ClientError(ClientErrorCode::LengthRequired(
             "Lenght Required".to_string(),
+        ))
+    }
+
+    pub fn request_entity_too_large() -> StatusCode {
+        StatusCode::ClientError(ClientErrorCode::RequestEntityTooLarge(
+            "The request entity is larger than the server is willing or able to process."
+                .to_string(),
         ))
     }
 

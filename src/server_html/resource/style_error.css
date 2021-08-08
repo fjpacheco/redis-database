@@ -1,0 +1,24 @@
+body {
+    background-color: #262626
+}
+
+#logo-rust-eze {
+    margin: auto;
+    text-align: center;
+}
+
+#title {
+    margin: auto;
+    text-align: center;
+    font-family: sans-serif;
+    font-size: 16px;
+    color: rgb(240, 240, 240);
+}
+
+#description {
+    margin: auto;
+    text-align: center;
+    font-family: sans-serif;
+    font-size: 16px;
+    color: rgb(240, 240, 240);
+}

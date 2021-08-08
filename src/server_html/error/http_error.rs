@@ -1,7 +1,7 @@
 use crate::server_html::status_codes::status_code::StatusCode;
 use std::convert::From;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct HttpError {
     status_code: StatusCode,
 }
