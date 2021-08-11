@@ -4,6 +4,9 @@ use crate::server_html::status_codes::successfull_code::SuccessfullCode;
 use std::string::ToString;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+/// Enumerates all the general status that a HttpResponse could take.
+/// Furthermore, each variant contains a enumerate that is encoded by
+/// a numeric code and its own description of the status.
 pub enum StatusCode {
     Informational(u16, String),
     Successfull(SuccessfullCode),

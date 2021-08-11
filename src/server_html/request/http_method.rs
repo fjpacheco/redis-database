@@ -3,6 +3,7 @@ use crate::server_html::status_codes::client_error_code::ClientErrorCode;
 use crate::server_html::status_codes::status_code::StatusCode;
 
 #[derive(Debug, PartialEq)]
+/// HttpMethod encapsules the methods that our html code can request
 pub enum HttpMethod {
     Get,
     Post,

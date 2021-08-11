@@ -1,4 +1,6 @@
 #[derive(Debug, Clone, PartialEq, Eq)]
+/// Enumerates some server error status that the reply
+/// could take. 
 pub enum ServerErrorCode {
     InternalServerError(String),
 }
