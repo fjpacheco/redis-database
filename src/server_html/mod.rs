@@ -6,5 +6,5 @@ pub mod error;
 pub mod handler;
 pub mod http_response;
 //pub mod http_response_agus;
-pub mod page_content;
+pub mod html_content;
 pub mod request;

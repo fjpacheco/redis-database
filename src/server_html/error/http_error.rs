@@ -17,6 +17,10 @@ impl HttpError {
         description.remove(0);
         (code, description)
     }
+
+    pub fn get_status_code(&self) -> StatusCode {
+        self.status_code.clone()
+    }
 }
 
 impl From<StatusCode> for HttpError {

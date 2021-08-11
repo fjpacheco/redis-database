@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use std::convert::From;
 use std::io::{BufRead, BufReader, Read};
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct HttpRequest {
     method: HttpMethod,
     url: HttpUrl,
@@ -31,12 +31,12 @@ impl HttpRequest {
         })
     }
 
-    pub fn get_method(&self) -> HttpMethod {
-        self.method.clone()
+    pub fn get_url(&self) -> &HttpUrl {
+        &self.url
     }
 
-    pub fn get_url(&self) -> HttpUrl {
-        self.url.clone()
+    pub fn get_method(&self) -> &HttpMethod {
+        &self.method
     }
 
     pub fn get_body(&self) -> Option<&String> {
@@ -136,9 +136,13 @@ fn process_req_line(req_line: String) -> Result<(HttpMethod, HttpUrl, String), H
 #[cfg(test)]
 pub mod test_http_request {
 
+    use crate::server_html::status_codes::{
+        client_error_code::ClientErrorCode, status_code::StatusCode,
+    };
+
     use super::*;
     #[test]
-    fn test_01() {
+    fn test_01_get_request_in_string_format_is_parsed_correctly_in_request_structure() {
         let emuled_request: String =
             String::from("GET /greeting HTTP/1.1\r\nPort: 8080\r\nRust-eze: Team\r\n\r\n");
         let mut headers_expected: HashMap<String, String> = HashMap::new();
@@ -151,7 +155,7 @@ pub mod test_http_request {
     }
 
     #[test]
-    fn test_02() {
+    fn test_02_post_request_in_string_format_is_parsed_correctly_in_request_structure() {
         let body = "I'm a Body!".to_string();
         let emuled_request: String = format!("POST /greeting HTTP/1.1\r\nPort: 8080\r\nRust-eze: Team\r\nContent-Length: {}\r\n\r\n{}", body.len(), body);
         let mut headers_expected: HashMap<String, String> = HashMap::new();
@@ -166,7 +170,7 @@ pub mod test_http_request {
     }
 
     #[test]
-    fn test_03() {
+    fn test_03_return_error_413_if_the_body_content_is_very_large() {
         let large_body = String::from_utf8(vec![b'X'; 8192]).unwrap();
         let emuled_request: String = format!("POST /greeting HTTP/1.1\r\nPort: 8080\r\nRust-eze: Team\r\nContent-Length: {}\r\n\r\n{}", large_body.len(), large_body);
         let mut headers_expected: HashMap<String, String> = HashMap::new();
@@ -174,11 +178,35 @@ pub mod test_http_request {
         headers_expected.insert("Rust-eze".into(), "Team".into());
         headers_expected.insert("Content-Length".into(), large_body.len().to_string());
 
-        let request_parsed = HttpRequest::new(&mut emuled_request.as_bytes());
+        let err_received = HttpRequest::new(&mut emuled_request.as_bytes()).unwrap_err();
 
         assert_eq!(
-            request_parsed.unwrap_err(),
+            err_received,
             HttpError::new(defaults::request_entity_too_large())
         );
+
+        assert_eq!(err_received.take().0, "413")
+    }
+
+    #[test]
+    fn test_04_return_error_400_if_a_request_does_not_support_the_html_protocol() {
+        let emuled_request: String =
+            String::from("GET /greeting HTTP/1.1 Port: 8080 Rust-eze: Team");
+        let mut headers_expected: HashMap<String, String> = HashMap::new();
+        headers_expected.insert("Port".into(), "8080".into());
+        headers_expected.insert("Rust-eze".into(), "Team".into());
+
+        let err_received = HttpRequest::new(&mut emuled_request.as_bytes()).unwrap_err();
+
+        assert_eq!(
+            err_received,
+            HttpError::new(StatusCode::ClientError(ClientErrorCode::BadRequest(
+                "The request could not be understood by the server due to malformed
+                syntax."
+                    .to_string(),
+            ),))
+        );
+
+        assert_eq!(err_received.take().0, "400")
     }
 }

@@ -1,5 +1,11 @@
 VALGRIND = valgrind --leak-check=full --track-origins=yes --show-reachable=yes -s
  
+run_server_database:
+	cargo run --release --bin=server_database
+
+run_server_html:
+	cargo run --release --bin=server_html
+	
 run_v:
 	cargo b
 	$(VALGRIND) target/debug/server

@@ -2,7 +2,7 @@ use crate::server_html::error::http_error::HttpError;
 use crate::server_html::status_codes::client_error_code::ClientErrorCode;
 use crate::server_html::status_codes::status_code::StatusCode;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, PartialEq)]
 pub enum HttpMethod {
     Get,
     Post,
