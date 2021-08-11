@@ -190,7 +190,7 @@ mod tests {
         let response_expected = HttpResponse {
             version: "HTTP/1.1".to_string(),
             status_code: "404".to_string(),
-            status_text: "Not Found".to_string(),
+            status_text: "Page not found".to_string(),
             headers: {
                 let mut h = HashMap::new();
                 h.insert("Content-Type".to_string(), "text/html".to_string());

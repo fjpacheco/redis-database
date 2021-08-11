@@ -25,11 +25,11 @@ impl<'a> ServerHtml<'a> {
             match HttpRequest::new(&mut stream) {
                 Ok(req) => {
                     if let Err(err) = Router::route(req, &mut stream) {
-                        process_err(err, &mut stream);
+                        process_err(err, &mut stream)?;
                     }
                 }
                 Err(err) => {
-                    process_err(err, &mut stream);
+                    process_err(err, &mut stream)?;
                 }
             }
             println!("Response sent");
@@ -38,8 +38,17 @@ impl<'a> ServerHtml<'a> {
     }
 }
 
-fn process_err(err: super::error::http_error::HttpError, stream: &mut std::net::TcpStream) {
+fn process_err(
+    err: super::error::http_error::HttpError,
+    stream: &mut std::net::TcpStream,
+) -> Result<(), std::io::Error> {
     let body = BodyContent::Text(get_page_content_error(err.take()));
     let response = HttpResponse::new(status_code::defaults::not_found(), None, body);
-    let _ = response.send_response(stream);
+    // We should close the programme if the socket is disconnected
+    response.send_response(stream).map_err(|_| {
+        std::io::Error::new(
+            std::io::ErrorKind::ConnectionAborted,
+            "Http Server has been closed",
+        )
+    })
 }
