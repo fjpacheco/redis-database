@@ -1,8 +1,8 @@
-use std::ops::Not;
 use std::{
     collections::HashSet,
     io::{BufRead, BufReader, Lines, Read, Write},
     net::{Shutdown, TcpStream},
+    ops::Not,
     sync::mpsc::{Receiver, Sender},
     thread::{self, JoinHandle},
 };
@@ -25,13 +25,15 @@ pub struct RedisClient {
 }
 
 impl RedisClient {
-    /// Creates the structure in charge of processing the website input.
-    ///
+    /// Creates the structure in charge of processing/parsing the website
+    /// input received from the http server.
     ///
     /// # Error
     /// Return an [ErrorStruct] if:
     ///
-    /// * TODO: COMPLETE THIS
+    /// * There's an error when connecting to the server.
+    /// * Streams clone can't be performed.
+    /// * An operation processed by function process_web_input fails.
     pub fn new(
         available_commands: HashSet<String>,
         cmd_sender: Sender<Option<String>>,
@@ -39,9 +41,9 @@ impl RedisClient {
         cmd_receiver: Receiver<Option<String>>,
         address: String,
     ) -> Result<Self, ErrorStruct> {
+        // address: self.ip.to_string() + ":" + &self.port
         let stream = TcpStream::connect(address).map_err(|_| {
             ErrorStruct::new(
-                // address = self.ip.to_string() + ":" + &self.port
                 "CONNECTION_FAIL".to_string(),
                 "Redis Client couldn't connect to the server.".to_string(),
             )
@@ -81,12 +83,12 @@ impl RedisClient {
 /// Checks if the input received as string relates to an available command.
 /// If it does, returns a vector with the string split by whitespace, if not
 /// returns error.
-pub fn turn_into_vector(
+fn turn_into_vector(
     available_commands: &HashSet<String>,
     input: String,
 ) -> Result<Vec<String>, ErrorStruct> {
-    // TODO: here could be called a function to check for special characters and replace them
-    let input_vector: Vec<String> = input.split(' ').map(str::to_string).collect();
+    let checked_input: String = convert_special_characters(input)?;
+    let input_vector: Vec<String> = checked_input.split(' ').map(str::to_string).collect();
     if input_vector.len() == 0 || available_commands.contains(&input_vector[0]).not() {
         return Err(ErrorStruct::new(
             "COMMAND".to_string(),
@@ -96,13 +98,66 @@ pub fn turn_into_vector(
     Ok(input_vector)
 }
 
+/// Returns the char related to the string hexadecimal.
+fn hex_to_char(s: &str) -> Result<char, ErrorStruct> {
+    match u8::from_str_radix(s, 16).map(|n| n as char) {
+        Ok(char) => Ok(char),
+        Err(_) => Err(ErrorStruct::new(
+            "INPUT".to_string(),
+            "User input had invalid characters.".to_string(),
+        )),
+    }
+}
+
+/// Checks for special characters on the string and replaces them.
+/// Iterates through the input string looking for a '%', in case of
+/// finding it, checks its next byte and obtains an ascii symbol,
+/// then replaces it at the string.
+pub fn convert_special_characters(input: String) -> Result<String, ErrorStruct> {
+    let mut checked_input: Vec<String> = [].to_vec();
+    let mut i = 0;
+    let mut iter = input.chars();
+    while let Some(mut char) = iter.next() {
+        match char {
+            '%' => {
+                // checking for equal should be enough, as the loop ensures it
+                if (i + 1) >= input.len() || (i + 2) >= input.len() {
+                    return Err(ErrorStruct::new(
+                        "INPUT_CHARACTERS".to_string(),
+                        "Input contains non-interpretable characters.".to_string(),
+                    ));
+                } else {
+                    let input_slice = input.get(i + 1..i + 3).unwrap();
+                    char = hex_to_char(input_slice)?;
+                    if char.to_string().is_ascii() {
+                        i += 3;
+                        iter.next();
+                        iter.next();
+                    } else {
+                        return Err(ErrorStruct::new(
+                            "INPUT_CHARACTERS".to_string(),
+                            "Input contains non-interpretable characters.".to_string(),
+                        ));
+                    }
+                }
+            }
+            _ => {
+                i += 1;
+            }
+        }
+        checked_input.push(char.to_string());
+    }
+    Ok(checked_input.into_iter().collect())
+}
+
 /// Iterates receiving string commands from the http server. If the command is
 /// valid, writes it to the stream, if it's not, sends an error to the http server.
 ///
 /// # Error
 /// Return an [ErrorStruct] if:
 ///
-/// *
+/// * A closed channel won't let send a message to the http server.
+/// * It is not possible to read a line from a stream.
 fn process_db_response(
     http_sender: Sender<Result<String, ErrorStruct>>,
     stream: &mut impl Read,
@@ -173,7 +228,8 @@ fn get_string_response(
 /// # Error
 /// Return an [ErrorStruct] if:
 ///
-/// *
+/// * A closed channel won't let send a message to the http server.
+/// * It is not possible to write a line to a stream.
 fn process_web_input(
     available_commands: &HashSet<String>,
     stream: &mut impl Write,
@@ -238,11 +294,12 @@ pub fn close_thread(
 mod test_redis_client {
 
     use super::*;
-    use crate::vec_strings;
-    use std::sync::mpsc;
+    // use crate::vec_strings;
+    // use std::sync::mpsc;
 
     #[test]
     fn test_01() {
+        /*
         let available_commands_list: Vec<String> = vec_strings![
             "decrby",
             "del",
@@ -285,6 +342,53 @@ mod test_redis_client {
             http_sender_mock,
             cmd_receiver_mock,
             "127.0.0.1:6379".to_string(),
+        );
+        */
+    }
+
+    #[test]
+    fn test_special_characters() {
+        assert_eq!(
+            convert_special_characters("example%3f".to_string()).unwrap(),
+            "example?".to_string()
+        );
+        assert_eq!(
+            convert_special_characters("example%3fexample".to_string()).unwrap(),
+            "example?example".to_string()
+        );
+        assert_eq!(
+            convert_special_characters("%3f".to_string()).unwrap(),
+            "?".to_string()
+        );
+        assert_eq!(
+            convert_special_characters("example".to_string()).unwrap(),
+            "example".to_string()
+        );
+        assert_eq!(
+            convert_special_characters("%253f".to_string()).unwrap(),
+            "%3f".to_string()
+        );
+        assert_eq!(
+            convert_special_characters("%252525252F".to_string()).unwrap(),
+            "%2525252F".to_string()
+        );
+        assert_eq!(
+            convert_special_characters("%2525%25".to_string()).unwrap(),
+            "%25%".to_string()
+        );
+
+        assert_eq!(
+            convert_special_characters("example%2".to_string())
+                .unwrap_err()
+                .print_it(),
+            "INPUT_CHARACTERS Input contains non-interpretable characters.".to_string()
+        );
+
+        assert_eq!(
+            convert_special_characters("example%".to_string())
+                .unwrap_err()
+                .print_it(),
+            "INPUT_CHARACTERS Input contains non-interpretable characters.".to_string()
         );
     }
 }
