@@ -8,3 +8,4 @@ pub mod http_response;
 //pub mod http_response_agus;
 pub mod html_content;
 pub mod request;
+pub mod redis_client;
