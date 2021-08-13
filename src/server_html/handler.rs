@@ -1,141 +1,101 @@
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::{Read, Write};
-use std::{collections::HashMap, fs};
 
 use super::error::http_error::HttpError;
 use super::http_response::HttpResponse;
-use crate::server_html::page_content::get_page_content;
+use super::request::http_method::HttpMethod;
+use crate::server_html::html_content::get_page_content;
 use crate::server_html::request::{http_request::HttpRequest, http_url::HttpUrl};
+use crate::server_html::status_codes::status_code;
 
 pub trait Handler {
-    fn handle(req: &HttpRequest) -> HttpResponse;
-    fn load_file(file_name: &str) -> Option<String> {
-        let contents = fs::read_to_string(file_name);
-        contents.ok()
-    }
-}
+    fn handle(req: &HttpRequest) -> Result<HttpResponse, HttpError>;
 
-pub struct Css;
+    fn load_file(file_name: &str) -> Result<Option<Vec<u8>>, HttpError> {
+        if file_name.is_empty() {
+            return Ok(None);
+        }
 
-impl Handler for Css {
-    fn handle(_req: &HttpRequest) -> HttpResponse {
-        let mut map: HashMap<&str, &str> = HashMap::new();
-        map.insert("Content-Type", "text/css");
-        HttpResponse::new(
-            "200",
-            Some(map),
-            Self::load_file("src/server_html/resource/style.css"),
-        )
-    }
-}
-
-pub struct Image;
-
-impl Handler for Image {
-    fn handle(_req: &HttpRequest) -> HttpResponse {
-        let mut map: HashMap<&str, &str> = HashMap::new();
-        map.insert("Content-Type", "image/jpeg");
-        HttpResponse::new(
-            "200",
-            Some(map),
-            Self::load_file("src/server_html/resource/image.html"),
-        )
-    }
-}
-
-pub struct ImagePng;
-
-impl ImagePng {
-    /// Recordar los map_err() :>
-    pub fn send_image(file_name: &str, stream: &mut impl Write) -> Result<(), HttpError> {
-        let file_path = format!("src/server_html/resource/{}", file_name);
-
+        let file_name = format!("src/server_html/resource/{}", file_name);
         let mut buff_image = Vec::new();
-        let mut file = File::open(&file_path).unwrap();
-        file.read_to_end(&mut buff_image).unwrap();
-        file.flush().unwrap();
-
-        let content_length = format!("Content-Length: {}", buff_image.len());
-
-        let headers = [
-            "HTTP/1.1 200 OK",
-            "Content-type: image/png",
-            &content_length,
-            "\r\n",
-        ];
-
-        let mut response = headers.join("\r\n").to_string().into_bytes();
-        response.extend(buff_image);
-
-        stream.write_all(&response).unwrap();
-        stream.flush().unwrap();
-        stream.write(b"\r\n").unwrap();
-        stream.flush().unwrap();
-        Ok(())
+        let mut file = File::open(&file_name)
+            .map_err(|_| HttpError::from(status_code::defaults::not_found()))?;
+        file.read_to_end(&mut buff_image)
+            .map_err(|_| HttpError::from(status_code::defaults::not_found()))?;
+        file.flush()
+            .map_err(|_| HttpError::from(status_code::defaults::not_found()))?;
+        Ok(Some(buff_image))
     }
 }
 
-pub struct CommandRedis;
+pub struct CommandRedisPage;
 
-impl Handler for CommandRedis {
-    fn handle(req: &HttpRequest) -> HttpResponse {
-        // Get the path of static page resource being requested
-        let HttpUrl::Path(s) = req.get_url();
+// TODO: para lo de MARTO seguramente acá no deberiamos respstar el trait HAndelr... habrá que pasar channels de alguna manera jeee
+impl Handler for CommandRedisPage {
+    fn handle(req: &HttpRequest) -> Result<HttpResponse, HttpError> {
+        let default_command = "";
+        let command = req
+            .get_body()
+            .unwrap_or(&default_command.to_string())
+            .split('=')
+            .collect::<Vec<&str>>()
+            .get(1)
+            .unwrap_or(&default_command)
+            .to_string()
+            .replace("+", " ");
 
-        // Parse the URI
-        let uri: Vec<&str> = s.split("=").collect();
-        let command = uri[1].to_string().replace("+", " ");
+        // TODO: ACA VA LO DE MARTO
 
-        let body = Some(get_page_content(&command));
+        let contents = get_page_content(&command).into_bytes();
 
-        HttpResponse::new("200", None, body)
-    }
-}
-
-pub struct PageNotFoundHandler;
-
-impl Handler for PageNotFoundHandler {
-    fn handle(_req: &HttpRequest) -> HttpResponse {
-        HttpResponse::new(
-            "404",
+        Ok(HttpResponse::new(
+            status_code::defaults::ok(),
             None,
-            Self::load_file("src/server_html/resource/404.html"),
-        )
+            Some(contents),
+        ))
     }
 }
-pub struct StaticPageHandler;
 
-impl Handler for StaticPageHandler {
-    fn handle(req: &HttpRequest) -> HttpResponse {
-        // Get the path of static page resource being requested
+pub struct StaticPage;
+
+impl Handler for StaticPage {
+    fn handle(req: &HttpRequest) -> Result<HttpResponse, HttpError> {
+        if req.get_method() != &HttpMethod::Get {
+            return Err(HttpError::from(status_code::defaults::bad_request()));
+        }
+
         let HttpUrl::Path(s) = req.get_url();
 
-        // Parse the URI
-        let route: Vec<&str> = s.split("/").collect();
+        let route: Vec<&str> = s.split('/').collect();
         match route[1] {
-            "" => HttpResponse::new(
-                "200",
+            "" => Ok(HttpResponse::new(
+                status_code::defaults::ok(),
                 None,
-                Self::load_file("src/server_html/resource/index.html"),
-            ),
-            path => match Self::load_file(path) {
-                Some(contents) => {
-                    let mut map: HashMap<&str, &str> = HashMap::new();
-                    if path.ends_with(".css") {
-                        map.insert("Content-Type", "text/css");
-                    } else if path.ends_with(".js") {
-                        map.insert("Content-Type", "text/javascript");
-                    } else {
-                        map.insert("Content-Type", "text/html");
-                    }
-                    HttpResponse::new("200", Some(map), Some(contents))
+                Self::load_file("index.html")?,
+            )),
+            path => {
+                let mut map: HashMap<String, String> = HashMap::new();
+                if path.ends_with(".css") {
+                    map.insert("Content-Type".to_string(), "text/css".to_string());
+                } else if path.ends_with(".png") {
+                    map.insert("Content-Type".to_string(), "image/png".to_string());
+                } else if path.ends_with(".html") {
+                    map.insert("Content-Type".to_string(), "text/html".to_string());
+                } else {
+                    return Ok(HttpResponse::new(
+                        status_code::defaults::not_found(),
+                        None,
+                        StaticPage::load_file("404.html")?,
+                    ));
                 }
-                None => HttpResponse::new(
-                    "404",
-                    None,
-                    Self::load_file("src/server_html/resource/404.html"),
-                ),
-            },
+
+                Ok(HttpResponse::new(
+                    status_code::defaults::ok(),
+                    Some(map),
+                    Self::load_file(path)?,
+                ))
+            }
         }
     }
 }

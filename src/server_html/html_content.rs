@@ -34,3 +34,34 @@ pub fn get_page_content(redis_response: &str) -> String {
             </body>
         </html>", redis_response)
 }
+
+pub fn get_page_content_error((code, description): (String, String)) -> String {
+    format!(
+        "
+        <html>
+            <head>
+                <meta charset=\"utf-8\" />
+                <title>{} Error - Rust-eze</title>
+                <link href=\"favicon.png\" rel=\"shortcut icon\">
+                <link href=\"/style_error.css\" rel=\"stylesheet\">
+
+            </head>
+
+            <body>
+                <div id=\"logo-rust-eze\">
+                    <img src=\"logo-rust-ese-2030.png\">
+                </div>
+
+                <div id=\"title\">
+                    <h1>{} - Error</h1>
+                </div>
+
+                <div id=\"description\">
+                    <p>{}</p>
+                </div>
+
+            </body>
+        </html>",
+        code, code, description
+    )
+}
