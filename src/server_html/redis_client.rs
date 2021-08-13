@@ -36,9 +36,9 @@ impl RedisClient {
     /// * An operation processed by function process_web_input fails.
     pub fn new(
         available_commands: HashSet<String>,
-        cmd_sender: Sender<Option<String>>,
-        http_sender: Sender<Result<String, ErrorStruct>>,
-        cmd_receiver: Receiver<Option<String>>,
+        cmd_sender: Sender<Option<String>>, // Agus sender
+        response_http_sender: Sender<Result<String, ErrorStruct>>, // Send OK or ERROR to Agus 77777
+        http_receiver: Receiver<Option<String>>, // Agus sends me stuff and I receive it here xD
         address: String,
     ) -> Result<Self, ErrorStruct> {
         // address: self.ip.to_string() + ":" + &self.port
@@ -57,7 +57,7 @@ impl RedisClient {
             .try_clone()
             .map_err(|_| ErrorStruct::new("TODO".to_string(), "TODO".to_string()))?;
 
-        let http_sender_clone = http_sender.clone();
+        let http_sender_clone = response_http_sender.clone();
 
         let read_thread =
             thread::spawn(move || process_db_response(http_sender_clone, &mut stream_read_clone));
@@ -66,8 +66,8 @@ impl RedisClient {
             process_web_input(
                 &available_commands,
                 &mut stream_write_clone,
-                cmd_receiver,
-                http_sender,
+                http_receiver,
+                response_http_sender,
             )
         });
 
@@ -294,12 +294,13 @@ pub fn close_thread(
 mod test_redis_client {
 
     use super::*;
-    // use crate::vec_strings;
-    // use std::sync::mpsc;
+    use std::{sync::mpsc, thread::{sleep, spawn, JoinHandle}, time::Duration};
+    use crate::{ServerRedis, vec_strings};
+
 
     #[test]
-    fn test_01() {
-        /*
+    fn test_01() -> Result<(), ErrorStruct> {
+
         let available_commands_list: Vec<String> = vec_strings![
             "decrby",
             "del",
@@ -334,16 +335,59 @@ mod test_redis_client {
             .iter()
             .map(|member| member.to_string())
             .collect();
-        let (http_sender_mock, _) = mpsc::channel();
-        let (cmd_sender_mock, cmd_receiver_mock) = mpsc::channel();
-        let _ = RedisClient::new(
-            available_commands_set,
-            cmd_sender_mock,
-            http_sender_mock,
-            cmd_receiver_mock,
-            "127.0.0.1:6379".to_string(),
-        );
-        */
+        let server_thread: JoinHandle<Result<(), ErrorStruct>> = spawn(move || {
+            ServerRedis::start(vec![])?;
+            Ok(())
+        });
+        let millisecond = Duration::from_millis(10);
+        let mut retries = 0;
+        loop {
+            let (response_http_mock, processed_response_mock) = mpsc::channel();
+            let (cmd_sender_mock, http_receiver_mock) = mpsc::channel();
+            match RedisClient::new(
+                available_commands_set.clone(),
+                cmd_sender_mock.clone(),
+                response_http_mock,
+                http_receiver_mock,
+                "127.0.0.1:6379".to_string(),
+            ) {
+                Err(err) => {
+                    if let Some(prefix) = err.prefix()  {
+                        if prefix == "CONNECTION_FAIL" {
+                            sleep(millisecond);
+                            retries += 1;
+                            if retries > 100000 {
+                                return Err(ErrorStruct::new(
+                                    "ERR_CLIENT".to_string(),
+                                    "Tried to connect too many times".to_string()),
+                                );
+                            }  
+                        } 
+                    } else {
+                        return Err(ErrorStruct::new(
+                            "ERR_CLIENT".to_string(),
+                            "Could not connect".to_string()),
+                        );
+                    }
+                }
+                Ok(redis_client) => {
+                    cmd_sender_mock.send(Some("set key value1".to_string()));
+                    dbg!(processed_response_mock.recv().unwrap());
+
+                    cmd_sender_mock.send(Some("set key value2".to_string()));
+                    dbg!(processed_response_mock.recv().unwrap());
+
+                    cmd_sender_mock.send(Some("get key".to_string()));
+                    dbg!(processed_response_mock.recv().unwrap());
+
+                    cmd_sender_mock.send(Some("monitor".to_string()));
+                    dbg!(processed_response_mock.recv().unwrap());
+
+                    break;
+                }
+            }
+        }
+        Ok(())
     }
 
     #[test]
