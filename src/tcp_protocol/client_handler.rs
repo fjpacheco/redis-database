@@ -273,7 +273,7 @@ fn process_command_redis(
     notifier: &Notifier,
     response_sender: &Sender<Option<String>>,
 ) -> Result<(), ErrorStruct> {
-    println!("input: {:?}", input);
+    //println!("input: {:?}", input);
     input.remove(0);
     process_command_general(
         input,
@@ -332,7 +332,7 @@ where
     G: BufRead,
 {
     let command_vec = RArray::decode(first_lecture, lines_buffer_reader)?;
-    println!("command_vec: {:?}", command_vec);
+    //println!("command_vec: {:?}", command_vec);
     let result = client_status
         .lock()
         .map_err(|_| {

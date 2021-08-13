@@ -60,16 +60,22 @@ impl RedisClient {
         let http_sender_clone = response_http_sender.clone();
 
         let read_thread =
-            thread::spawn(move || process_db_response(http_sender_clone, &mut stream_read_clone));
+            thread::Builder::new()
+            .name("redis_client_read_thread".to_string())
+            .spawn(move || process_db_response(http_sender_clone, &mut stream_read_clone))
+            .unwrap();
 
-        let write_thread = thread::spawn(move || {
-            process_web_input(
-                &available_commands,
-                &mut stream_write_clone,
-                http_receiver,
-                response_http_sender,
-            )
-        });
+        let write_thread = thread::Builder::new()
+                                            .name("redis_client_write_thread".to_string())
+                                            .spawn(move || {
+                                                process_web_input(
+                                                    &available_commands,
+                                                    &mut stream_write_clone,
+                                                    http_receiver,
+                                                    response_http_sender,
+                                                )
+                                            })
+                                            .unwrap();
 
         Ok(RedisClient {
             cmd_sender,
@@ -167,7 +173,9 @@ fn process_db_response(
     while let Some(received) = lines.next() {
         match received {
             Ok(db_response) => {
+                //println!("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA {}", db_response);
                 let string_response = get_string_response(db_response, &mut lines);
+                //println!("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB {:?}", string_response);
                 http_sender.send(string_response).map_err(|_| {
                     ErrorStruct::new(
                         "CLOSED_CHANNEL".to_string(),
@@ -193,6 +201,12 @@ fn get_string_response(
     mut lines: &mut Lines<BufReader<&mut impl Read>>,
 ) -> Result<String, ErrorStruct> {
     let string_response;
+    if db_response.is_empty() {
+        return Err(ErrorStruct::new(
+            "STREAM_READ".to_string(),
+            "Given response is empty.".to_string(),
+        ));
+    }
     match db_response.remove(0) {
         '*' => {
             let array_response = RArray::decode(db_response, &mut lines);
@@ -219,6 +233,7 @@ fn get_string_response(
             ));
         }
     }
+    let _ = lines.next();
     string_response
 }
 
@@ -289,6 +304,7 @@ pub fn close_thread(
         Ok(())
     }
 }
+
 
 #[cfg(test)]
 mod test_redis_client {
@@ -372,16 +388,22 @@ mod test_redis_client {
                 }
                 Ok(redis_client) => {
                     cmd_sender_mock.send(Some("set key value1".to_string()));
-                    dbg!(processed_response_mock.recv().unwrap());
 
                     cmd_sender_mock.send(Some("set key value2".to_string()));
-                    dbg!(processed_response_mock.recv().unwrap());
 
                     cmd_sender_mock.send(Some("get key".to_string()));
-                    dbg!(processed_response_mock.recv().unwrap());
 
-                    cmd_sender_mock.send(Some("monitor".to_string()));
-                    dbg!(processed_response_mock.recv().unwrap());
+                    assert_eq!(processed_response_mock.recv().unwrap().unwrap(), "OK");
+                    assert_eq!(processed_response_mock.recv().unwrap().unwrap(), "OK");
+                    assert_eq!(processed_response_mock.recv().unwrap().unwrap(), "value2");
+                    //cmd_sender_mock.send(Some("shutdown".to_string()));
+                    
+                    /*for response in processed_response_mock.iter() {
+                        println!("RESPUESTA DEL SERVER: {:?}", response);
+                    }*/
+
+                    //cmd_sender_mock.send(Some("monitor".to_string()));
+                    //dbg!(processed_response_mock.recv().unwrap());
 
                     break;
                 }
