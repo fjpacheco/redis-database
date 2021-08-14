@@ -7,5 +7,6 @@ pub mod handler;
 pub mod http_response;
 pub mod redis_client;
 //pub mod http_response_agus;
+pub mod available_commands;
 pub mod html_content;
 pub mod request;

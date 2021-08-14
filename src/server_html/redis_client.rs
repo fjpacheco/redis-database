@@ -311,47 +311,14 @@ mod test_redis_client {
 
     use super::*;
     use std::{sync::mpsc, thread::{sleep, spawn, JoinHandle}, time::Duration};
-    use crate::{ServerRedis, vec_strings};
-
+    use crate::ServerRedis;
+    use crate::server_html::available_commands::available_commands;
 
     #[test]
     fn test_01() -> Result<(), ErrorStruct> {
 
-        let available_commands_list: Vec<String> = vec_strings![
-            "decrby",
-            "del",
-            "exists",
-            "get",
-            "getset",
-            "incrby",
-            "keys",
-            "lindex",
-            "llen",
-            "lpop",
-            "lpush",
-            "lrange",
-            "lrem",
-            "lset",
-            "mget",
-            "mset",
-            "rename",
-            "rpop",
-            "rpush",
-            "sadd",
-            "scard",
-            "set",
-            "sismember",
-            "smembers",
-            "sort",
-            "srem",
-            "ttl",
-            "type"
-        ];
-        let available_commands_set: HashSet<String> = available_commands_list
-            .iter()
-            .map(|member| member.to_string())
-            .collect();
-        let server_thread: JoinHandle<Result<(), ErrorStruct>> = spawn(move || {
+        let available_commands_set = available_commands();
+        let _server_thread: JoinHandle<Result<(), ErrorStruct>> = spawn(move || {
             ServerRedis::start(vec![])?;
             Ok(())
         });
@@ -386,12 +353,12 @@ mod test_redis_client {
                         );
                     }
                 }
-                Ok(redis_client) => {
-                    cmd_sender_mock.send(Some("set key value1".to_string()));
+                Ok(_redis_client) => {
+                    let _ = cmd_sender_mock.send(Some("set key value1".to_string()));
 
-                    cmd_sender_mock.send(Some("set key value2".to_string()));
+                    let _ = cmd_sender_mock.send(Some("set key value2".to_string()));
 
-                    cmd_sender_mock.send(Some("get key".to_string()));
+                    let _ = cmd_sender_mock.send(Some("get key".to_string()));
 
                     assert_eq!(processed_response_mock.recv().unwrap().unwrap(), "OK");
                     assert_eq!(processed_response_mock.recv().unwrap().unwrap(), "OK");
