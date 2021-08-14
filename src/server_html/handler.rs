@@ -13,6 +13,7 @@ use crate::server_html::available_commands::available_commands;
 use crate::server_html::redis_client::RedisClient;
 
 use crate::native_types::error::ErrorStruct;
+use crate::joinable::Joinable;
 pub trait Handler {
     fn handle(req: &HttpRequest) -> Result<HttpResponse, HttpError>;
 
@@ -67,13 +68,13 @@ fn execute_command(command: String) -> Result<String, HttpError> {
     let (cmd_sender, cmd_receiver) = mpsc::channel();
     let (rsp_sender, rsp_receiver) = mpsc::channel();
 
-    let _client = RedisClient::new(
+    let mut client = RedisClient::new(
         available_commands(),
         cmd_sender.clone(),
         rsp_sender,
         cmd_receiver,
         "127.0.0.1:6379".to_string(),
-    );
+    ).map_err(|err| map_db_err_to_http_err(err))?;
 
     cmd_sender.send(Some(command))
               .map_err(|_| HttpError::from(
@@ -81,11 +82,15 @@ fn execute_command(command: String) -> Result<String, HttpError> {
               ))?;
 
     
-    rsp_receiver.recv()
+    let response = rsp_receiver.recv()
                 .map_err(|_| HttpError::from(
                     status_code::defaults::internal_server_error()
                 ))?
-                .map_err(|err| map_db_err_to_http_err(err))
+                .map_err(|err| map_db_err_to_http_err(err));
+
+    client.join().map_err(|err| map_db_err_to_http_err(err))?;
+
+    response
 
 }
 
