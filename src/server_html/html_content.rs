@@ -1,3 +1,4 @@
+/// Generates in a string the html code with a response box provided by redis database.
 pub fn get_page_content(redis_response: &str) -> String {
     format!("
     <html>
@@ -35,6 +36,7 @@ pub fn get_page_content(redis_response: &str) -> String {
         </html>", redis_response)
 }
 
+/// Generates the html code in a string for the error page, according to the received code and description.
 pub fn get_page_content_error((code, description): (String, String)) -> String {
     format!(
         "

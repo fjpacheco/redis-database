@@ -78,7 +78,7 @@ fn get_body(
         let buffer = buf_reader
             .fill_buf()
             .map_err(|_| HttpError::from(defaults::bad_request()))?;
-        let body_string = String::from_utf8_lossy(&buffer).to_string();
+        let body_string = String::from_utf8_lossy(buffer).to_string();
         let length = buffer.len();
         buf_reader.consume(length);
 

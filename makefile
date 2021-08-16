@@ -6,11 +6,11 @@ run_server_database:
 run_server_html:
 	cargo run --release --bin=server_html
 	
-run_v:
+run_server_html_valgrind:
 	cargo b
 	$(VALGRIND) target/debug/server
 
-run_gdb:
+run_server_html_gdb:
 	cargo b
 	rust-gdb target/debug/server
 

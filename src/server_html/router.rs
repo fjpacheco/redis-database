@@ -60,7 +60,7 @@ mod tests {
     use super::*;
     #[test]
     #[ignore = "Test with concurrency problem crossing with other tests on the same port in server redis mock"]
-    fn long_test_01_response_command_in_set_key_value_post_method() {
+    fn concurrency_test_01_response_command_in_set_key_value_post_method() {
         let handler_mock_server = thread::spawn(move || {
             let server_mock = TcpListener::bind("127.0.0.1:6379").unwrap();
             let mut stream_tcp = server_mock.accept().unwrap().0;

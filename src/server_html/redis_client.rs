@@ -100,7 +100,7 @@ fn turn_into_vector(
 ) -> Result<Vec<String>, ErrorStruct> {
     let checked_input: String = convert_special_characters(input)?;
     let input_vector: Vec<String> = checked_input.split(' ').map(str::to_string).collect();
-    if input_vector.len() == 0 || available_commands.contains(&input_vector[0]).not() {
+    if input_vector.is_empty() || available_commands.contains(&input_vector[0]).not() {
         return Err(ErrorStruct::new(
             "COMMAND".to_string(),
             "User input did not match any available web command.".to_string(),
@@ -323,7 +323,8 @@ mod test_redis_client {
     };
 
     #[test]
-    fn test_01() -> Result<(), ErrorStruct> {
+    #[ignore]
+    fn long_test_01() -> Result<(), ErrorStruct> {
         let available_commands_set = available_commands();
         let _server_thread: JoinHandle<Result<(), ErrorStruct>> = spawn(move || {
             ServerRedis::start(vec![])?;

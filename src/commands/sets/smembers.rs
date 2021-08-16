@@ -53,7 +53,7 @@ impl Runnable<Arc<Mutex<Database>>> for Smembers {
 }
 
 fn check_error_cases(buffer: &[String]) -> Result<(), ErrorStruct> {
-    check_empty(&buffer, "smembers")?;
+    check_empty(buffer, "smembers")?;
 
     if buffer.len() != 1 {
         let error_message = redis_messages::arguments_invalid_to("smembers");

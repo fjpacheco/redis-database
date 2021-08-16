@@ -41,10 +41,10 @@ impl Runnable<Arc<Mutex<Database>>> for Copy {
         let key_source = &buffer[0];
         let key_destinty = &buffer[1];
 
-        if !database.contains_key(&key_source) | database.contains_key(&key_destinty) {
+        if !database.contains_key(key_source) | database.contains_key(key_destinty) {
             Ok(RInteger::encode(0))
         } else {
-            let value = database.get(&key_source).unwrap().clone(); // Unwrap Reason: Value associated for Key Source exists!
+            let value = database.get(key_source).unwrap().clone(); // Unwrap Reason: Value associated for Key Source exists!
             database.insert(key_destinty.to_string(), value);
             Ok(RInteger::encode(1))
         }
@@ -52,7 +52,7 @@ impl Runnable<Arc<Mutex<Database>>> for Copy {
 }
 
 fn check_error_cases(buffer: &[String]) -> Result<(), ErrorStruct> {
-    check_empty(&buffer, "copy")?;
+    check_empty(buffer, "copy")?;
 
     if buffer.len() != 2 {
         // never "copy" or "copy arg1"

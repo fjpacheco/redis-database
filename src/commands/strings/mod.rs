@@ -39,7 +39,7 @@ pub fn execute_value_modification(
 pub fn string_key_check(database: &mut Database, key: String) -> Result<isize, ErrorStruct> {
     if let Some(typesaved) = database.get_mut(&key) {
         match typesaved {
-            TypeSaved::String(old_value) => get_as_integer(&old_value),
+            TypeSaved::String(old_value) => get_as_integer(old_value),
             _ => Err(ErrorStruct::new(
                 String::from("ERR"),
                 String::from("key provided is not from strings"),

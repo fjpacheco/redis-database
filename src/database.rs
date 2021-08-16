@@ -277,7 +277,7 @@ impl Database {
             {
                 let time = expire_clone.ttl().map(|t| t as isize).unwrap_or(-1);
                 write_integer_to_file(time, &mut file)?;
-                persist_data(&key, &mut file, typesaved)?;
+                persist_data(key, &mut file, typesaved)?;
             }
         }
         Ok(())
@@ -461,7 +461,7 @@ fn persist_data(key: &str, file: &mut File, typesaved: &TypeSaved) -> Result<(),
         TypeSaved::String(value) => {
             write_integer_to_file(TypeCase::String as isize, file)?; // 0: String Encoding
             write_string_to_file(key, file)?; // KEY encoded as Redis String
-            write_string_to_file(&value, file)?;
+            write_string_to_file(value, file)?;
         }
         TypeSaved::List(values) => {
             write_integer_to_file(TypeCase::List as isize, file)?; // 1: List Encoding

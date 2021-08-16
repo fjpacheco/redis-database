@@ -4,7 +4,8 @@ use crate::server_html::error::http_error::HttpError;
 use crate::server_html::status_codes::status_code::StatusCode;
 
 use super::status_codes::status_code;
-
+/// Stores the corresponding data to provide a request with the HTTP/1.1 protocol.
+/// The headers and body may be empty.
 #[derive(Debug, PartialEq, Clone)]
 pub struct HttpResponse {
     version: String,
@@ -26,6 +27,8 @@ impl Default for HttpResponse {
     }
 }
 impl HttpResponse {
+    /// Create the structure with the corresponding data to provide a request with the HTTP/1.1 protocol.
+    /// Headers and body can be empty but not the [StatusCode].
     pub fn new(
         status_code: StatusCode,
         headers: Option<HashMap<String, String>>,
@@ -50,6 +53,7 @@ impl HttpResponse {
         response
     }
 
+    /// Writes the response to the given writer with the HTTP/1.1 protocol.
     pub fn send_response(&self, write_stream: &mut impl Write) -> Result<(), HttpError> {
         write_stream
             .write_all(&self.as_bytes())
@@ -61,18 +65,22 @@ impl HttpResponse {
     }
 }
 impl HttpResponse {
+    /// Get a version of the response.
     fn version(&self) -> String {
         self.version.clone()
     }
 
+    /// Get a status code of the response.
     fn status_code(&self) -> String {
         self.status_code.clone()
     }
 
+    /// Get a status text of the response.
     fn status_text(&self) -> String {
         self.status_text.clone()
     }
 
+    /// Get a headers of the response.
     fn headers(&self) -> String {
         let mut header_string: String = "".into();
         if self.headers.is_some() {
@@ -84,10 +92,12 @@ impl HttpResponse {
         header_string
     }
 
+    /// Get a reference to the body of the response in vector of bytes.
     pub fn body_bytes(&self) -> &Option<Vec<u8>> {
         &self.body
     }
 
+    /// Get the vector of bytes with the response format of the HTTP/1.1 protocol.
     fn as_bytes(&self) -> Vec<u8> {
         let mut response = format!(
             "{} {} {}\r\n{}Content-Length: {}\r\n\r\n",
@@ -106,6 +116,7 @@ impl HttpResponse {
 }
 
 impl From<HttpError> for HttpResponse {
+    /// Create the structure by the given error.
     fn from(err: HttpError) -> HttpResponse {
         let (code, description) = err.take();
         Self {
