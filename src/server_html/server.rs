@@ -2,18 +2,24 @@ use crate::server_html::html_content::get_page_content_error;
 use crate::server_html::http_response::HttpResponse;
 use crate::server_html::{request::http_request::HttpRequest, router::Router};
 use std::net::TcpListener;
-pub struct ServerHtml {
-    socket_addr: String,
-}
+pub struct ServerHtml;
 
 impl ServerHtml {
-    pub fn new(socket_addr: String) -> Self {
-        ServerHtml { socket_addr }
-    }
-
-    pub fn run(&self) -> Result<(), std::io::Error> {
-        let connection_listener = TcpListener::bind(self.socket_addr.to_string())?;
-        println!("Running on {}", self.socket_addr);
+     /// # Start of Client Web for Server Redis
+     /// Starts the web server that receives requests from browsers, communicating with them through 
+     /// the HTTP/1.1 protocol. The description of this protocol is the one corresponding to RFC 2616.
+     ///
+     /// The server must listen for HTTP requests on TCP port 8080 and will communicate with the [ServerRedis](crate::tcp_protocol::server::ServerRedis)
+     /// developed from the implemented redis protocol. 
+     ///
+     /// # Error
+     /// Return an [Error](std::io::Error) if:
+     ///
+     /// * The server cannot be started on the default port (8080).
+     /// * The connection was aborted (terminated) by the server.
+    pub fn start(socket_addr: &str) -> Result<(), std::io::Error> {
+        let connection_listener = TcpListener::bind(socket_addr.to_string())?;
+        println!("Running on {}", socket_addr);
 
         for mut stream in connection_listener
             .incoming()
@@ -21,6 +27,7 @@ impl ServerHtml {
             .map(|x| x.unwrap())
         {
             println!("Request received");
+            
             match HttpRequest::new(&mut stream) {
                 Ok(req) => {
                     if let Err(err) = Router::route(req, &mut stream) {
@@ -41,7 +48,7 @@ fn process_err(
     err: super::error::http_error::HttpError,
     stream: &mut std::net::TcpStream,
 ) -> Result<(), std::io::Error> {
-    let code = err.get_status_code();
+    let code = err.get_status_code().clone();
     let body = Some(get_page_content_error(err.take()).into_bytes());
     let response = HttpResponse::new(code, None, body);
     // We should close the programme if the socket is disconnected

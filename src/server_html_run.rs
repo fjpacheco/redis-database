@@ -1,7 +1,7 @@
-use redis_rust::server_html::server_html::ServerHtml;
+use redis_rust::server_html::server::ServerHtml;
+
 
 fn main() -> Result<(), std::io::Error> {
-    let server = ServerHtml::new("localhost:8080".to_string());
-    server.run()?;
+    ServerHtml::start("localhost:8080")?;
     Ok(())
 }
