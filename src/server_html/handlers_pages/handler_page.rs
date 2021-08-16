@@ -1,6 +1,12 @@
-use std::{fs::File, io::{Read, Write}};
+use std::{
+    fs::File,
+    io::{Read, Write},
+};
 
-use crate::server_html::{error::http_error::HttpError, http_response::HttpResponse, request::http_request::HttpRequest, status_codes::status_code};
+use crate::server_html::{
+    error::http_error::HttpError, http_response::HttpResponse, request::http_request::HttpRequest,
+    status_codes::status_code,
+};
 
 pub trait HandlerPage {
     /// In charge of handling the [HttpRequest] returning a response in an [HttpResponse].
@@ -8,8 +14,8 @@ pub trait HandlerPage {
     fn handle(req: &HttpRequest) -> Result<HttpResponse, HttpError>;
 
     /// Returns the content of a file in a <[Option]<[Vec]<[u8]>>.
-    /// If the empty file_name is received, it returns a [None]. 
-    /// Returns an [HttpError] if there was an error reading the file. 
+    /// If the empty file_name is received, it returns a [None].
+    /// Returns an [HttpError] if there was an error reading the file.
     fn load_file(file_name: &str) -> Result<Option<Vec<u8>>, HttpError> {
         if file_name.is_empty() {
             return Ok(None);

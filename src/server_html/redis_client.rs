@@ -36,9 +36,9 @@ impl RedisClient {
     /// * An operation processed by function process_web_input fails.
     pub fn new(
         available_commands: HashSet<String>,
-        cmd_sender: Sender<Option<String>>, // Agus sender
-        response_http_sender: Sender<Result<String, ErrorStruct>>, // Send OK or ERROR to Agus 77777
-        http_receiver: Receiver<Option<String>>, // Agus sends me stuff and I receive it here xD
+        cmd_sender: Sender<Option<String>>, // Http sender
+        response_http_sender: Sender<Result<String, ErrorStruct>>, // Send OK or ERROR to http server
+        http_receiver: Receiver<Option<String>>, // Http server sends stuff and RedisClient receives it here
         address: String,
     ) -> Result<Self, ErrorStruct> {
         // address: self.ip.to_string() + ":" + &self.port
@@ -49,33 +49,38 @@ impl RedisClient {
             )
         })?;
 
-        let mut stream_read_clone = stream
-            .try_clone()
-            .map_err(|_| ErrorStruct::new("TODO".to_string(), "TODO".to_string()))?;
+        let mut stream_read_clone = stream.try_clone().map_err(|_| {
+            ErrorStruct::new(
+                "STREAM_CLONE".to_string(),
+                "Stream clone couldn't be performed.".to_string(),
+            )
+        })?;
 
-        let mut stream_write_clone = stream
-            .try_clone()
-            .map_err(|_| ErrorStruct::new("TODO".to_string(), "TODO".to_string()))?;
+        let mut stream_write_clone = stream.try_clone().map_err(|_| {
+            ErrorStruct::new(
+                "STREAM_CLONE".to_string(),
+                "Stream clone couldn't be performed.".to_string(),
+            )
+        })?;
 
         let http_sender_clone = response_http_sender.clone();
 
-        let read_thread =
-            thread::Builder::new()
+        let read_thread = thread::Builder::new()
             .name("redis_client_read_thread".to_string())
             .spawn(move || process_db_response(http_sender_clone, &mut stream_read_clone))
             .unwrap();
 
         let write_thread = thread::Builder::new()
-                                            .name("redis_client_write_thread".to_string())
-                                            .spawn(move || {
-                                                process_web_input(
-                                                    &available_commands,
-                                                    &mut stream_write_clone,
-                                                    http_receiver,
-                                                    response_http_sender,
-                                                )
-                                            })
-                                            .unwrap();
+            .name("redis_client_write_thread".to_string())
+            .spawn(move || {
+                process_web_input(
+                    &available_commands,
+                    &mut stream_write_clone,
+                    http_receiver,
+                    response_http_sender,
+                )
+            })
+            .unwrap();
 
         Ok(RedisClient {
             cmd_sender,
@@ -305,18 +310,20 @@ pub fn close_thread(
     }
 }
 
-
 #[cfg(test)]
 mod test_redis_client {
 
     use super::*;
-    use std::{sync::mpsc, thread::{sleep, spawn, JoinHandle}, time::Duration};
-    use crate::ServerRedis;
     use crate::server_html::available_commands::available_commands;
+    use crate::ServerRedis;
+    use std::{
+        sync::mpsc,
+        thread::{sleep, spawn, JoinHandle},
+        time::Duration,
+    };
 
     #[test]
     fn test_01() -> Result<(), ErrorStruct> {
-
         let available_commands_set = available_commands();
         let _server_thread: JoinHandle<Result<(), ErrorStruct>> = spawn(move || {
             ServerRedis::start(vec![])?;
@@ -335,43 +342,32 @@ mod test_redis_client {
                 "127.0.0.1:6379".to_string(),
             ) {
                 Err(err) => {
-                    if let Some(prefix) = err.prefix()  {
+                    if let Some(prefix) = err.prefix() {
                         if prefix == "CONNECTION_FAIL" {
                             sleep(millisecond);
                             retries += 1;
                             if retries > 100000 {
                                 return Err(ErrorStruct::new(
                                     "ERR_CLIENT".to_string(),
-                                    "Tried to connect too many times".to_string()),
-                                );
-                            }  
-                        } 
+                                    "Tried to connect too many times".to_string(),
+                                ));
+                            }
+                        }
                     } else {
                         return Err(ErrorStruct::new(
                             "ERR_CLIENT".to_string(),
-                            "Could not connect".to_string()),
-                        );
+                            "Could not connect".to_string(),
+                        ));
                     }
                 }
                 Ok(_redis_client) => {
                     let _ = cmd_sender_mock.send(Some("set key value1".to_string()));
-
                     let _ = cmd_sender_mock.send(Some("set key value2".to_string()));
-
                     let _ = cmd_sender_mock.send(Some("get key".to_string()));
 
                     assert_eq!(processed_response_mock.recv().unwrap().unwrap(), "OK");
                     assert_eq!(processed_response_mock.recv().unwrap().unwrap(), "OK");
                     assert_eq!(processed_response_mock.recv().unwrap().unwrap(), "value2");
-                    //cmd_sender_mock.send(Some("shutdown".to_string()));
-                    
-                    /*for response in processed_response_mock.iter() {
-                        println!("RESPUESTA DEL SERVER: {:?}", response);
-                    }*/
-
-                    //cmd_sender_mock.send(Some("monitor".to_string()));
-                    //dbg!(processed_response_mock.recv().unwrap());
-
                     break;
                 }
             }

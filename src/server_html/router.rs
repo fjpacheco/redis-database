@@ -1,8 +1,8 @@
 use std::io::Write;
 
 use crate::server_html::error::http_error::HttpError;
-use crate::server_html::request::http_method::HttpMethod;
 use crate::server_html::http_response::HttpResponse;
+use crate::server_html::request::http_method::HttpMethod;
 use crate::server_html::request::{http_request::HttpRequest, http_url::HttpUrl};
 
 use super::handlers_pages::command_redis_page::CommandRedisPage;
@@ -13,9 +13,9 @@ use super::status_codes::status_code;
 pub struct Router;
 
 impl Router {
-    /// Structure in charge of handling an [HttpRequest](crate::server_html::request::http_request::HttpRequest) and writes over a stream 
+    /// Structure in charge of handling an [HttpRequest](crate::server_html::request::http_request::HttpRequest) and writes over a stream
     /// that respects the [Write] function to return a response.
-    /// 
+    ///
     /// In case of respecting the URL surfix '/?Command', will process the command
     /// with the database [ServerRedis](crate::tcp_protocol::server::ServerRedis) implemented, on port 6379.
     ///
@@ -61,7 +61,6 @@ mod tests {
     #[test]
     #[ignore = "Test with concurrency problem crossing with other tests on the same port in server redis mock"]
     fn long_test_01_response_command_in_set_key_value_post_method() {
-
         let handler_mock_server = thread::spawn(move || {
             let server_mock = TcpListener::bind("127.0.0.1:6379").unwrap();
             let mut stream_tcp = server_mock.accept().unwrap().0;
@@ -77,18 +76,18 @@ mod tests {
             body
         );
         let request_parsed = HttpRequest::new(&mut emuled_request.as_bytes()).unwrap();
-        
+
         let mut response_stream = vec![];
         let _ = Router::route(request_parsed, &mut response_stream);
         let response_stream_string = String::from_utf8_lossy(&response_stream).to_string();
-        assert!(response_stream_string.contains("OK")); 
+        assert!(response_stream_string.contains("OK"));
 
         let _ = handler_mock_server.join();
     }
 
     #[test]
     fn test_02_response_index_html() {
-        // Arrange 
+        // Arrange
         let body = "".to_string();
         let emuled_request: String = format!(
             "GET / HTTP/1.1\r\nPort: 8080\r\nContent-Length: {}\r\n\r\n{}",

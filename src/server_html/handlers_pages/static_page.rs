@@ -1,15 +1,19 @@
 use std::collections::HashMap;
 
-use crate::server_html::{error::http_error::HttpError, http_response::HttpResponse, request::{http_method::HttpMethod, http_request::HttpRequest, http_url::HttpUrl}, status_codes::status_code};
+use crate::server_html::{
+    error::http_error::HttpError,
+    http_response::HttpResponse,
+    request::{http_method::HttpMethod, http_request::HttpRequest, http_url::HttpUrl},
+    status_codes::status_code,
+};
 
 use super::handler_page::HandlerPage;
-
 
 pub struct StaticPage;
 
 impl HandlerPage for StaticPage {
     /// It handles static pages that only need to be inserted into the body of an [HttpRespone](crate::server_html::http_response::HttpResponse)
-    /// without other complex interaction like PNG images, plain text, and cascading style sheets. 
+    /// without other complex interaction like PNG images, plain text, and cascading style sheets.
     fn handle(req: &HttpRequest) -> Result<HttpResponse, HttpError> {
         if req.get_method() != &HttpMethod::Get {
             return Err(HttpError::from(status_code::defaults::bad_request()));

@@ -5,18 +5,18 @@ use std::net::TcpListener;
 pub struct ServerHtml;
 
 impl ServerHtml {
-     /// # Start of Client Web for Server Redis
-     /// Starts the web server that receives requests from browsers, communicating with them through 
-     /// the HTTP/1.1 protocol. The description of this protocol is the one corresponding to RFC 2616.
-     ///
-     /// The server must listen for HTTP requests on TCP port 8080 and will communicate with the [ServerRedis](crate::tcp_protocol::server::ServerRedis)
-     /// developed from the implemented redis protocol. 
-     ///
-     /// # Error
-     /// Return an [Error](std::io::Error) if:
-     ///
-     /// * The server cannot be started on the default port (8080).
-     /// * The connection was aborted (terminated) by the server.
+    /// # Start of Client Web for Server Redis
+    /// Starts the web server that receives requests from browsers, communicating with them through
+    /// the HTTP/1.1 protocol. The description of this protocol is the one corresponding to RFC 2616.
+    ///
+    /// The server must listen for HTTP requests on TCP port 8080 and will communicate with the [ServerRedis](crate::tcp_protocol::server::ServerRedis)
+    /// developed from the implemented redis protocol.
+    ///
+    /// # Error
+    /// Return an [Error](std::io::Error) if:
+    ///
+    /// * The server cannot be started on the default port (8080).
+    /// * The connection was aborted (terminated) by the server.
     pub fn start(socket_addr: &str) -> Result<(), std::io::Error> {
         let connection_listener = TcpListener::bind(socket_addr.to_string())?;
         println!("Running on {}", socket_addr);
@@ -27,7 +27,7 @@ impl ServerHtml {
             .map(|x| x.unwrap())
         {
             println!("Request received");
-            
+
             match HttpRequest::new(&mut stream) {
                 Ok(req) => {
                     if let Err(err) = Router::route(req, &mut stream) {

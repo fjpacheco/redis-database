@@ -16,7 +16,7 @@ pub struct HttpRequest {
 }
 
 impl HttpRequest {
-    /// Structure in charge of parsing a request received by stream to convert it into a readable structure in rust. 
+    /// Structure in charge of parsing a request received by stream to convert it into a readable structure in rust.
     ///
     /// The parsing is done in two steps:
     /// 1. The first step is to read the request line and extract the method, url and http version.
@@ -94,8 +94,7 @@ fn get_body(
     Ok(body)
 }
 
-
-/// Get the first line of the request. 
+/// Get the first line of the request.
 ///
 /// # Error
 /// Return an [HttpError] if:

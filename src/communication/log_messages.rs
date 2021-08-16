@@ -60,9 +60,6 @@ impl LogMessage {
         LogMessage::new(2, "This is test 3".to_string())
     }
 
-    // A partir de aca abajo, pondriamos todos los
-    // mensajes que queremos logear.
-
     /// COMMAND --> KEY: VALUE
 
     pub fn init_server() -> LogMessage {

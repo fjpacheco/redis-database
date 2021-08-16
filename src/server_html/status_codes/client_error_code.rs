@@ -1,7 +1,7 @@
 use std::string::ToString;
 #[derive(Debug, Clone, PartialEq, Eq)]
 /// Enumerates some client error status that the reply
-/// could take. 
+/// could take.
 pub enum ClientErrorCode {
     BadRequest(String),
     RequestEntityTooLarge(String),

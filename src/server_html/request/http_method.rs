@@ -10,7 +10,7 @@ pub enum HttpMethod {
 }
 
 impl HttpMethod {
-    /// Get the string representation of the enum 'POST' or 'GET' method. 
+    /// Get the string representation of the enum 'POST' or 'GET' method.
     ///
     /// # Error
     /// Return an [HttpError] if:
@@ -37,17 +37,22 @@ pub mod test_http_methoid {
     use super::*;
     #[test]
     fn test_01_from_get_method() {
-        assert_eq!(HttpMethod::Get, HttpMethod::from("GET".to_string()).unwrap());
+        assert_eq!(
+            HttpMethod::Get,
+            HttpMethod::from("GET".to_string()).unwrap()
+        );
     }
 
     #[test]
-    fn test_02_from_set_method () {
-        assert_eq!(HttpMethod::Post, HttpMethod::from("POST".to_string()).unwrap());
+    fn test_02_from_set_method() {
+        assert_eq!(
+            HttpMethod::Post,
+            HttpMethod::from("POST".to_string()).unwrap()
+        );
     }
 
     #[test]
     fn test_03_return_err_if_there_is_no_method() {
         assert!(HttpMethod::from("X".to_string()).is_err())
     }
-
 }

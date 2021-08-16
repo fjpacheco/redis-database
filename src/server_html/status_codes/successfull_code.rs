@@ -1,6 +1,6 @@
 #[derive(Debug, Clone, PartialEq, Eq)]
 /// Enumerates some successfull status that the reply
-/// could take. 
+/// could take.
 pub enum SuccessfullCode {
     Ok(String),
 }

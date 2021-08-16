@@ -46,7 +46,6 @@ impl ErrorStruct {
         Some(&self.severity)
     }
 
-    // Para tests... investigar si existe una macro así: #[metodo_para_test]
     pub fn get_encoded_message_complete(&self) -> String {
         RError::encode(self.clone())
     }

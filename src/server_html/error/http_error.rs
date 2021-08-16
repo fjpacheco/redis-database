@@ -32,7 +32,6 @@ impl From<StatusCode> for HttpError {
     }
 }
 
-
 #[cfg(test)]
 pub mod test_http_error {
 
