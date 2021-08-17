@@ -1,38 +1,36 @@
-pub fn get_page_content(redis_response: &str) -> String {
-    format!("
-    <html>
-        <head>
-            <title>Try Redis - Rust-eze</title>
-            <link href=\"favicon.png\" rel=\"shortcut icon\">
-            <link href=\"/style.css\" rel=\"stylesheet\">
-        </head>
-        <body>
-            <div id=\"logo-rust-eze\">
-                <img src=\"logo-rust-ese-2030.png\">
-            </div>
+use std::{
+    fs::{self, OpenOptions},
+    io::Write,
+};
 
-            <div id=\"header-redis\">
-                <img src=\"header-logo.png\">
-            </div>
-            <div class=\"button-container\">
-                <form action=\"?command\" name=\"testForm\" method=\"POST\">
-                    <div class=\"from-group\">
-                        <div id=\"toolbar\" style=\"display: block;\">
-                            <input id=\"input\" spellcheck=\"false\" name=\"command\" class=\"from-control\">
-                        </div>
-                    </div>
-                    <button id=\"button-send\" type=\"submit\" class=\"btn btn-primary\">Enviar</button>
-                </form>
-            </div>
-            <div id=\"footer\">
-                <p>Este sitio fue desarrollado por Rust-eze team</p>
-                <p><a href=\"https://github.com/taller-1-fiuba-rust/Rust-eze\">Repositorio Github</a></p>
-            </div>
-            <div id=\"response\">
-                <p>{}</p>
-            </div>
-            </body>
-        </html>", redis_response)
+pub fn get_page_content(command: String, redis_response: &str) -> String {
+    let response_content = format!("<div><div class=\"line input\"><div class=\"nopad\"><span class=\"prompt\">&gt; </span><a href=\"#run\">{}</a></div></div><div class=\"line error\"><div class=\"nopad\"><span class=\"prompt\"></span>{}</div></div></div>", command, redis_response);
+    let mut file = match OpenOptions::new()
+        .create(true)
+        .read(true)
+        .write(true)
+        .append(true)
+        .open(
+            "/Users/martinaagata/Desktop/Rust-eze/src/server_html/resource/top_content".to_string(),
+        ) {
+        Ok(file) => file,
+        Err(err) => return format!("Opening file failed. Detail: {}", err),
+    };
+
+    file.write_all(response_content.as_bytes()).unwrap(); // TODO
+
+    let mut content = fs::read_to_string(
+        "/Users/martinaagata/Desktop/Rust-eze/src/server_html/resource/top_content".to_string(),
+    )
+    .unwrap(); // TODO?
+    let bottom_content = fs::read_to_string(
+        "/Users/martinaagata/Desktop/Rust-eze/src/server_html/resource/bottom_content".to_string(),
+    )
+    .unwrap(); // TODO?
+
+    content.push_str(&bottom_content);
+
+    content
 }
 
 pub fn get_page_content_error((code, description): (String, String)) -> String {
@@ -49,7 +47,7 @@ pub fn get_page_content_error((code, description): (String, String)) -> String {
 
             <body>
                 <div id=\"logo-rust-eze\">
-                    <img src=\"logo-rust-ese-2030.png\">
+                    <img src=\"logo-black.png\">
                 </div>
 
                 <div id=\"title\">

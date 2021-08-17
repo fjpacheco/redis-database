@@ -100,7 +100,7 @@ fn turn_into_vector(
 ) -> Result<Vec<String>, ErrorStruct> {
     let checked_input: String = convert_special_characters(input)?;
     let input_vector: Vec<String> = checked_input.split(' ').map(str::to_string).collect();
-    if input_vector.len() == 0 || available_commands.contains(&input_vector[0]).not() {
+    if input_vector.is_empty() || available_commands.contains(&input_vector[0]).not() {
         return Err(ErrorStruct::new(
             "COMMAND".to_string(),
             "User input did not match any available web command.".to_string(),
@@ -178,9 +178,7 @@ fn process_db_response(
     while let Some(received) = lines.next() {
         match received {
             Ok(db_response) => {
-                //println!("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA {}", db_response);
                 let string_response = get_string_response(db_response, &mut lines);
-                //println!("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB {:?}", string_response);
                 http_sender.send(string_response).map_err(|_| {
                     ErrorStruct::new(
                         "CLOSED_CHANNEL".to_string(),

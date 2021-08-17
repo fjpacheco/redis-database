@@ -9,8 +9,11 @@
 </head>
 
 <body>
+    
     <div id="logo-rust-eze">
-        <img src="logo-black.png">
+            <a href="/"></a>
+                <img src="logo-black.png">
+        </a>
     </div>
 
     <!--
@@ -24,9 +27,8 @@
             <a href="http://redis.io">Redis</a> database by the Rust-eze team!</p>
             
             <p>Please enter a Redis command of the <a href="#available_commands">LIST</a> to play with the database.</p>
-          </div>
+        </div>
     </div>
-    
     <div class="button-container">
         <form action="?command" name="testForm" method="POST">
             <div class="from-group">
@@ -34,7 +36,7 @@
                     <input id="input" placeholder="Enter a command here" spellcheck="false" name="command" class="from-control">
                 </div>
             </div>
-            <button id="button-send" type="submit" class="btn btn-primary">SEND</button>
+            <button id="button-send" type="submit" class="btn btn-primary"><strong>SEND</strong></button>
         </form>
     </div>
 

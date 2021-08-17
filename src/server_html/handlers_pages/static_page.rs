@@ -30,18 +30,27 @@ impl HandlerPage for StaticPage {
             )),
             path => {
                 let mut map: HashMap<String, String> = HashMap::new();
-                if path.ends_with(".css") {
-                    map.insert("Content-Type".to_string(), "text/css".to_string());
-                } else if path.ends_with(".png") {
-                    map.insert("Content-Type".to_string(), "image/png".to_string());
-                } else if path.ends_with(".html") {
-                    map.insert("Content-Type".to_string(), "text/html".to_string());
-                } else {
-                    return Ok(HttpResponse::new(
-                        status_code::defaults::not_found(),
-                        None,
-                        StaticPage::load_file("404.html")?,
-                    ));
+                let mut split_path: Vec<&str> = path.split('.').collect();
+
+                match split_path.pop().unwrap() {
+                    "css" => {
+                        map.insert("Content-Type".to_string(), "text/css".to_string());
+                    }
+                    "png" => {
+                        map.insert("Content-Type".to_string(), "image/png".to_string());
+                    }
+                    "html" => {
+                        map.insert("Content-Type".to_string(), "text/html".to_string());
+                    }
+                    _ => {
+                        return Err(HttpError::from(status_code::defaults::bad_request()));
+                        /* TODO
+                        return Ok(HttpResponse::new(
+                            status_code::defaults::not_found(),
+                            None,
+                            StaticPage::load_file("404.html")?,
+                        ));*/
+                    }
                 }
 
                 Ok(HttpResponse::new(

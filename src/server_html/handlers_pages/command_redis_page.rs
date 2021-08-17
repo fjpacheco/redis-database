@@ -27,9 +27,9 @@ impl HandlerPage for CommandRedisPage {
             .to_string()
             .replace("+", " ");
 
-        let response = execute_command(command)?;
+        let response = execute_command(command.clone())?;
 
-        let contents = get_page_content(&response).into_bytes();
+        let contents = get_page_content(command, &response).into_bytes();
 
         Ok(HttpResponse::new(
             status_code::defaults::ok(),
@@ -80,11 +80,38 @@ if response.is_err(){
 
 fn map_db_err_to_http_response(db_err: ErrorStruct) -> Result<String, HttpError> {
     match db_err.prefix().unwrap_or("default") {
-        "COMMAND" => Ok("(error) I'm sorry, I don't recognize that command. Please
-        type HELP for one of these commands: DECRBY, DEL, EXISTS, GET, GETSET, INCRBY,
-        KEYS, LINDEX, LLEN, LPOP, LPUSH, LRANGE, LREM, LSET, MGET, MSET, RENAME, RPOP,
-        RPUSH, SADD, SCARD, SET, SISMEMBER, SMEMBERS, SORT, SREM, TTL, TYPE"
-            .to_string()),
+        "COMMAND" => Ok(
+            "(error) I'm sorry, I don't recognize that command. Commands supported:
+        <a href=\"#decrby\">DECRBY</a>,
+        <a href=\"#help\">DEL</a>,
+        <a href=\"#help\">EXISTS</a>,
+        <a href=\"#help\">GET</a>,
+        <a href=\"#help\">GETSET</a>,
+        <a href=\"#help\">INCRBY</a>,
+        <a href=\"#help\">KEYS</a>,
+        <a href=\"#help\">LINDEX</a>,
+        <a href=\"#help\">LLEN</a>,
+        <a href=\"#help\">LPOP</a>,
+        <a href=\"#help\">LPUSH</a>,
+        <a href=\"#help\">LRANGE</a>,
+        <a href=\"#help\">LREM</a>,
+        <a href=\"#help\">LSET</a>,
+        <a href=\"#help\">MGET</a>,
+        <a href=\"#help\">MSET</a>,
+        <a href=\"#help\">RENAME</a>,
+        <a href=\"#help\">RPOP</a>,
+        <a href=\"#help\">RPUSH</a>,
+        <a href=\"#help\">SADD</a>,
+        <a href=\"#help\">SCARD</a>,
+        <a href=\"#help\">SET</a>,
+        <a href=\"#help\">SISMEMBER</a>,
+        <a href=\"#help\">SMEMBERS</a>,
+        <a href=\"#help\">SORT</a>,
+        <a href=\"#help\">SREM</a>,
+        <a href=\"#help\">TTL</a>,
+        <a href=\"#help\">TYPE</a>"
+                .to_string(),
+        ),
         _ => Err(HttpError::from(
             status_code::defaults::internal_server_error(),
         )),
