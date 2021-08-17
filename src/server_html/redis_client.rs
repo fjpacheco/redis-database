@@ -321,7 +321,8 @@ mod test_redis_client {
     };
 
     #[test]
-    fn test_01() -> Result<(), ErrorStruct> {
+    #[ignore]
+    fn long_test_01() -> Result<(), ErrorStruct> {
         let available_commands_set = available_commands();
         let _server_thread: JoinHandle<Result<(), ErrorStruct>> = spawn(move || {
             ServerRedis::start(vec![])?;

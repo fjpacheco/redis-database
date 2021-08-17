@@ -49,7 +49,7 @@ impl Runnable<Arc<Mutex<Database>>> for Scard {
 }
 
 fn check_error_cases(buffer: &mut Vec<String>) -> Result<(), ErrorStruct> {
-    check_empty(&buffer, "scard")?;
+    check_empty(buffer, "scard")?;
 
     if buffer.len() != 1 {
         let error_message = redis_messages::arguments_invalid_to("scard");

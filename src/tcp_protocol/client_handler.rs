@@ -307,7 +307,7 @@ fn process_other(
         first_lecture,
         &mut lines,
         client_status,
-        &notifier,
+        notifier,
         response_sender,
     )
 }
@@ -365,17 +365,13 @@ fn delegate_command(
 ) -> Result<(), ErrorStruct> {
     let command_received_initial = command_received.clone();
     let (sender, receiver): (mpsc::Sender<Response>, mpsc::Receiver<Response>) = mpsc::channel();
-    notifier.send_command_delegator(Some((
-        command_received,
-        sender,
-        Arc::clone(&client_fields),
-    )))?;
+    notifier.send_command_delegator(Some((command_received, sender, Arc::clone(client_fields))))?;
     for response in receiver.iter() {
         match response {
             Ok(good_string) => {
                 send_response(good_string, response_sender)?;
                 notifier
-                    .notify_successful_shipment(&client_fields, command_received_initial.clone())?;
+                    .notify_successful_shipment(client_fields, command_received_initial.clone())?;
             }
             Err(error) => {
                 if let Some(severity) = error.severity() {

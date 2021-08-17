@@ -15,6 +15,8 @@ use super::handler_page::HandlerPage;
 pub struct CommandRedisPage;
 
 impl HandlerPage for CommandRedisPage {
+    /// It is responsible for processing the command received by a user with the redis database.
+    /// Provide the answer in [HttpResponse] format.
     fn handle(req: &HttpRequest) -> Result<HttpResponse, HttpError> {
         let default_command = "";
         let command = req

@@ -148,7 +148,7 @@ impl LogMessage {
         let mut message = String::from("List of clients:\r\n");
         for (index, client) in clients_detail.iter().enumerate() {
             message.push_str("               -> ");
-            message.push_str(&client);
+            message.push_str(client);
             if !(clients_detail.len() - 1).eq(&(index)) {
                 message.push_str("\r\n")
             }

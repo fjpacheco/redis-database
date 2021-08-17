@@ -1,11 +1,10 @@
-pub mod error;
-pub mod router;
-pub mod server;
-pub mod status_codes;
-//pub mod handler;
 pub mod available_commands;
+pub mod error;
 pub mod handlers_pages;
 pub mod html_content;
 pub mod http_response;
 pub mod redis_client;
 pub mod request;
+pub mod router;
+pub mod server;
+pub mod status_codes;

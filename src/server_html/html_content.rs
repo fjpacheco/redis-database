@@ -2,6 +2,7 @@ use std::{
     fs::{self, OpenOptions},
     io::Write,
 };
+/// Generates in a string the html code with a response box provided by redis database.
 
 pub fn get_page_content(command: String, redis_response: &str) -> String {
     let response_content = format!("<div><div class=\"line input\"><div class=\"nopad\"><span class=\"prompt\">&gt; </span><a href=\"#run\">{}</a></div></div><div class=\"line error\"><div class=\"nopad\"><span class=\"prompt\"></span>{}</div></div></div>", command, redis_response);
@@ -33,6 +34,7 @@ pub fn get_page_content(command: String, redis_response: &str) -> String {
     content
 }
 
+/// Generates the html code in a string for the error page, according to the received code and description.
 pub fn get_page_content_error((code, description): (String, String)) -> String {
     format!(
         "
