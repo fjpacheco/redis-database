@@ -35,3 +35,13 @@ This version implements:
 - Server multithreading (by a Threadpool)
 - Datapacks and resources routing.
 - Graphic Interface.
+
+# Authors
+
+Nombre | Padrón | Email
+------ | ------| -------------
+[FIRMAPAZ, Agustin Ezequiel](https://github.com/Agustinefe) | 105172 | afirmapaz@fi.uba.ar
+[PACHECO, Federico Jose](https://github.com/fjpacheco) | 104541 | fpacheco@fi.uba.a
+[PANETTA, Martina Agata](https://github.com/---) | --- | mpanetta@fi.uba.ar
+
+This project is part of the subject Taller de Programacion I, [Facultad de Ingenieria](http://www.fi.uba.ar/), [Universidad de Buenos Aires](https://www.uba.ar/).
