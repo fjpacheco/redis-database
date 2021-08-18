@@ -35,11 +35,11 @@ impl HandlerPage for StaticPage {
                     File::create("src/server_html/resource/top_content".to_string()).unwrap();
                 file.write_all(base_top_content.as_bytes()).unwrap(); // TODO
 
-                return Ok(HttpResponse::new(
+                Ok(HttpResponse::new(
                     status_code::defaults::ok(),
                     None,
                     Self::load_file("index.html")?,
-                ));
+                ))
             }
             "?clean" => {
                 let base_top_content =
@@ -49,11 +49,11 @@ impl HandlerPage for StaticPage {
                     File::create("src/server_html/resource/top_content".to_string()).unwrap();
                 file.write_all(base_top_content.as_bytes()).unwrap(); // TODO
 
-                return Ok(HttpResponse::new(
+                Ok(HttpResponse::new(
                     status_code::defaults::ok(),
                     None,
                     Self::load_file("index.html")?,
-                ));
+                ))
             }
             path => {
                 let mut map: HashMap<String, String> = HashMap::new();
