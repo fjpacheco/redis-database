@@ -44,4 +44,4 @@ Nombre | Padrón | Email
 [PACHECO, Federico Jose](https://github.com/fjpacheco) | 104541 | fpacheco@fi.uba.a
 [PANETTA, Martina Agata](https://github.com/---) | --- | mpanetta@fi.uba.ar
 
-This project is part of the subject Taller de Programacion I, [Facultad de Ingenieria](http://www.fi.uba.ar/), [Universidad de Buenos Aires](https://www.uba.ar/).
+This project is part of the subject [Taller de Programacion I (Demoynnaz)](https://taller-1-fiuba-rust.github.io/), [Facultad de Ingenieria](http://www.fi.uba.ar/), [Universidad de Buenos Aires](https://www.uba.ar/).
