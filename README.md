@@ -26,7 +26,7 @@ All this project was made using technics as: Automated Unit Testing, Automated I
 
 # Redis HTTP Monitor in Rust
 
-The web server that receives requests from browsers, communicating with them through the HTTP/1.1 protocol. The description of this protocol is the one corresponding to RFC 2616. [????????????]
+The web server that receives requests from browsers, communicating with them through the HTTP/1.1 protocol. The description of this protocol is the one corresponding to [RFC 2616](https://datatracker.ietf.org/doc/html/rfc2616).
 
 ????
 
