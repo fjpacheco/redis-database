@@ -42,6 +42,6 @@ Nombre | Padrón | Email
 ------ | ------| -------------
 [FIRMAPAZ, Agustin Ezequiel](https://github.com/Agustinefe) | 105172 | afirmapaz@fi.uba.ar
 [PACHECO, Federico Jose](https://github.com/fjpacheco) | 104541 | fpacheco@fi.uba.a
-[PANETTA, Martina Agata](https://github.com/---) | --- | mpanetta@fi.uba.ar
+[PANETTA, Martina Agata](https://github.com/martinaAgata) | --- | mpanetta@fi.uba.ar
 
-This project is part of the subject [Taller de Programacion I (Deymonnaz)](https://taller-1-fiuba-rust.github.io/), [Facultad de Ingenieria](http://www.fi.uba.ar/), [Universidad de Buenos Aires](https://www.uba.ar/).
+This project was proposed and guided by [Taller de Programacion I (Deymonnaz)](https://taller-1-fiuba-rust.github.io/), [Facultad de Ingenieria](http://www.fi.uba.ar/), [Universidad de Buenos Aires](https://www.uba.ar/).
