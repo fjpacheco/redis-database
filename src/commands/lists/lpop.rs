@@ -94,7 +94,6 @@ pub mod test_lpop {
 
         let buffer = vec_strings!["key", "3"];
         let encode = LPop.run(buffer, &mut data);
-        println!("a");
         assert_eq!(
             encode.unwrap(),
             "*3\r\n$4\r\nthis\r\n$2\r\nis\r\n$1\r\na\r\n".to_string()

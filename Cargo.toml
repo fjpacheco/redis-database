@@ -1,18 +1,19 @@
 [package]
 name = "redis_rust"
-version = "0.1.0"
-authors = []
+version = "1.0.0"
+authors = ["Agustin Firmapaz <afirmapaz@fi.uba.ar>", "Federico Pacheco <fpacheco@fi.uba.ar>", "Martina Panetta <mpanetta@fi.uba.ar>"]
 edition = "2018"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+readme = "README.md"
 
 [dependencies]
-rand = "0.8.0"
-regex = "1.5.4"
-
-[dependencies.redis]
-version = "*"
+rand = "*"
+regex = "*"
+redis = "*"
 
 [[bin]]
-name = "server"
+name = "server_database"
 path = "src/server_run.rs"
+
+[[bin]]
+name = "server_html"
+path = "src/server_html_run.rs"

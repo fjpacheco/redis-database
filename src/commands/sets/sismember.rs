@@ -58,7 +58,7 @@ impl Runnable<Arc<Mutex<Database>>> for Sismember {
 }
 
 fn check_error_cases(buffer: &[String]) -> Result<(), ErrorStruct> {
-    check_empty(&buffer, "sismember")?;
+    check_empty(buffer, "sismember")?;
 
     if buffer.len() != 2 {
         let error_message = redis_messages::arguments_invalid_to("sismember");

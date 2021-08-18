@@ -130,7 +130,7 @@ fn check_error_cases_without_elements(
     name_command: &str,
     elements: usize,
 ) -> Result<(), ErrorStruct> {
-    check_empty(&buffer, name_command)?;
+    check_empty(buffer, name_command)?;
 
     if buffer.len() != elements {
         let error_message = redis_messages::arguments_invalid_to(name_command);

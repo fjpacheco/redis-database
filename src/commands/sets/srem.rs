@@ -59,7 +59,7 @@ impl Runnable<Arc<Mutex<Database>>> for Srem {
 }
 
 fn check_error_cases(buffer: &[String]) -> Result<(), ErrorStruct> {
-    check_empty(&buffer, "srem")?;
+    check_empty(buffer, "srem")?;
 
     if buffer.len() < 2 {
         let error_message = redis_messages::arguments_invalid_to("srem");

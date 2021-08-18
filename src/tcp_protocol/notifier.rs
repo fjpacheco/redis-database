@@ -133,7 +133,7 @@ impl Notifier {
         self.send_command_delegator(Some((
             command_vec_modify,
             sender_notify,
-            Arc::clone(&client_fields),
+            Arc::clone(client_fields),
         )))?;
 
         receiver_notify

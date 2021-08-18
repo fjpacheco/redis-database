@@ -70,7 +70,7 @@ fn insert_in_set(buffer: &[String], item: &mut HashSet<String>) -> usize {
 }
 
 fn check_error_cases(buffer: &[String]) -> Result<(), ErrorStruct> {
-    check_empty(&buffer, "sadd")?;
+    check_empty(buffer, "sadd")?;
 
     if buffer.len() < 2 {
         let error_message = redis_messages::arguments_invalid_to("sadd");

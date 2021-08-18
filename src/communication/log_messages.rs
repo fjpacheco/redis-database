@@ -60,9 +60,6 @@ impl LogMessage {
         LogMessage::new(2, "This is test 3".to_string())
     }
 
-    // A partir de aca abajo, pondriamos todos los
-    // mensajes que queremos logear.
-
     /// COMMAND --> KEY: VALUE
 
     pub fn init_server() -> LogMessage {
@@ -151,7 +148,7 @@ impl LogMessage {
         let mut message = String::from("List of clients:\r\n");
         for (index, client) in clients_detail.iter().enumerate() {
             message.push_str("               -> ");
-            message.push_str(&client);
+            message.push_str(client);
             if !(clients_detail.len() - 1).eq(&(index)) {
                 message.push_str("\r\n")
             }

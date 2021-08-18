@@ -78,7 +78,7 @@ fn start_incoming(
     notifier: &Notifier,
     server_redis: ServerRedisAttributes,
 ) -> Result<(), ErrorStruct> {
-    welcome_message(&listener, &notifier)?;
+    welcome_message(&listener, notifier)?;
     for stream in listener.incoming() {
         if server_redis.status_listener() {
             break;
