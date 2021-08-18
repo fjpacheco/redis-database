@@ -1,0 +1,21 @@
+    <html>
+        <head>
+            <title>Try Redis - Rust-eze</title>
+            <link href="/favicon.png" rel="shortcut icon">
+            <link href="/style.css" rel="stylesheet">
+            <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css">
+        </head>
+
+        <body>
+            <div id="logo-rust-eze">
+                <a href="/">
+                    <img src="logo-black.png">
+                </a>
+            </div>
+
+            <div id="logs">
+                <div class="line notification">
+                    <p>Welcome to <strong>Try Redis</strong>, a <a href="http://redis.io">Redis</a> database demo by the Rust-eze team!</p>
+                    
+                    <p>Please enter a Redis command to play with the database.</p>
+                </div>

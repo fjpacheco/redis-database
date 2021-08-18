@@ -2,6 +2,8 @@ use crate::server_html::html_content::get_page_content_error;
 use crate::server_html::http_response::HttpResponse;
 use crate::server_html::{request::http_request::HttpRequest, router::Router};
 use std::net::TcpListener;
+
+use super::thread_pool::ThreadPool;
 pub struct ServerHtml;
 
 impl ServerHtml {
@@ -21,24 +23,23 @@ impl ServerHtml {
         let connection_listener = TcpListener::bind(socket_addr.to_string())?;
         println!("Running on {}", socket_addr);
 
+        let pool = ThreadPool::new(5);
+
         for mut stream in connection_listener
             .incoming()
             .filter(|x| x.is_ok())
             .map(|x| x.unwrap())
         {
-            println!("Request received");
-
-            match HttpRequest::new(&mut stream) {
+            pool.spawn(move || match HttpRequest::new(&mut stream) {
                 Ok(req) => {
                     if let Err(err) = Router::route(req, &mut stream) {
-                        process_err(err, &mut stream)?;
+                        let _ = process_err(err, &mut stream);
                     }
                 }
                 Err(err) => {
-                    process_err(err, &mut stream)?;
+                    let _ = process_err(err, &mut stream);
                 }
-            }
-            println!("Response sent");
+            });
         }
         Ok(())
     }

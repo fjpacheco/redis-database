@@ -1,4 +1,8 @@
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    fs::{self, File},
+    io::Write,
+};
 
 use crate::server_html::{
     error::http_error::HttpError,
@@ -23,11 +27,34 @@ impl HandlerPage for StaticPage {
 
         let route: Vec<&str> = s.split('/').collect();
         match route[1] {
-            "" => Ok(HttpResponse::new(
-                status_code::defaults::ok(),
-                None,
-                Self::load_file("index.html")?,
-            )),
+            "" => {
+                let base_top_content =
+                    fs::read_to_string("src/server_html/resource/base_top_content".to_string())
+                        .unwrap(); // TODO?
+                let mut file =
+                    File::create("src/server_html/resource/top_content".to_string()).unwrap();
+                file.write_all(base_top_content.as_bytes()).unwrap(); // TODO
+
+                return Ok(HttpResponse::new(
+                    status_code::defaults::ok(),
+                    None,
+                    Self::load_file("index.html")?,
+                ));
+            }
+            "?clean" => {
+                let base_top_content =
+                    fs::read_to_string("src/server_html/resource/base_top_content".to_string())
+                        .unwrap(); // TODO?
+                let mut file =
+                    File::create("src/server_html/resource/top_content".to_string()).unwrap();
+                file.write_all(base_top_content.as_bytes()).unwrap(); // TODO
+
+                return Ok(HttpResponse::new(
+                    status_code::defaults::ok(),
+                    None,
+                    Self::load_file("index.html")?,
+                ));
+            }
             path => {
                 let mut map: HashMap<String, String> = HashMap::new();
                 let mut split_path: Vec<&str> = path.split('.').collect();
@@ -44,12 +71,6 @@ impl HandlerPage for StaticPage {
                     }
                     _ => {
                         return Err(HttpError::from(status_code::defaults::bad_request()));
-                        /* TODO
-                        return Ok(HttpResponse::new(
-                            status_code::defaults::not_found(),
-                            None,
-                            StaticPage::load_file("404.html")?,
-                        ));*/
                     }
                 }
 

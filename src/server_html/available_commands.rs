@@ -5,6 +5,7 @@ pub fn available_commands() -> HashSet<String> {
     let available_commands_list: Vec<String> = vec_strings![
         "decrby",
         "del",
+        "expire",
         "exists",
         "get",
         "getset",
@@ -25,6 +26,7 @@ pub fn available_commands() -> HashSet<String> {
         "sadd",
         "scard",
         "set",
+        "shutdown",
         "sismember",
         "smembers",
         "sort",

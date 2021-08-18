@@ -54,7 +54,7 @@ pub mod defaults {
 
     pub fn length_required() -> StatusCode {
         StatusCode::ClientError(ClientErrorCode::LengthRequired(
-            "Lenght Required".to_string(),
+            "Length Required".to_string(),
         ))
     }
 

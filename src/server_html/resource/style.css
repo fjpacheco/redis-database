@@ -7,11 +7,6 @@ a[href^="#"] {
     font-size: 0.85em
 }
 
-a:hover {
-    background-color: #3b3b3b;
-    color: rgb(0, 0, 0)
-}
-
 div.nopad {
     padding: 0px
 }
@@ -75,6 +70,7 @@ div.nopad {
     display: block;
     text-align: center;
     font-weight: bold;
+    text-decoration: none;
 }
 
 #toolbar {
@@ -129,6 +125,8 @@ sub-body {
     font-family: sans-serif;
     font-size: 0.75em;
     padding: 1em;
+    position: relative;
+    overflow: auto;
 }
 
 #logs .line {

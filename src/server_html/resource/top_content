@@ -1,154 +1,51 @@
     <html>
         <head>
             <title>Try Redis - Rust-eze</title>
-            <link href="favicon.png" rel="shortcut icon">
+            <link href="/favicon.png" rel="shortcut icon">
             <link href="/style.css" rel="stylesheet">
             <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css">
         </head>
 
         <body>
             <div id="logo-rust-eze">
-                <img src="logo-black.png">
+                <a href="/">
+                    <img src="logo-black.png">
+                </a>
             </div>
 
             <div id="logs">
                 <div class="line notification">
-                    <p>Welcome to <strong>Try Redis</strong>, a demonstration of the
-                    <a href="http://redis.io">Redis</a> database by the Rust-eze team!</p>
+                    <p>Welcome to <strong>Try Redis</strong>, a <a href="http://redis.io">Redis</a> database demo by the Rust-eze team!</p>
                     
-                    <p>Please enter a Redis command of the <a href="#available_commandss">LIST</a> to play with the database.</p>
-                </div><div><div class="line input"><div class="nopad"><span class="prompt">&gt; </span><a href="#run">set key value</a></div></div><div class="line error"><div class="nopad"><span class="prompt"></span>OK</div></div></div><div><div class="line input"><div class="nopad"><span class="prompt">&gt; </span><a href="#run">set key value</a></div></div><div class="line error"><div class="nopad"><span class="prompt"></span>OK</div></div></div><div><div class="line input"><div class="nopad"><span class="prompt">&gt; </span><a href="#run">set key value</a></div></div><div class="line error"><div class="nopad"><span class="prompt"></span>OK</div></div></div><div><div class="line input"><div class="nopad"><span class="prompt">&gt; </span><a href="#run">set key value</a></div></div><div class="line error"><div class="nopad"><span class="prompt"></span>OK</div></div></div><div><div class="line input"><div class="nopad"><span class="prompt">&gt; </span><a href="#run">set key value</a></div></div><div class="line error"><div class="nopad"><span class="prompt"></span>OK</div></div></div><div><div class="line input"><div class="nopad"><span class="prompt">&gt; </span><a href="#run">set key value</a></div></div><div class="line error"><div class="nopad"><span class="prompt"></span>OK</div></div></div><div><div class="line input"><div class="nopad"><span class="prompt">&gt; </span><a href="#run">set kei valiu</a></div></div><div class="line error"><div class="nopad"><span class="prompt"></span>OK</div></div></div><div><div class="line input"><div class="nopad"><span class="prompt">&gt; </span><a href="#run">set ki valiu</a></div></div><div class="line error"><div class="nopad"><span class="prompt"></span>OK</div></div></div><div><div class="line input"><div class="nopad"><span class="prompt">&gt; </span><a href="#run">set kei kei kei</a></div></div><div class="line error"><div class="nopad"><span class="prompt"></span>ERR syntax error</div></div></div><div><div class="line input"><div class="nopad"><span class="prompt">&gt; </span><a href="#run">set k</a></div></div><div class="line error"><div class="nopad"><span class="prompt"></span>ERR wrong number of arguments for 'set' command</div></div></div><div><div class="line input"><div class="nopad"><span class="prompt">&gt; </span><a href="#run">asd</a></div></div><div class="line error"><div class="nopad"><span class="prompt"></span>(error) I'm sorry, I don't recognize that command. Commands supported:
-        DECRBY, DEL, EXISTS, GET, GETSET, INCRBY, KEYS, LINDEX, LLEN, LPOP, LPUSH, LRANGE, LREM,
-        LSET, MGET, MSET, RENAME, RPOP, RPUSH, SADD, SCARD, SET, SISMEMBER, SMEMBERS, SORT, SREM,
-        TTL, TYPE</div></div></div><div><div class="line input"><div class="nopad"><span class="prompt">&gt; </span><a href="#run">aaaaaa</a></div></div><div class="line error"><div class="nopad"><span class="prompt"></span>(error) I'm sorry, I don't recognize that command. Commands supported:
-        DECRBY, DEL, EXISTS, GET, GETSET, INCRBY, KEYS, LINDEX, LLEN, LPOP, LPUSH, LRANGE, LREM,
-        LSET, MGET, MSET, RENAME, RPOP, RPUSH, SADD, SCARD, SET, SISMEMBER, SMEMBERS, SORT, SREM,
-        TTL, TYPE</div></div></div><div><div class="line input"><div class="nopad"><span class="prompt">&gt; </span><a href="#run">aaaaa</a></div></div><div class="line error"><div class="nopad"><span class="prompt"></span>(error) I'm sorry, I don't recognize that command. Commands supported:
-        DECRBY, DEL, EXISTS, GET, GETSET, INCRBY, KEYS, LINDEX, LLEN, LPOP, LPUSH, LRANGE, LREM,
-        LSET, MGET, MSET, RENAME, RPOP, RPUSH, SADD, SCARD, SET, SISMEMBER, SMEMBERS, SORT, SREM,
-        TTL, TYPE</div></div></div><div><div class="line input"><div class="nopad"><span class="prompt">&gt; </span><a href="#run">a</a></div></div><div class="line error"><div class="nopad"><span class="prompt"></span>(error) I'm sorry, I don't recognize that command. Commands supported:
-        DECRBY, DEL, EXISTS, GET, GETSET, INCRBY, KEYS, LINDEX, LLEN, LPOP, LPUSH, LRANGE, LREM,
-        LSET, MGET, MSET, RENAME, RPOP, RPUSH, SADD, SCARD, SET, SISMEMBER, SMEMBERS, SORT, SREM,
-        TTL, TYPE</div></div></div><div><div class="line input"><div class="nopad"><span class="prompt">&gt; </span><a href="#run"></a></div></div><div class="line error"><div class="nopad"><span class="prompt"></span>(error) I'm sorry, I don't recognize that command. Commands supported:
-        DECRBY, DEL, EXISTS, GET, GETSET, INCRBY, KEYS, LINDEX, LLEN, LPOP, LPUSH, LRANGE, LREM,
-        LSET, MGET, MSET, RENAME, RPOP, RPUSH, SADD, SCARD, SET, SISMEMBER, SMEMBERS, SORT, SREM,
-        TTL, TYPE</div></div></div><div><div class="line input"><div class="nopad"><span class="prompt">&gt; </span><a href="#run"></a></div></div><div class="line error"><div class="nopad"><span class="prompt"></span>(error) I'm sorry, I don't recognize that command. Commands supported:
-        DECRBY, DEL, EXISTS, GET, GETSET, INCRBY, KEYS, LINDEX, LLEN, LPOP, LPUSH, LRANGE, LREM,
-        LSET, MGET, MSET, RENAME, RPOP, RPUSH, SADD, SCARD, SET, SISMEMBER, SMEMBERS, SORT, SREM,
-        TTL, TYPE</div></div></div><div><div class="line input"><div class="nopad"><span class="prompt">&gt; </span><a href="#run"></a></div></div><div class="line error"><div class="nopad"><span class="prompt"></span>(error) I'm sorry, I don't recognize that command. Commands supported:
-        DECRBY, DEL, EXISTS, GET, GETSET, INCRBY, KEYS, LINDEX, LLEN, LPOP, LPUSH, LRANGE, LREM,
-        LSET, MGET, MSET, RENAME, RPOP, RPUSH, SADD, SCARD, SET, SISMEMBER, SMEMBERS, SORT, SREM,
-        TTL, TYPE</div></div></div><div><div class="line input"><div class="nopad"><span class="prompt">&gt; </span><a href="#run"></a></div></div><div class="line error"><div class="nopad"><span class="prompt"></span>(error) I'm sorry, I don't recognize that command. Commands supported:
-        DECRBY, DEL, EXISTS, GET, GETSET, INCRBY, KEYS, LINDEX, LLEN, LPOP, LPUSH, LRANGE, LREM,
-        LSET, MGET, MSET, RENAME, RPOP, RPUSH, SADD, SCARD, SET, SISMEMBER, SMEMBERS, SORT, SREM,
-        TTL, TYPE</div></div></div><div><div class="line input"><div class="nopad"><span class="prompt">&gt; </span><a href="#run"></a></div></div><div class="line error"><div class="nopad"><span class="prompt"></span>(error) I'm sorry, I don't recognize that command. Commands supported:
-        DECRBY, DEL, EXISTS, GET, GETSET, INCRBY, KEYS, LINDEX, LLEN, LPOP, LPUSH, LRANGE, LREM,
-        LSET, MGET, MSET, RENAME, RPOP, RPUSH, SADD, SCARD, SET, SISMEMBER, SMEMBERS, SORT, SREM,
-        TTL, TYPE</div></div></div><div><div class="line input"><div class="nopad"><span class="prompt">&gt; </span><a href="#run">shutdown</a></div></div><div class="line error"><div class="nopad"><span class="prompt"></span>(error) I'm sorry, I don't recognize that command. Commands supported:
-        DECRBY, DEL, EXISTS, GET, GETSET, INCRBY, KEYS, LINDEX, LLEN, LPOP, LPUSH, LRANGE, LREM,
-        LSET, MGET, MSET, RENAME, RPOP, RPUSH, SADD, SCARD, SET, SISMEMBER, SMEMBERS, SORT, SREM,
-        TTL, TYPE</div></div></div><div><div class="line input"><div class="nopad"><span class="prompt">&gt; </span><a href="#run">set key value</a></div></div><div class="line error"><div class="nopad"><span class="prompt"></span>OK</div></div></div><div><div class="line input"><div class="nopad"><span class="prompt">&gt; </span><a href="#run">aaaaa</a></div></div><div class="line error"><div class="nopad"><span class="prompt"></span>(error) I'm sorry, I don't recognize that command. Commands supported:
-        DECRBY, DEL, EXISTS, GET, GETSET, INCRBY, KEYS, LINDEX, LLEN, LPOP, LPUSH, LRANGE, LREM,
-        LSET, MGET, MSET, RENAME, RPOP, RPUSH, SADD, SCARD, SET, SISMEMBER, SMEMBERS, SORT, SREM,
-        TTL, TYPE</div></div></div><div><div class="line input"><div class="nopad"><span class="prompt">&gt; </span><a href="#run">set a</a></div></div><div class="line error"><div class="nopad"><span class="prompt"></span>ERR wrong number of arguments for 'set' command</div></div></div><div><div class="line input"><div class="nopad"><span class="prompt">&gt; </span><a href="#run">get key</a></div></div><div class="line error"><div class="nopad"><span class="prompt"></span>value</div></div></div><div><div class="line input"><div class="nopad"><span class="prompt">&gt; </span><a href="#run">a</a></div></div><div class="line error"><div class="nopad"><span class="prompt"></span>(error) I'm sorry, I don't recognize that command. Commands supported:
-        DECRBY, DEL, EXISTS, GET, GETSET, INCRBY, KEYS, LINDEX, LLEN, LPOP, LPUSH, LRANGE, LREM,
-        LSET, MGET, MSET, RENAME, RPOP, RPUSH, SADD, SCARD, SET, SISMEMBER, SMEMBERS, SORT, SREM,
-        TTL, TYPE</div></div></div><div><div class="line input"><div class="nopad"><span class="prompt">&gt; </span><a href="#run"></a></div></div><div class="line error"><div class="nopad"><span class="prompt"></span>(error) I'm sorry, I don't recognize that command. Commands supported:
-        DECRBY, DEL, EXISTS, GET, GETSET, INCRBY, KEYS, LINDEX, LLEN, LPOP, LPUSH, LRANGE, LREM,
-        LSET, MGET, MSET, RENAME, RPOP, RPUSH, SADD, SCARD, SET, SISMEMBER, SMEMBERS, SORT, SREM,
-        TTL, TYPE</div></div></div><div><div class="line input"><div class="nopad"><span class="prompt">&gt; </span><a href="#run">set key value</a></div></div><div class="line error"><div class="nopad"><span class="prompt"></span>OK</div></div></div><div><div class="line input"><div class="nopad"><span class="prompt">&gt; </span><a href="#run">set key value</a></div></div><div class="line error"><div class="nopad"><span class="prompt"></span>OK</div></div></div><div><div class="line input"><div class="nopad"><span class="prompt">&gt; </span><a href="#run">set key value</a></div></div><div class="line error"><div class="nopad"><span class="prompt"></span>OK</div></div></div><div><div class="line input"><div class="nopad"><span class="prompt">&gt; </span><a href="#run">aa</a></div></div><div class="line error"><div class="nopad"><span class="prompt"></span>(error) I'm sorry, I don't recognize that command. Commands supported:
-        DECRBY, DEL, EXISTS, GET, GETSET, INCRBY, KEYS, LINDEX, LLEN, LPOP, LPUSH, LRANGE, LREM,
-        LSET, MGET, MSET, RENAME, RPOP, RPUSH, SADD, SCARD, SET, SISMEMBER, SMEMBERS, SORT, SREM,
-        TTL, TYPE</div></div></div><div><div class="line input"><div class="nopad"><span class="prompt">&gt; </span><a href="#run">lkdfjdfk</a></div></div><div class="line error"><div class="nopad"><span class="prompt"></span>(error) I'm sorry, I don't recognize that command. Commands supported:
-        DECRBY, DEL, EXISTS, GET, GETSET, INCRBY, KEYS, LINDEX, LLEN, LPOP, LPUSH, LRANGE, LREM,
-        LSET, MGET, MSET, RENAME, RPOP, RPUSH, SADD, SCARD, SET, SISMEMBER, SMEMBERS, SORT, SREM,
-        TTL, TYPE</div></div></div><div><div class="line input"><div class="nopad"><span class="prompt">&gt; </span><a href="#run">aaa</a></div></div><div class="line error"><div class="nopad"><span class="prompt"></span>(error) I'm sorry, I don't recognize that command. Commands supported:
-        DECRBY, DEL, EXISTS, GET, GETSET, INCRBY, KEYS, LINDEX, LLEN, LPOP, LPUSH, LRANGE, LREM,
-        LSET, MGET, MSET, RENAME, RPOP, RPUSH, SADD, SCARD, SET, SISMEMBER, SMEMBERS, SORT, SREM,
-        TTL, TYPE</div></div></div><div><div class="line input"><div class="nopad"><span class="prompt">&gt; </span><a href="#run">a</a></div></div><div class="line error"><div class="nopad"><span class="prompt"></span>(error) I'm sorry, I don't recognize that command. Commands supported:
-        <a href="#decrby">DECRBY<\a>,
-        <a href="#help">DEL<\a>,
-        <a href="#help">EXISTS<\a>,
-        <a href="#help">GET<\a>,
-        <a href="#help">GETSET<\a>,
-        <a href="#help">INCRBY<\a>,
-        <a href="#help">KEYS<\a>,
-        <a href="#help">LINDEX<\a>,
-        <a href="#help">LLEN<\a>,
-        <a href="#help">LPOP<\a>,
-        <a href="#help">LPUSH<\a>,
-        <a href="#help">LRANGE<\a>,
-        <a href="#help">LREM<\a>,
-        <a href="#help">LSET<\a>,
-        <a href="#help">MGET<\a>,
-        <a href="#help">MSET<\a>,
-        <a href="#help">RENAME<\a>,
-        <a href="#help">RPOP<\a>,
-        <a href="#help">RPUSH<\a>,
-        <a href="#help">SADD<\a>,
-        <a href="#help">SCARD<\a>,
-        <a href="#help">SET<\a>,
-        <a href="#help">SISMEMBER<\a>,
-        <a href="#help">SMEMBERS<\a>,
-        <a href="#help">SORT<\a>,
-        <a href="#help">SREM<\a>,
-        <a href="#help">TTL<\a>,
-        <a href="#help">TYPE<\a>,
-        <a href="#help"><\a>,
-        <a href="#help"><\a></div></div></div><div><div class="line input"><div class="nopad"><span class="prompt">&gt; </span><a href="#run">a</a></div></div><div class="line error"><div class="nopad"><span class="prompt"></span>(error) I'm sorry, I don't recognize that command. Commands supported:
-        <a href="#decrby">DECRBY<\a>,
-        <a href="#help">DEL<\a>,
-        <a href="#help">EXISTS<\a>,
-        <a href="#help">GET<\a>,
-        <a href="#help">GETSET<\a>,
-        <a href="#help">INCRBY<\a>,
-        <a href="#help">KEYS<\a>,
-        <a href="#help">LINDEX<\a>,
-        <a href="#help">LLEN<\a>,
-        <a href="#help">LPOP<\a>,
-        <a href="#help">LPUSH<\a>,
-        <a href="#help">LRANGE<\a>,
-        <a href="#help">LREM<\a>,
-        <a href="#help">LSET<\a>,
-        <a href="#help">MGET<\a>,
-        <a href="#help">MSET<\a>,
-        <a href="#help">RENAME<\a>,
-        <a href="#help">RPOP<\a>,
-        <a href="#help">RPUSH<\a>,
-        <a href="#help">SADD<\a>,
-        <a href="#help">SCARD<\a>,
-        <a href="#help">SET<\a>,
-        <a href="#help">SISMEMBER<\a>,
-        <a href="#help">SMEMBERS<\a>,
-        <a href="#help">SORT<\a>,
-        <a href="#help">SREM<\a>,
-        <a href="#help">TTL<\a>,
-        <a href="#help">TYPE<\a></div></div></div><div><div class="line input"><div class="nopad"><span class="prompt">&gt; </span><a href="#run">a</a></div></div><div class="line error"><div class="nopad"><span class="prompt"></span>(error) I'm sorry, I don't recognize that command. Commands supported:
-        <a href="#decrby">DECRBY</a>,
-        <a href="#help">DEL</a>,
-        <a href="#help">EXISTS</a>,
-        <a href="#help">GET</a>,
-        <a href="#help">GETSET</a>,
-        <a href="#help">INCRBY</a>,
-        <a href="#help">KEYS</a>,
-        <a href="#help">LINDEX</a>,
-        <a href="#help">LLEN</a>,
-        <a href="#help">LPOP</a>,
-        <a href="#help">LPUSH</a>,
-        <a href="#help">LRANGE</a>,
-        <a href="#help">LREM</a>,
-        <a href="#help">LSET</a>,
-        <a href="#help">MGET</a>,
-        <a href="#help">MSET</a>,
-        <a href="#help">RENAME</a>,
-        <a href="#help">RPOP</a>,
-        <a href="#help">RPUSH</a>,
-        <a href="#help">SADD</a>,
-        <a href="#help">SCARD</a>,
-        <a href="#help">SET</a>,
-        <a href="#help">SISMEMBER</a>,
-        <a href="#help">SMEMBERS</a>,
-        <a href="#help">SORT</a>,
-        <a href="#help">SREM</a>,
-        <a href="#help">TTL</a>,
-        <a href="#help">TYPE</a></div></div></div>
+                    <p>Please enter a Redis command to play with the database.</p>
+                </div><div><div class="line input"><div class="nopad"><span class="prompt">&gt; </span><a href="#run">a</a></div></div><div class="line error"><div class="nopad"><span class="prompt"></span>(error) I'm sorry, I don't recognize that command. Commands supported:
+        <a href="https://redis.io/commands/decrby">DECRBY</a>,
+        <a href="https://redis.io/commands/del">DEL</a>,
+        <a href="https://redis.io/commands/exists">EXISTS</a>,
+        <a href="https://redis.io/commands/expire">EXPIRE</a>,
+        <a href="https://redis.io/commands/get">GET</a>,
+        <a href="https://redis.io/commands/getset">GETSET</a>,
+        <a href="https://redis.io/commands/incrby">INCRBY</a>,
+        <a href="https://redis.io/commands/keys">KEYS</a>,
+        <a href="https://redis.io/commands/lindex">LINDEX</a>,
+        <a href="https://redis.io/commands/llen">LLEN</a>,
+        <a href="https://redis.io/commands/lpop">LPOP</a>,
+        <a href="https://redis.io/commands/lpush">LPUSH</a>,
+        <a href="https://redis.io/commands/lrange">LRANGE</a>,
+        <a href="https://redis.io/commands/lrem">LREM</a>,
+        <a href="https://redis.io/commands/lset">LSET</a>,
+        <a href="https://redis.io/commands/mget">MGET</a>,
+        <a href="https://redis.io/commands/mset">MSET</a>,
+        <a href="https://redis.io/commands/rename">RENAME</a>,
+        <a href="https://redis.io/commands/rpop">RPOP</a>,
+        <a href="https://redis.io/commands/rpush">RPUSH</a>,
+        <a href="https://redis.io/commands/sadd">SADD</a>,
+        <a href="https://redis.io/commands/scard">SCARD</a>,
+        <a href="https://redis.io/commands/set">SET</a>,
+        <a href="https://redis.io/commands/shutdown">SHUTDOWN</a>,
+        <a href="https://redis.io/commands/sismember">SISMEMBER</a>,
+        <a href="https://redis.io/commands/smembers">SMEMBERS</a>,
+        <a href="https://redis.io/commands/sort">SORT</a>,
+        <a href="https://redis.io/commands/srem">SREM</a>,
+        <a href="https://redis.io/commands/ttl">TTL</a>,
+        <a href="https://redis.io/commands/type">TYPE</a></div></div></div><div><div class="line input"><div class="nopad"><span class="prompt">&gt; </span><a href="#run">shutdown</a></div></div><div class="line error"><div class="nopad"><span class="prompt"></span>OK</div></div></div>

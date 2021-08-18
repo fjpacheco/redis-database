@@ -11,23 +11,18 @@ pub fn get_page_content(command: String, redis_response: &str) -> String {
         .read(true)
         .write(true)
         .append(true)
-        .open(
-            "/Users/martinaagata/Desktop/Rust-eze/src/server_html/resource/top_content".to_string(),
-        ) {
+        .open("src/server_html/resource/top_content".to_string())
+    {
         Ok(file) => file,
         Err(err) => return format!("Opening file failed. Detail: {}", err),
     };
 
     file.write_all(response_content.as_bytes()).unwrap(); // TODO
 
-    let mut content = fs::read_to_string(
-        "/Users/martinaagata/Desktop/Rust-eze/src/server_html/resource/top_content".to_string(),
-    )
-    .unwrap(); // TODO?
-    let bottom_content = fs::read_to_string(
-        "/Users/martinaagata/Desktop/Rust-eze/src/server_html/resource/bottom_content".to_string(),
-    )
-    .unwrap(); // TODO?
+    let mut content =
+        fs::read_to_string("src/server_html/resource/top_content".to_string()).unwrap(); // TODO?
+    let bottom_content =
+        fs::read_to_string("src/server_html/resource/bottom_content".to_string()).unwrap(); // TODO?
 
     content.push_str(&bottom_content);
 
@@ -49,7 +44,9 @@ pub fn get_page_content_error((code, description): (String, String)) -> String {
 
             <body>
                 <div id=\"logo-rust-eze\">
-                    <img src=\"logo-black.png\">
+                    <a href=\"/\">
+                        <img src=\"logo-black.png\">
+                    </a>
                 </div>
 
                 <div id=\"title\">
