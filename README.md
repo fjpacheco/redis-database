@@ -22,9 +22,9 @@ This version implements:
 
 All this project was made using technics as: Automated Unit Testing, Automated Integration Tests using a Redis client to the Rust language [(an external crate)](https://crates.io/crates/redis), Error Handling and versions control.
 
-## Second Part
-
 # Redis HTTP Monitor in Rust
+
+## Second Part
 
 The web server that receives requests from browsers, communicating with them through the HTTP/1.1 protocol. The description of this protocol is the one corresponding to [RFC 2616](https://datatracker.ietf.org/doc/html/rfc2616).
 
